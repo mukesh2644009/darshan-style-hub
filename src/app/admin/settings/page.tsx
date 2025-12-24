@@ -1,4 +1,4 @@
-import { FiSettings, FiStore, FiPhone, FiMail, FiMapPin } from 'react-icons/fi';
+import { FiSettings, FiHome, FiPhone, FiMail, FiMapPin } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 
 export default function SettingsPage() {
@@ -13,7 +13,7 @@ export default function SettingsPage() {
         {/* Store Information */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <FiStore className="w-5 h-5" />
+            <FiHome className="w-5 h-5" />
             Store Information
           </h2>
           <div className="grid md:grid-cols-2 gap-6">

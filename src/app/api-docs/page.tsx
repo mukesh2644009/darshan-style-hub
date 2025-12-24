@@ -1,5 +1,6 @@
 'use client';
 
+// @ts-expect-error - swagger-ui-react doesn't have type definitions
 import SwaggerUI from 'swagger-ui-react';
 import 'swagger-ui-react/swagger-ui.css';
 import { useEffect, useState } from 'react';

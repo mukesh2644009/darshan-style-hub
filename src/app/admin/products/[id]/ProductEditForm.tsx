@@ -1,0 +1,281 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { FiSave, FiLoader, FiCheck } from 'react-icons/fi';
+
+interface Product {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  originalPrice: number | null;
+  category: string;
+  subcategory: string | null;
+  featured: boolean;
+  newArrival: boolean;
+}
+
+interface Props {
+  product: Product;
+}
+
+export default function ProductEditForm({ product }: Props) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [formData, setFormData] = useState({
+    name: product.name,
+    description: product.description,
+    price: product.price,
+    originalPrice: product.originalPrice || 0,
+    category: product.category,
+    subcategory: product.subcategory || '',
+    featured: product.featured,
+    newArrival: product.newArrival,
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
+              type === 'number' ? parseFloat(value) || 0 : value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
+
+    try {
+      const response = await fetch(`/api/admin/products/${product.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        setMessage('Product updated successfully!');
+        router.refresh();
+      } else {
+        const data = await response.json();
+        setMessage(data.error || 'Failed to update product');
+      }
+    } catch (error) {
+      setMessage('Error updating product');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const categories = ['Sarees', 'Suits', 'Kurtis'];
+  const subcategories: Record<string, string[]> = {
+    'Sarees': ['Silk Sarees', 'Cotton Sarees', 'Banarasi Sarees', 'Designer Sarees', 'Wedding Sarees'],
+    'Suits': ['Anarkali Suits', 'Salwar Suits', 'Palazzo Suits', 'Churidar Suits', 'Party Wear Suits'],
+    'Kurtis': ['Cotton Kurtis', 'Printed Kurtis', 'Embroidered Kurtis', 'Party Wear Kurtis', 'Casual Kurtis'],
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Basic Information */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Basic Information</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Product Name *
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description *
+            </label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              required
+              rows={4}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category *
+              </label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Subcategory
+              </label>
+              <select
+                name="subcategory"
+                value={formData.subcategory}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="">Select subcategory</option>
+                {subcategories[formData.category]?.map(sub => (
+                  <option key={sub} value={sub}>{sub}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pricing */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">💰 Pricing</h2>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Selling Price (₹) *
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+              <input
+                type="number"
+                name="price"
+                value={formData.price}
+                onChange={handleChange}
+                required
+                min="0"
+                step="1"
+                className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-lg font-bold"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">This is the price customers will pay</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Original Price (₹)
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">₹</span>
+              <input
+                type="number"
+                name="originalPrice"
+                value={formData.originalPrice}
+                onChange={handleChange}
+                min="0"
+                step="1"
+                className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">If set higher than selling price, shows as discount</p>
+          </div>
+        </div>
+
+        {formData.originalPrice > formData.price && (
+          <div className="mt-4 p-3 bg-green-50 rounded-lg">
+            <p className="text-green-800 text-sm font-medium">
+              🏷️ Discount: {Math.round((1 - formData.price / formData.originalPrice) * 100)}% OFF
+              <span className="text-green-600 ml-2">
+                (Save ₹{(formData.originalPrice - formData.price).toLocaleString('en-IN')})
+              </span>
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Status Flags */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Status</h2>
+        <div className="flex flex-wrap gap-6">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              name="featured"
+              checked={formData.featured}
+              onChange={handleChange}
+              className="w-5 h-5 text-primary-600 rounded focus:ring-primary-500"
+            />
+            <div>
+              <span className="font-medium text-gray-900">Featured Product</span>
+              <p className="text-xs text-gray-500">Show on homepage featured section</p>
+            </div>
+          </label>
+
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              name="newArrival"
+              checked={formData.newArrival}
+              onChange={handleChange}
+              className="w-5 h-5 text-primary-600 rounded focus:ring-primary-500"
+            />
+            <div>
+              <span className="font-medium text-gray-900">New Arrival</span>
+              <p className="text-xs text-gray-500">Show "New" badge on product</p>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      {/* Submit Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          {message && (
+            <p className={`text-sm font-medium ${
+              message.includes('success') ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {message.includes('success') && <FiCheck className="inline mr-1" />}
+              {message}
+            </p>
+          )}
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
+            loading
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-primary-600 text-white hover:bg-primary-700'
+          }`}
+        >
+          {loading ? (
+            <>
+              <FiLoader className="w-5 h-5 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>
+              <FiSave className="w-5 h-5" />
+              Save Changes
+            </>
+          )}
+        </button>
+      </div>
+    </form>
+  );
+}
+

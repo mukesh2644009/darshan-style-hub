@@ -1,0 +1,191 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  phone         String?
+  password      String
+  role          String    @default("CUSTOMER") // ADMIN or CUSTOMER
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  addresses     Address[]
+  orders        Order[]
+  cartItems     CartItem[]
+  wishlist      WishlistItem[]
+}
+
+// Address model for shipping
+model Address {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  phone         String
+  addressLine1  String
+  addressLine2  String?
+  city          String
+  state         String
+  pincode       String
+  isDefault     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// Product model
+model Product {
+  id            String    @id @default(cuid())
+  name          String
+  description   String
+  price         Float
+  originalPrice Float?
+  category      String
+  subcategory   String
+  inStock       Boolean   @default(true)
+  featured      Boolean   @default(false)
+  newArrival    Boolean   @default(false)
+  rating        Float     @default(0)
+  reviews       Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  images        ProductImage[]
+  sizes         ProductSize[]
+  colors        ProductColor[]
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+  wishlistItems WishlistItem[]
+}
+
+// Product images
+model ProductImage {
+  id          String    @id @default(cuid())
+  url         String
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// Product sizes
+model ProductSize {
+  id          String    @id @default(cuid())
+  size        String
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// Product colors
+model ProductColor {
+  id          String    @id @default(cuid())
+  name        String
+  hex         String
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+// Cart items
+model CartItem {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity      Int       @default(1)
+  selectedSize  String
+  selectedColor String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, productId, selectedSize, selectedColor])
+}
+
+// Wishlist items
+model WishlistItem {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, productId])
+}
+
+// Order model
+model Order {
+  id              String      @id @default(cuid())
+  userId          String?
+  user            User?       @relation(fields: [userId], references: [id])
+  status          String      @default("PENDING") // PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
+  paymentMethod   String      @default("COD")
+  paymentStatus   String      @default("PENDING") // PENDING, PAID, FAILED, REFUNDED
+  subtotal        Float
+  shipping        Float       @default(0)
+  discount        Float       @default(0)
+  total           Float
+  
+  // Shipping details (stored directly for guest checkout)
+  shippingName    String
+  shippingPhone   String
+  shippingAddress String
+  shippingCity    String
+  shippingState   String
+  shippingPincode String
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  items           OrderItem[]
+}
+
+// Order items
+model OrderItem {
+  id            String    @id @default(cuid())
+  orderId       String
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId     String
+  product       Product   @relation(fields: [productId], references: [id])
+  quantity      Int
+  price         Float
+  size          String?
+  color         String?
+}
+
+// Category model for dynamic categories
+model Category {
+  id            String    @id @default(cuid())
+  name          String    @unique
+  createdAt     DateTime  @default(now())
+  
+  subcategories Subcategory[]
+}
+
+// Subcategory model
+model Subcategory {
+  id          String    @id @default(cuid())
+  name        String
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([name, categoryId])
+}
+
+// Session model for authentication
+model Session {
+  id          String    @id @default(cuid())
+  userId      String
+  token       String    @unique
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+}

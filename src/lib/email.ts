@@ -1,0 +1,320 @@
+// Email service using Resend
+// If RESEND_API_KEY is not set, emails will be skipped
+
+// Shop details
+const SHOP_NAME = 'Darshan Style Hub';
+const SHOP_EMAIL = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+const SHOP_WEBSITE = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
+interface WelcomeEmailProps {
+  to: string;
+  customerName: string;
+}
+
+export async function sendWelcomeEmail({ to, customerName }: WelcomeEmailProps) {
+  // Skip if no API key
+  if (!process.env.RESEND_API_KEY) {
+    console.log('RESEND_API_KEY not set, skipping welcome email');
+    return { success: false, error: 'Email not configured' };
+  }
+
+  try {
+    // Dynamic import to avoid errors when API key is not set
+    const { Resend } = await import('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    const { data, error } = await resend.emails.send({
+      from: `${SHOP_NAME} <${SHOP_EMAIL}>`,
+      to: [to],
+      subject: `Welcome to ${SHOP_NAME}! 🎉`,
+      html: getWelcomeEmailTemplate(customerName),
+    });
+
+    if (error) {
+      console.error('Error sending welcome email:', error);
+      return { success: false, error };
+    }
+
+    console.log('Welcome email sent successfully:', data);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Failed to send welcome email:', error);
+    return { success: false, error };
+  }
+}
+
+function getWelcomeEmailTemplate(customerName: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to ${SHOP_NAME}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f4f0;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #9f1239 0%, #be185d 100%); padding: 40px 30px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: bold;">
+                ${SHOP_NAME}
+              </h1>
+              <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">
+                Johari Bazaar, Jaipur
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Welcome Message -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <h2 style="color: #1f2937; margin: 0 0 20px; font-size: 24px;">
+                Welcome, ${customerName}! 🎉
+              </h2>
+              <p style="color: #4b5563; line-height: 1.6; margin: 0 0 20px; font-size: 16px;">
+                Thank you for joining the ${SHOP_NAME} family! We're thrilled to have you with us.
+              </p>
+              <p style="color: #4b5563; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">
+                Get ready to explore our exquisite collection of traditional Indian wear - from beautiful sarees to elegant suits and trendy kurtis.
+              </p>
+              
+              <!-- Special Offer Box -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; margin-bottom: 30px;">
+                <tr>
+                  <td style="padding: 25px; text-align: center;">
+                    <p style="color: #92400e; margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                      🎁 Your Exclusive Welcome Gift
+                    </p>
+                    <p style="color: #78350f; margin: 0 0 10px; font-size: 28px; font-weight: bold;">
+                      10% OFF
+                    </p>
+                    <p style="color: #92400e; margin: 0 0 15px; font-size: 14px;">
+                      Use code at checkout:
+                    </p>
+                    <div style="background-color: #ffffff; display: inline-block; padding: 12px 30px; border-radius: 8px; border: 2px dashed #d97706;">
+                      <span style="color: #d97706; font-size: 20px; font-weight: bold; letter-spacing: 2px;">WELCOME10</span>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Shop Categories -->
+              <p style="color: #1f2937; font-weight: 600; margin: 0 0 15px; font-size: 16px;">
+                Explore Our Collections:
+              </p>
+              <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                <tr>
+                  <td style="padding: 10px; text-align: center;">
+                    <a href="${SHOP_WEBSITE}/products?category=Sarees" style="text-decoration: none;">
+                      <div style="background-color: #fce7f3; padding: 20px; border-radius: 12px;">
+                        <p style="font-size: 32px; margin: 0 0 5px;">🥻</p>
+                        <p style="color: #be185d; font-weight: 600; margin: 0;">Sarees</p>
+                      </div>
+                    </a>
+                  </td>
+                  <td style="padding: 10px; text-align: center;">
+                    <a href="${SHOP_WEBSITE}/products?category=Suits" style="text-decoration: none;">
+                      <div style="background-color: #ede9fe; padding: 20px; border-radius: 12px;">
+                        <p style="font-size: 32px; margin: 0 0 5px;">👗</p>
+                        <p style="color: #7c3aed; font-weight: 600; margin: 0;">Suits</p>
+                      </div>
+                    </a>
+                  </td>
+                  <td style="padding: 10px; text-align: center;">
+                    <a href="${SHOP_WEBSITE}/products?category=Kurtis" style="text-decoration: none;">
+                      <div style="background-color: #fef3c7; padding: 20px; border-radius: 12px;">
+                        <p style="font-size: 32px; margin: 0 0 5px;">👚</p>
+                        <p style="color: #d97706; font-weight: 600; margin: 0;">Kurtis</p>
+                      </div>
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- CTA Button -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td align="center">
+                    <a href="${SHOP_WEBSITE}/products" style="display: inline-block; background: linear-gradient(135deg, #9f1239 0%, #be185d 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                      Start Shopping Now →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; margin: 0 0 10px; font-size: 14px;">
+                Need help? Contact us anytime!
+              </p>
+              <p style="color: #9f1239; margin: 0 0 20px; font-size: 16px; font-weight: 600;">
+                📞 +91 98765 43210
+              </p>
+              <p style="color: #9ca3af; margin: 0; font-size: 12px;">
+                ${SHOP_NAME} | Johari Bazaar, Jaipur, Rajasthan 302001
+              </p>
+              <p style="color: #9ca3af; margin: 10px 0 0; font-size: 12px;">
+                © 2026 ${SHOP_NAME}. All rights reserved.
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
+// Order confirmation email
+interface OrderEmailProps {
+  to: string;
+  customerName: string;
+  orderId: string;
+  total: number;
+  items: Array<{
+    name: string;
+    quantity: number;
+    price: number;
+  }>;
+}
+
+export async function sendOrderConfirmationEmail({ to, customerName, orderId, total, items }: OrderEmailProps) {
+  // Skip if no API key
+  if (!process.env.RESEND_API_KEY) {
+    console.log('RESEND_API_KEY not set, skipping order confirmation email');
+    return { success: false, error: 'Email not configured' };
+  }
+
+  try {
+    // Dynamic import to avoid errors when API key is not set
+    const { Resend } = await import('resend');
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
+    const { data, error } = await resend.emails.send({
+      from: `${SHOP_NAME} <${SHOP_EMAIL}>`,
+      to: [to],
+      subject: `Order Confirmed! #${orderId.slice(0, 8).toUpperCase()} 🛍️`,
+      html: getOrderConfirmationTemplate(customerName, orderId, total, items),
+    });
+
+    if (error) {
+      console.error('Error sending order confirmation email:', error);
+      return { success: false, error };
+    }
+
+    console.log('Order confirmation email sent successfully:', data);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Failed to send order confirmation email:', error);
+    return { success: false, error };
+  }
+}
+
+function getOrderConfirmationTemplate(customerName: string, orderId: string, total: number, items: Array<{ name: string; quantity: number; price: number }>): string {
+  const itemsHtml = items.map(item => `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
+        <p style="margin: 0; color: #1f2937; font-weight: 500;">${item.name}</p>
+        <p style="margin: 5px 0 0; color: #6b7280; font-size: 14px;">Qty: ${item.quantity}</p>
+      </td>
+      <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">
+        <p style="margin: 0; color: #1f2937; font-weight: 600;">₹${(item.price * item.quantity).toLocaleString('en-IN')}</p>
+      </td>
+    </tr>
+  `).join('');
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order Confirmation</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f4f0;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 40px 30px; text-align: center;">
+              <p style="font-size: 48px; margin: 0 0 10px;">✅</p>
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
+                Order Confirmed!
+              </h1>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <p style="color: #4b5563; line-height: 1.6; margin: 0 0 20px; font-size: 16px;">
+                Hi ${customerName},
+              </p>
+              <p style="color: #4b5563; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">
+                Thank you for your order! We're preparing your items with care.
+              </p>
+              
+              <!-- Order ID -->
+              <div style="background-color: #f3f4f6; padding: 15px 20px; border-radius: 8px; margin-bottom: 30px;">
+                <p style="margin: 0; color: #6b7280; font-size: 14px;">Order ID</p>
+                <p style="margin: 5px 0 0; color: #1f2937; font-size: 20px; font-weight: bold;">#${orderId.slice(0, 8).toUpperCase()}</p>
+              </div>
+              
+              <!-- Items -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                <thead>
+                  <tr>
+                    <th style="padding: 12px; background-color: #f9fafb; text-align: left; color: #6b7280; font-size: 14px;">Item</th>
+                    <th style="padding: 12px; background-color: #f9fafb; text-align: right; color: #6b7280; font-size: 14px;">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsHtml}
+                </tbody>
+              </table>
+              
+              <!-- Total -->
+              <div style="background-color: #fef3c7; padding: 15px 20px; border-radius: 8px; text-align: right;">
+                <p style="margin: 0; color: #92400e; font-size: 14px;">Total Amount</p>
+                <p style="margin: 5px 0 0; color: #78350f; font-size: 24px; font-weight: bold;">₹${total.toLocaleString('en-IN')}</p>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; margin: 0 0 10px; font-size: 14px;">
+                Questions about your order?
+              </p>
+              <p style="color: #9f1239; margin: 0 0 20px; font-size: 16px; font-weight: 600;">
+                📞 +91 98765 43210
+              </p>
+              <p style="color: #9ca3af; margin: 0; font-size: 12px;">
+                ${SHOP_NAME} | Johari Bazaar, Jaipur
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}

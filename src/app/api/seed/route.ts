@@ -1,10 +1,20 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// This endpoint seeds the database - use once after deployment
-// Visit: https://your-site.vercel.app/api/seed?secret=darshan2026
+// This endpoint seeds the database - DISABLED after initial setup
+// To re-enable, change SEED_ENABLED to true
+
+const SEED_ENABLED = false; // Set to true only when you need to re-seed
 
 export async function GET(request: Request) {
+  // Seed is disabled for security
+  if (!SEED_ENABLED) {
+    return NextResponse.json({ 
+      error: 'Seed endpoint is disabled. Contact admin to enable.',
+      hint: 'Set SEED_ENABLED = true in the code to re-enable'
+    }, { status: 403 });
+  }
+
   const { searchParams } = new URL(request.url);
   const secret = searchParams.get('secret');
 

@@ -4,14 +4,15 @@ import { useState } from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
 import { FiX, FiMessageCircle } from 'react-icons/fi';
 
-// Replace with your actual WhatsApp number (with country code, no + or spaces)
-const WHATSAPP_NUMBER = '919876543210'; // Example: 91 for India + your number
+// Your WhatsApp number (with country code, no + or spaces)
+const WHATSAPP_NUMBER = '919019076335'; // Your number: 91 (India) + 9019076335
+const SITE_URL = 'https://darshan-style-hub.vercel.app';
 
 export default function WhatsAppButton() {
   const [isOpen, setIsOpen] = useState(false);
 
   const defaultMessage = encodeURIComponent(
-    'Hi! I\'m interested in your sarees and suits collection. Can you help me?'
+    `Hi 👋\nI visited your website ${SITE_URL}\nI'm interested in your women's apparel.\nPlease share product details and pricing.`
   );
 
   const whatsappLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${defaultMessage}`;
@@ -55,15 +56,15 @@ export default function WhatsAppButton() {
             <div className="space-y-2 mb-4">
               <p className="text-xs text-gray-500 font-medium">Quick Messages:</p>
               <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi! I want to know about your latest saree collection.')}`}
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI'm interested in your saree collection.\nPlease share details.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-sm text-green-600 hover:text-green-700 hover:underline"
               >
-                📦 Inquire about sarees
+                🥻 Inquire about sarees
               </a>
               <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi! I want to check availability of a suit.')}`}
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI'm interested in your suits collection.\nPlease share details.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-sm text-green-600 hover:text-green-700 hover:underline"
@@ -71,12 +72,12 @@ export default function WhatsAppButton() {
                 👗 Check suit availability
               </a>
               <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi! I need help with my order.')}`}
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI'm interested in your kurtis collection.\nPlease share details.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-sm text-green-600 hover:text-green-700 hover:underline"
               >
-                🛍️ Order support
+                👚 Inquire about kurtis
               </a>
             </div>
           </div>

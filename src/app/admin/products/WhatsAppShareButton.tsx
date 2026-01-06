@@ -16,9 +16,9 @@ interface Props {
   product: Product;
 }
 
-// Replace with your actual WhatsApp number
-const WHATSAPP_NUMBER = '919876543210';
-const STORE_URL = 'http://localhost:3000'; // Change to your actual domain in production
+// Your WhatsApp number
+const WHATSAPP_NUMBER = '919019076335';
+const STORE_URL = 'https://darshan-style-hub.vercel.app';
 
 export default function WhatsAppShareButton({ product }: Props) {
   const [showModal, setShowModal] = useState(false);
@@ -44,7 +44,7 @@ export default function WhatsAppShareButton({ product }: Props) {
     message += `\n\nView Product: ${productUrl}`;
     message += `\n\n*Darshan Style Hub*`;
     message += `\nJohari Bazaar, Jaipur`;
-    message += `\nContact: +91 98765 43210`;
+    message += `\nContact: +91 90190 76335`;
     
     return message;
   };

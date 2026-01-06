@@ -135,14 +135,14 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <FiPhone className="flex-shrink-0 text-primary-400" />
-                <a href="tel:+919876543210" className="text-accent-300 hover:text-white transition-colors">
-                  +91 98765 43210
+                <a href="tel:+919019076335" className="text-accent-300 hover:text-white transition-colors">
+                  +91 90190 76335
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <FaWhatsapp className="flex-shrink-0 text-green-400" />
                 <a 
-                  href="https://wa.me/919876543210?text=Hi!%20I'm%20interested%20in%20your%20collection." 
+                  href="https://wa.me/919019076335?text=Hi%20%F0%9F%91%8B%0AI%20visited%20your%20website%20https%3A%2F%2Fdarshan-style-hub.vercel.app%0AI'm%20interested%20in%20your%20women's%20apparel.%0APlease%20share%20product%20details%20and%20pricing." 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-accent-300 hover:text-green-400 transition-colors"

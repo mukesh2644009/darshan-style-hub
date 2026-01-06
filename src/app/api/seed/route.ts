@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 // This endpoint seeds the database - DISABLED after initial setup
 // To re-enable, change SEED_ENABLED to true
 
-const SEED_ENABLED = false; // Set to true only when you need to re-seed
+const SEED_ENABLED = true; // Set to true only when you need to re-seed
 
 export async function GET(request: Request) {
   // Seed is disabled for security

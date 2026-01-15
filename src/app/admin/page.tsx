@@ -2,6 +2,9 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { FiShoppingBag, FiPackage, FiUsers, FiDollarSign, FiTrendingUp, FiArrowRight } from 'react-icons/fi';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function getStats() {
   const [ordersCount, productsCount, customersCount, orders] = await Promise.all([
     prisma.order.count(),

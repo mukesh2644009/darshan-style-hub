@@ -1,6 +1,9 @@
 import { prisma } from '@/lib/prisma';
 import { FiUsers, FiMail, FiPhone, FiShoppingBag } from 'react-icons/fi';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function getCustomers() {
   return prisma.user.findMany({
     orderBy: { createdAt: 'desc' },

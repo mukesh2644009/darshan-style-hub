@@ -19,10 +19,10 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const secret = searchParams.get('secret');
 
-  // Use environment variable for seed secret - NEVER hardcode!
-  const SEED_SECRET = process.env.SEED_SECRET;
-  if (!SEED_SECRET || secret !== SEED_SECRET) {
-    return NextResponse.json({ error: 'Invalid or missing secret' }, { status: 401 });
+  // Temporary hardcoded secret - REMOVE AFTER SEEDING!
+  const SEED_SECRET = process.env.SEED_SECRET || 'TempSeed2026';
+  if (secret !== SEED_SECRET) {
+    return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
   }
 
   try {

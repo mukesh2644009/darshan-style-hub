@@ -91,6 +91,7 @@ export async function GET(request: Request) {
     const products = [
       // SAREES
       {
+        sku: 'DSH-SAR-001',
         name: 'Royal Kanjeevaram Silk Saree',
         description: 'Elegant pure Kanjeevaram silk saree with intricate golden zari work.',
         price: 8999,
@@ -106,6 +107,7 @@ export async function GET(request: Request) {
         colors: [{ name: 'Maroon', hex: '#800000' }],
       },
       {
+        sku: 'DSH-SAR-002',
         name: 'Banarasi Silk Saree',
         description: 'Traditional Banarasi silk saree with golden zari border.',
         price: 7599,
@@ -121,6 +123,7 @@ export async function GET(request: Request) {
         colors: [{ name: 'Red', hex: '#DC143C' }],
       },
       {
+        sku: 'DSH-SAR-003',
         name: 'Cotton Handloom Saree',
         description: 'Lightweight cotton saree perfect for daily wear.',
         price: 1999,
@@ -137,6 +140,7 @@ export async function GET(request: Request) {
       },
       // SUITS
       {
+        sku: 'DSH-SUT-001',
         name: 'Elegant Anarkali Suit',
         description: 'Beautiful Lucknowi chikankari Anarkali suit with delicate embroidery.',
         price: 4599,
@@ -152,6 +156,7 @@ export async function GET(request: Request) {
         colors: [{ name: 'White', hex: '#FFFFFF' }],
       },
       {
+        sku: 'DSH-SUT-002',
         name: 'Palazzo Suit Set',
         description: 'Trendy palazzo suit with printed kurta and dupatta.',
         price: 2999,
@@ -167,6 +172,7 @@ export async function GET(request: Request) {
         colors: [{ name: 'Pink', hex: '#FF69B4' }],
       },
       {
+        sku: 'DSH-SUT-003',
         name: 'Party Wear Salwar Suit',
         description: 'Stunning party wear suit with heavy embroidery.',
         price: 5499,
@@ -183,6 +189,7 @@ export async function GET(request: Request) {
       },
       // KURTIS - Using your authentic images
       {
+        sku: 'DSH-KUR-001',
         name: 'Golden Block Print Kurti',
         description: 'Elegant cream kurti with beautiful golden block print design.',
         price: 1299,
@@ -198,6 +205,7 @@ export async function GET(request: Request) {
         colors: [{ name: 'Cream', hex: '#FFFDD0' }],
       },
       {
+        sku: 'DSH-KUR-002',
         name: 'Patchwork Cotton Kurti',
         description: 'Trendy patchwork kurti with colorful geometric patterns.',
         price: 999,
@@ -213,6 +221,7 @@ export async function GET(request: Request) {
         colors: [{ name: 'Multi Color', hex: '#FFD700' }],
       },
       {
+        sku: 'DSH-KUR-003',
         name: 'Chikankari Embroidered Kurti',
         description: 'Beautiful Lucknowi chikankari work kurti in pure cotton.',
         price: 1599,
@@ -228,6 +237,7 @@ export async function GET(request: Request) {
         colors: [{ name: 'White', hex: '#FFFFFF' }],
       },
       {
+        sku: 'DSH-KUR-004',
         name: 'Paisley Print Short Kurti',
         description: 'Stylish short kurti with traditional paisley print.',
         price: 899,
@@ -243,6 +253,7 @@ export async function GET(request: Request) {
         colors: [{ name: 'Yellow', hex: '#FFD700' }],
       },
       {
+        sku: 'DSH-KUR-005',
         name: 'Party Wear Kurti',
         description: 'Elegant party wear kurti with sequin work.',
         price: 1999,
@@ -258,6 +269,7 @@ export async function GET(request: Request) {
         colors: [{ name: 'Maroon', hex: '#800000' }],
       },
       {
+        sku: 'DSH-KUR-006',
         name: 'Casual Cotton Kurti',
         description: 'Comfortable daily wear cotton kurti.',
         price: 699,
@@ -277,6 +289,7 @@ export async function GET(request: Request) {
     for (const p of products) {
       await prisma.product.create({
         data: {
+          sku: p.sku,
           name: p.name,
           description: p.description,
           price: p.price,

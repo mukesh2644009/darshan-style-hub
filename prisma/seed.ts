@@ -74,6 +74,7 @@ async function main() {
   const productsData = [
     // ===== SAREES =====
     {
+      sku: 'DSH-SAR-001',
       name: 'Royal Kanjeevaram Silk Saree',
       description: 'Elegant pure Kanjeevaram silk saree with intricate golden zari work and traditional temple border. Perfect for weddings and special occasions.',
       price: 8999,
@@ -95,6 +96,7 @@ async function main() {
       ],
     },
     {
+      sku: 'DSH-SAR-002',
       name: 'Banarasi Silk Saree',
       description: 'Authentic Banarasi silk saree with traditional butta motifs and rich pallu. Handwoven by skilled artisans of Varanasi.',
       price: 15999,
@@ -116,6 +118,7 @@ async function main() {
       ],
     },
     {
+      sku: 'DSH-SAR-003',
       name: 'Jaipuri Cotton Saree',
       description: 'Breathable Jaipuri cotton saree with beautiful block print design. Soft fabric perfect for daily wear in Rajasthan summer.',
       price: 2499,
@@ -137,6 +140,7 @@ async function main() {
       ],
     },
     {
+      sku: 'DSH-SAR-004',
       name: 'Bridal Wedding Saree',
       description: 'Exquisite bridal saree with heavy zardozi embroidery, kundan work and rich golden border. Perfect for your wedding day.',
       price: 24999,
@@ -159,6 +163,7 @@ async function main() {
     },
     // ===== SUITS =====
     {
+      sku: 'DSH-SUT-001',
       name: 'Lucknowi Anarkali Suit',
       description: 'Beautiful Lucknowi chikankari Anarkali suit with delicate hand embroidery. Flowing silhouette with dupatta and churidar.',
       price: 4599,
@@ -180,6 +185,7 @@ async function main() {
       ],
     },
     {
+      sku: 'DSH-SUT-002',
       name: 'Punjabi Salwar Kameez',
       description: 'Traditional Punjabi patiala salwar suit with phulkari embroidery. Comfortable cotton blend fabric with matching dupatta.',
       price: 3299,
@@ -201,6 +207,7 @@ async function main() {
       ],
     },
     {
+      sku: 'DSH-SUT-003',
       name: 'Heavy Embroidered Party Suit',
       description: 'Glamorous party wear salwar suit with heavy mirror work, sequins and gota patti. Stand out at any Indian celebration.',
       price: 5999,
@@ -223,6 +230,7 @@ async function main() {
     },
     // ===== KURTIS (New Category - Using Your Own Images!) =====
     {
+      sku: 'DSH-KUR-001',
       name: 'Golden Block Print Kurti',
       description: 'Elegant cream kurti with beautiful golden block print design. Features button placket and 3/4 sleeves. Perfect with churidar or leggings.',
       price: 1299,
@@ -244,6 +252,7 @@ async function main() {
       ],
     },
     {
+      sku: 'DSH-KUR-002',
       name: 'Patchwork Cotton Kurti',
       description: 'Trendy patchwork kurti with colorful geometric patterns. Made from soft cotton with lace trim on sleeves. Stylish with jeans or pants.',
       price: 999,
@@ -265,6 +274,7 @@ async function main() {
       ],
     },
     {
+      sku: 'DSH-KUR-003',
       name: 'Paisley Print Short Kurti',
       description: 'Beautiful short kurti with traditional paisley print in golden. Features lace detailing on placket and sleeves. Perfect casual wear.',
       price: 899,
@@ -286,6 +296,7 @@ async function main() {
       ],
     },
     {
+      sku: 'DSH-KUR-004',
       name: 'Chikankari Embroidered Kurti',
       description: 'Elegant Lucknowi chikankari hand-embroidered kurti. Delicate white thread work on soft cotton. Timeless traditional elegance.',
       price: 1599,
@@ -307,6 +318,7 @@ async function main() {
       ],
     },
     {
+      sku: 'DSH-KUR-005',
       name: 'Festive Party Kurti',
       description: 'Stunning party wear kurti with mirror work and sequin embellishments. Perfect for festivals and celebrations.',
       price: 1999,
@@ -328,6 +340,7 @@ async function main() {
       ],
     },
     {
+      sku: 'DSH-KUR-006',
       name: 'A-Line Cotton Kurti',
       description: 'Comfortable A-line cotton kurti for daily wear. Simple and elegant with side pockets. Breathable fabric for all-day comfort.',
       price: 799,
@@ -353,6 +366,7 @@ async function main() {
   for (const productData of productsData) {
     await prisma.product.create({
       data: {
+        sku: productData.sku,
         name: productData.name,
         description: productData.description,
         price: productData.price,

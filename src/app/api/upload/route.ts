@@ -1,15 +1,34 @@
 import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
+import { requireAdmin, validateImageUpload } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
+    // ✅ Require admin authentication for file uploads
+    const authResult = await requireAdmin();
+    if ('error' in authResult) {
+      return NextResponse.json(
+        { success: false, message: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
     if (!file) {
       return NextResponse.json(
         { success: false, message: 'No file uploaded' },
+        { status: 400 }
+      );
+    }
+
+    // ✅ Validate file type and size
+    const validation = validateImageUpload(file);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { success: false, message: validation.error },
         { status: 400 }
       );
     }
@@ -21,8 +40,9 @@ export async function POST(request: Request) {
     const uploadDir = path.join(process.cwd(), 'public', 'products');
     await mkdir(uploadDir, { recursive: true });
 
-    // Generate unique filename
-    const uniqueName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+    // ✅ Generate secure unique filename (remove original name to prevent path traversal)
+    const extension = file.name.toLowerCase().split('.').pop();
+    const uniqueName = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
     const filePath = path.join(uploadDir, uniqueName);
 
     await writeFile(filePath, buffer);
@@ -40,4 +60,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

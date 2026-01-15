@@ -1,10 +1,39 @@
-// Email service using Resend
-// If RESEND_API_KEY is not set, emails will be skipped
+// Email service - supports both Resend and Gmail SMTP
+// Priority: Resend (custom domain) > Gmail SMTP > Skip
+
+import nodemailer from 'nodemailer';
 
 // Shop details
 const SHOP_NAME = 'Darshan Style Hub';
-const SHOP_EMAIL = process.env.EMAIL_FROM || 'onboarding@resend.dev';
 const SHOP_WEBSITE = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
+// Check which email service is available
+// Resend is prioritized for custom domain emails (info@darshanstylehub.com)
+// Set FORCE_GMAIL=true to use Gmail while Resend domain is being verified
+function getEmailService(): 'gmail' | 'resend' | null {
+  // Temporary: Use Gmail while Resend domain verification is pending
+  if (process.env.FORCE_GMAIL === 'true' && process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    return 'gmail';
+  }
+  if (process.env.RESEND_API_KEY) {
+    return 'resend';
+  }
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    return 'gmail';
+  }
+  return null;
+}
+
+// Create Gmail transporter
+function createGmailTransporter() {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+}
 
 interface WelcomeEmailProps {
   to: string;
@@ -12,35 +41,60 @@ interface WelcomeEmailProps {
 }
 
 export async function sendWelcomeEmail({ to, customerName }: WelcomeEmailProps) {
-  // Skip if no API key
-  if (!process.env.RESEND_API_KEY) {
-    console.log('RESEND_API_KEY not set, skipping welcome email');
+  const service = getEmailService();
+  
+  if (!service) {
+    console.log('No email service configured, skipping welcome email');
     return { success: false, error: 'Email not configured' };
   }
 
-  try {
-    // Dynamic import to avoid errors when API key is not set
-    const { Resend } = await import('resend');
-    const resend = new Resend(process.env.RESEND_API_KEY);
+  const htmlContent = getWelcomeEmailTemplate(customerName);
 
-    const { data, error } = await resend.emails.send({
-      from: `${SHOP_NAME} <${SHOP_EMAIL}>`,
-      to: [to],
-      subject: `Welcome to ${SHOP_NAME}! 🎉`,
-      html: getWelcomeEmailTemplate(customerName),
-    });
+  // Try Resend first (for custom domain: info@darshanstylehub.com)
+  if (service === 'resend') {
+    try {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      const { data, error } = await resend.emails.send({
+        from: `${SHOP_NAME} <info@darshanstylehub.com>`,
+        to: [to],
+        subject: `Welcome to ${SHOP_NAME}! 🎉`,
+        html: htmlContent,
+      });
 
-    if (error) {
-      console.error('Error sending welcome email:', error);
-      return { success: false, error };
+      if (error) {
+        console.error('Resend error:', error);
+        return { success: false, error };
+      }
+
+      console.log('Welcome email sent via Resend:', data);
+      return { success: true, data, via: 'resend' };
+    } catch (resendError) {
+      console.error('Resend failed, trying Gmail...', resendError);
+      // Fall through to try Gmail
     }
-
-    console.log('Welcome email sent successfully:', data);
-    return { success: true, data };
-  } catch (error) {
-    console.error('Failed to send welcome email:', error);
-    return { success: false, error };
   }
+
+  // Try Gmail as fallback
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    try {
+      const transporter = createGmailTransporter();
+      const info = await transporter.sendMail({
+        from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`,
+        to: to,
+        subject: `Welcome to ${SHOP_NAME}! 🎉`,
+        html: htmlContent,
+      });
+      console.log('Welcome email sent via Gmail:', info.messageId);
+      return { success: true, messageId: info.messageId, via: 'gmail' };
+    } catch (gmailError) {
+      console.error('Gmail failed:', gmailError);
+      return { success: false, error: gmailError };
+    }
+  }
+
+  return { success: false, error: 'All email services failed' };
 }
 
 function getWelcomeEmailTemplate(customerName: string): string {
@@ -190,35 +244,60 @@ interface OrderEmailProps {
 }
 
 export async function sendOrderConfirmationEmail({ to, customerName, orderId, total, items }: OrderEmailProps) {
-  // Skip if no API key
-  if (!process.env.RESEND_API_KEY) {
-    console.log('RESEND_API_KEY not set, skipping order confirmation email');
+  const service = getEmailService();
+  
+  if (!service) {
+    console.log('No email service configured, skipping order email');
     return { success: false, error: 'Email not configured' };
   }
 
-  try {
-    // Dynamic import to avoid errors when API key is not set
-    const { Resend } = await import('resend');
-    const resend = new Resend(process.env.RESEND_API_KEY);
+  const htmlContent = getOrderConfirmationTemplate(customerName, orderId, total, items);
 
-    const { data, error } = await resend.emails.send({
-      from: `${SHOP_NAME} <${SHOP_EMAIL}>`,
-      to: [to],
-      subject: `Order Confirmed! #${orderId.slice(0, 8).toUpperCase()} 🛍️`,
-      html: getOrderConfirmationTemplate(customerName, orderId, total, items),
-    });
+  // Try Resend first (for custom domain: info@darshanstylehub.com)
+  if (service === 'resend') {
+    try {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      const { data, error } = await resend.emails.send({
+        from: `${SHOP_NAME} <info@darshanstylehub.com>`,
+        to: [to],
+        subject: `Order Confirmed! #${orderId.slice(0, 8).toUpperCase()} 🛍️`,
+        html: htmlContent,
+      });
 
-    if (error) {
-      console.error('Error sending order confirmation email:', error);
-      return { success: false, error };
+      if (error) {
+        console.error('Resend error:', error);
+        return { success: false, error };
+      }
+
+      console.log('Order email sent via Resend:', data);
+      return { success: true, data, via: 'resend' };
+    } catch (resendError) {
+      console.error('Resend failed, trying Gmail...', resendError);
+      // Fall through to try Gmail
     }
-
-    console.log('Order confirmation email sent successfully:', data);
-    return { success: true, data };
-  } catch (error) {
-    console.error('Failed to send order confirmation email:', error);
-    return { success: false, error };
   }
+
+  // Try Gmail as fallback
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    try {
+      const transporter = createGmailTransporter();
+      const info = await transporter.sendMail({
+        from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`,
+        to: to,
+        subject: `Order Confirmed! #${orderId.slice(0, 8).toUpperCase()} 🛍️`,
+        html: htmlContent,
+      });
+      console.log('Order email sent via Gmail:', info.messageId);
+      return { success: true, messageId: info.messageId, via: 'gmail' };
+    } catch (gmailError) {
+      console.error('Gmail failed:', gmailError);
+      return { success: false, error: gmailError };
+    }
+  }
+
+  return { success: false, error: 'All email services failed' };
 }
 
 function getOrderConfirmationTemplate(customerName: string, orderId: string, total: number, items: Array<{ name: string; quantity: number; price: number }>): string {

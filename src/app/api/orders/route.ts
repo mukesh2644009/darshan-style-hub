@@ -1,14 +1,40 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin, getCurrentUser } from '@/lib/auth';
 
+// ✅ Admin only - get all orders
 export async function GET() {
   try {
+    // Require admin authentication to view all orders
+    const authResult = await requireAdmin();
+    if ('error' in authResult) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
     const orders = await prisma.order.findMany({
       include: {
-        user: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            // ✅ Don't include password!
+          },
+        },
         items: {
           include: {
-            product: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                images: true,
+              },
+            },
           },
         },
       },
@@ -39,8 +65,10 @@ export async function POST(request: Request) {
       shippingState,
       shippingPincode,
       paymentMethod = 'COD',
-      userId,
     } = body;
+
+    // Get current user if logged in
+    const user = await getCurrentUser();
 
     // Validate required fields
     if (!items || !items.length) {
@@ -53,6 +81,24 @@ export async function POST(request: Request) {
     if (!shippingName || !shippingPhone || !shippingAddress || !shippingCity || !shippingState || !shippingPincode) {
       return NextResponse.json(
         { error: 'Shipping details are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate phone number format
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(shippingPhone.replace(/\s/g, ''))) {
+      return NextResponse.json(
+        { error: 'Invalid phone number format' },
+        { status: 400 }
+      );
+    }
+
+    // Validate pincode format
+    const pincodeRegex = /^\d{6}$/;
+    if (!pincodeRegex.test(shippingPincode)) {
+      return NextResponse.json(
+        { error: 'Invalid pincode format' },
         { status: 400 }
       );
     }
@@ -73,6 +119,13 @@ export async function POST(request: Request) {
         );
       }
 
+      if (!product.inStock) {
+        return NextResponse.json(
+          { error: `${product.name} is out of stock` },
+          { status: 400 }
+        );
+      }
+
       subtotal += product.price * item.quantity;
       orderItems.push({
         productId: item.productId,
@@ -89,7 +142,7 @@ export async function POST(request: Request) {
     // Create order
     const order = await prisma.order.create({
       data: {
-        userId: userId || null,
+        userId: user?.id || null, // ✅ Use authenticated user's ID
         status: 'PENDING',
         paymentStatus: 'PENDING',
         paymentMethod,
@@ -97,12 +150,12 @@ export async function POST(request: Request) {
         shipping,
         discount: 0,
         total,
-        shippingName,
-        shippingPhone,
-        shippingAddress,
-        shippingCity,
-        shippingState,
-        shippingPincode,
+        shippingName: shippingName.trim(),
+        shippingPhone: shippingPhone.trim(),
+        shippingAddress: shippingAddress.trim(),
+        shippingCity: shippingCity.trim(),
+        shippingState: shippingState.trim(),
+        shippingPincode: shippingPincode.trim(),
         items: {
           create: orderItems,
         },
@@ -116,6 +169,28 @@ export async function POST(request: Request) {
       },
     });
 
+    // Send order confirmation email
+    if (user?.email) {
+      try {
+        const { sendOrderConfirmationEmail } = await import('@/lib/email');
+        sendOrderConfirmationEmail({
+          to: user.email,
+          customerName: shippingName,
+          orderId: order.id,
+          total: order.total,
+          items: orderItems.map((item, index) => ({
+            name: order.items[index].product.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+        }).catch((err) => {
+          console.error('Failed to send order email:', err);
+        });
+      } catch (emailError) {
+        console.log('Email service not available');
+      }
+    }
+
     return NextResponse.json(order, { status: 201 });
   } catch (error) {
     console.error('Error creating order:', error);
@@ -125,4 +200,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

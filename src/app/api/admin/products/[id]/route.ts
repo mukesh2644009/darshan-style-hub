@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireAdmin } from '@/lib/auth';
 
 export async function GET(
   request: Request,
@@ -37,13 +38,22 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    // ✅ Require admin authentication
+    const authResult = await requireAdmin();
+    if ('error' in authResult) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
     const body = await request.json();
-    const { name, description, price, originalPrice, category, subcategory, featured, newArrival } = body;
+    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival } = body;
 
     // Validate required fields
-    if (!name || !description || price === undefined) {
+    if (!sku || !name || !description || price === undefined) {
       return NextResponse.json(
-        { error: 'Name, description, and price are required' },
+        { error: 'SKU, name, description, and price are required' },
         { status: 400 }
       );
     }
@@ -59,6 +69,7 @@ export async function PATCH(
     const product = await prisma.product.update({
       where: { id: params.id },
       data: {
+        sku,
         name,
         description,
         price: parseFloat(price.toString()),
@@ -90,6 +101,15 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    // ✅ Require admin authentication
+    const authResult = await requireAdmin();
+    if ('error' in authResult) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
     // Delete related records first
     await prisma.productImage.deleteMany({ where: { productId: params.id } });
     await prisma.productSize.deleteMany({ where: { productId: params.id } });
@@ -109,4 +129,3 @@ export async function DELETE(
     );
   }
 }
-

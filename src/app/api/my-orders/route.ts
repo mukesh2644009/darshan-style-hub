@@ -1,34 +1,19 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-
-async function getCurrentUser() {
-  const token = cookies().get('auth_token')?.value;
-  if (!token) return null;
-
-  const session = await prisma.session.findUnique({
-    where: { token },
-  });
-
-  if (!session || session.expiresAt < new Date()) {
-    return null;
-  }
-
-  return prisma.user.findUnique({
-    where: { id: session.userId },
-  });
-}
+import { requireAuth } from '@/lib/auth';
 
 export async function GET() {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
+    // ✅ Use centralized auth middleware
+    const authResult = await requireAuth();
+    if ('error' in authResult) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
+        { success: false, error: authResult.error },
+        { status: authResult.status }
       );
     }
+
+    const user = authResult.user;
 
     const orders = await prisma.order.findMany({
       where: { userId: user.id },
@@ -36,7 +21,14 @@ export async function GET() {
         items: {
           include: {
             product: {
-              select: { name: true },
+              select: { 
+                id: true,
+                name: true,
+                images: {
+                  take: 1,
+                  select: { url: true },
+                },
+              },
             },
           },
         },
@@ -53,4 +45,3 @@ export async function GET() {
     );
   }
 }
-

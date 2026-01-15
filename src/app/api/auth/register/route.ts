@@ -1,9 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
+import { hashPassword, checkRateLimit } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
+    // Rate limiting by IP
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimit = checkRateLimit(`register:${ip}`, 5, 60 * 60 * 1000); // 5 attempts per hour
+    
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Too many registration attempts. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     const { name, email, phone, password } = await request.json();
 
     // Validate required fields
@@ -14,9 +26,26 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      return NextResponse.json(
+        { success: false, error: 'Password must be at least 8 characters long' },
+        { status: 400 }
+      );
+    }
+
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase().trim() },
     });
 
     if (existingUser) {
@@ -26,13 +55,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create user (in production, hash the password!)
+    // Hash password securely
+    const hashedPassword = await hashPassword(password);
+
+    // Create user with hashed password
     const user = await prisma.user.create({
       data: {
-        name,
-        email,
-        phone,
-        password, // Note: In production, use bcrypt to hash passwords!
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
+        phone: phone?.trim() || null,
+        password: hashedPassword,
         role: 'CUSTOMER',
       },
     });
@@ -49,15 +81,16 @@ export async function POST(request: Request) {
       },
     });
 
-    // Set cookie
+    // Set secure cookie
     cookies().set('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       expires: expiresAt,
+      path: '/',
     });
 
-    // Send welcome email (non-blocking, import dynamically)
+    // Send welcome email (non-blocking)
     try {
       const { sendWelcomeEmail } = await import('@/lib/email');
       sendWelcomeEmail({
@@ -87,4 +120,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

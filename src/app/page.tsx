@@ -17,8 +17,8 @@ export default async function Home() {
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative h-[80vh] min-h-[600px] overflow-hidden">
-        {/* Clean white background to match logo */}
-        <div className="absolute inset-0 bg-white">
+        {/* Light cream background */}
+        <div className="absolute inset-0 bg-[#FFF8F0]">
           {/* Subtle decorative border at bottom */}
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-rose-400 to-amber-400"></div>
         </div>

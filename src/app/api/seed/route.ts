@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { hashPassword } from '@/lib/auth';
 
 // This endpoint seeds the database - DISABLED after initial setup
 // To re-enable, change SEED_ENABLED to true
 
-const SEED_ENABLED = true; // Set to true only when you need to re-seed
+const SEED_ENABLED = false; // ⚠️ DISABLED FOR SECURITY - Only enable temporarily when needed
 
 export async function GET(request: Request) {
   // Seed is disabled for security
@@ -18,9 +19,10 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const secret = searchParams.get('secret');
 
-  // Simple protection - change this secret!
-  if (secret !== 'darshan2026') {
-    return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
+  // Use environment variable for seed secret - NEVER hardcode!
+  const SEED_SECRET = process.env.SEED_SECRET;
+  if (!SEED_SECRET || secret !== SEED_SECRET) {
+    return NextResponse.json({ error: 'Invalid or missing secret' }, { status: 401 });
   }
 
   try {
@@ -307,24 +309,26 @@ export async function GET(request: Request) {
       });
     }
 
-    // Create Admin user
+    // Create Admin user with hashed password
+    const adminPassword = await hashPassword(process.env.ADMIN_PASSWORD || 'ChangeMe123!');
     await prisma.user.create({
       data: {
-        email: 'admin@darshan.com',
+        email: process.env.ADMIN_EMAIL || 'admin@darshan.com',
         name: 'Admin User',
         phone: '+91 98765 43210',
-        password: 'admin123',
+        password: adminPassword,
         role: 'ADMIN',
       },
     });
 
-    // Create Demo Customer
+    // Create Demo Customer with hashed password
+    const userPassword = await hashPassword('DemoUser123!');
     await prisma.user.create({
       data: {
-        email: 'user@darshan.com',
+        email: 'demo@darshan.com',
         name: 'Demo Customer',
         phone: '+91 87654 32109',
-        password: 'user123',
+        password: userPassword,
         role: 'CUSTOMER',
       },
     });

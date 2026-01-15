@@ -1,12 +1,12 @@
-// Production Prisma schema - PostgreSQL
-// To use: Replace schema.prisma with this file and run migrations
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -16,7 +16,7 @@ model User {
   email         String    @unique
   name          String?
   phone         String?
-  password      String    // ✅ Now stores bcrypt hashed passwords
+  password      String
   role          String    @default("CUSTOMER") // ADMIN or CUSTOMER
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -25,9 +25,6 @@ model User {
   orders        Order[]
   cartItems     CartItem[]
   wishlist      WishlistItem[]
-  sessions      Session[]
-
-  @@index([email])
 }
 
 // Address model for shipping
@@ -45,14 +42,12 @@ model Address {
   isDefault     Boolean   @default(false)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-
-  @@index([userId])
 }
 
 // Product model
 model Product {
   id            String    @id @default(cuid())
-  sku           String    @unique
+  sku           String    @unique // Serial number for barcode generation
   name          String
   description   String
   price         Float
@@ -73,10 +68,6 @@ model Product {
   cartItems     CartItem[]
   orderItems    OrderItem[]
   wishlistItems WishlistItem[]
-
-  @@index([category])
-  @@index([subcategory])
-  @@index([featured])
 }
 
 // Product images
@@ -85,8 +76,6 @@ model ProductImage {
   url         String
   productId   String
   product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId])
 }
 
 // Product sizes
@@ -95,8 +84,6 @@ model ProductSize {
   size        String
   productId   String
   product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId])
 }
 
 // Product colors
@@ -106,8 +93,6 @@ model ProductColor {
   hex         String
   productId   String
   product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@index([productId])
 }
 
 // Cart items
@@ -124,7 +109,6 @@ model CartItem {
   updatedAt     DateTime  @updatedAt
 
   @@unique([userId, productId, selectedSize, selectedColor])
-  @@index([userId])
 }
 
 // Wishlist items
@@ -137,7 +121,6 @@ model WishlistItem {
   createdAt   DateTime  @default(now())
 
   @@unique([userId, productId])
-  @@index([userId])
 }
 
 // Order model
@@ -145,15 +128,15 @@ model Order {
   id              String      @id @default(cuid())
   userId          String?
   user            User?       @relation(fields: [userId], references: [id])
-  status          String      @default("PENDING")
+  status          String      @default("PENDING") // PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED
   paymentMethod   String      @default("COD")
-  paymentStatus   String      @default("PENDING")
+  paymentStatus   String      @default("PENDING") // PENDING, PAID, FAILED, REFUNDED
   subtotal        Float
   shipping        Float       @default(0)
   discount        Float       @default(0)
   total           Float
   
-  // Shipping details
+  // Shipping details (stored directly for guest checkout)
   shippingName    String
   shippingPhone   String
   shippingAddress String
@@ -165,10 +148,6 @@ model Order {
   updatedAt       DateTime    @updatedAt
   
   items           OrderItem[]
-
-  @@index([userId])
-  @@index([status])
-  @@index([createdAt])
 }
 
 // Order items
@@ -182,11 +161,9 @@ model OrderItem {
   price         Float
   size          String?
   color         String?
-
-  @@index([orderId])
 }
 
-// Category model
+// Category model for dynamic categories
 model Category {
   id            String    @id @default(cuid())
   name          String    @unique
@@ -203,19 +180,13 @@ model Subcategory {
   category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([name, categoryId])
-  @@index([categoryId])
 }
 
 // Session model for authentication
 model Session {
   id          String    @id @default(cuid())
   userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   token       String    @unique
   expiresAt   DateTime
   createdAt   DateTime  @default(now())
-
-  @@index([token])
-  @@index([userId])
-  @@index([expiresAt])
 }

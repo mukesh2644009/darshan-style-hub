@@ -78,6 +78,9 @@ export default function Navbar() {
             <Link href="/products?newArrival=true" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
               New Arrivals
             </Link>
+            <Link href="/contact" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
+              Contact
+            </Link>
           </div>
 
           {/* Right Icons */}
@@ -210,6 +213,9 @@ export default function Navbar() {
             </Link>
             <Link href="/products?newArrival=true" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               New Arrivals
+            </Link>
+            <Link href="/contact" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+              Contact
             </Link>
             <hr className="border-accent-200" />
             {isAuthenticated ? (

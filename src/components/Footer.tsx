@@ -38,7 +38,12 @@ export default function Footer() {
               Quality fabrics, timeless designs, and exceptional service since 2010.
             </p>
             <div className="flex gap-3">
-              <a href="#" className="p-2 bg-accent-800 hover:bg-primary-600 rounded-full transition-colors">
+              <a 
+                href="https://www.instagram.com/stylehubjaipur/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="p-2 bg-accent-800 hover:bg-gradient-to-br hover:from-purple-600 hover:via-pink-500 hover:to-orange-400 rounded-full transition-colors"
+              >
                 <FiInstagram size={20} />
               </a>
               <a href="#" className="p-2 bg-accent-800 hover:bg-primary-600 rounded-full transition-colors">
@@ -114,6 +119,11 @@ export default function Footer() {
                   FAQs
                 </Link>
               </li>
+              <li>
+                <Link href="/contact" className="text-accent-300 hover:text-white transition-colors">
+                  Contact Us
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -147,8 +157,8 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <FiMail className="flex-shrink-0 text-primary-400" />
-                <a href="mailto:hello@darshan.com" className="text-accent-300 hover:text-white transition-colors">
-                  hello@darshan.com
+                <a href="mailto:info@darshanstylehub.com" className="text-accent-300 hover:text-white transition-colors">
+                  info@darshanstylehub.com
                 </a>
               </li>
             </ul>

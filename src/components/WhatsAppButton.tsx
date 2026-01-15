@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { FaWhatsapp } from 'react-icons/fa';
+import { FaWhatsapp, FaInstagram } from 'react-icons/fa';
 import { FiX, FiMessageCircle } from 'react-icons/fi';
 
 // Your WhatsApp number (with country code, no + or spaces)
 const WHATSAPP_NUMBER = '919019076335'; // Your number: 91 (India) + 9019076335
-const SITE_URL = 'https://darshan-style-hub.vercel.app';
+const SITE_URL = 'https://darshanstylehub.com';
+const INSTAGRAM_URL = 'https://www.instagram.com/stylehubjaipur/';
 
 export default function WhatsAppButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,105 +19,119 @@ export default function WhatsAppButton() {
   const whatsappLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${defaultMessage}`;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      {/* Chat Popup */}
-      {isOpen && (
-        <div className="absolute bottom-16 right-0 w-72 bg-white rounded-2xl shadow-2xl overflow-hidden animate-scaleIn mb-4">
-          {/* Header */}
-          <div className="bg-green-500 p-4 text-white">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                  <FaWhatsapp size={24} />
-                </div>
-                <div>
-                  <p className="font-semibold">Darshan Style Hub</p>
-                  <p className="text-xs text-green-100">Typically replies within 5 mins</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-1 hover:bg-white/20 rounded-full transition-colors"
-              >
-                <FiX size={20} />
-              </button>
-            </div>
-          </div>
-
-          {/* Body */}
-          <div className="p-4 bg-gray-50">
-            <div className="bg-white p-3 rounded-lg shadow-sm mb-4">
-              <p className="text-sm text-gray-600">
-                👋 Hi there! Looking for the perfect saree or suit? We're here to help!
-              </p>
-              <p className="text-xs text-gray-400 mt-2">Just now</p>
-            </div>
-
-            {/* Quick Messages */}
-            <div className="space-y-2 mb-4">
-              <p className="text-xs text-gray-500 font-medium">Quick Messages:</p>
-              <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI'm interested in your saree collection.\nPlease share details.`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-sm text-green-600 hover:text-green-700 hover:underline"
-              >
-                🥻 Inquire about sarees
-              </a>
-              <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI'm interested in your suits collection.\nPlease share details.`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-sm text-green-600 hover:text-green-700 hover:underline"
-              >
-                👗 Check suit availability
-              </a>
-              <a
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI'm interested in your kurtis collection.\nPlease share details.`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block text-sm text-green-600 hover:text-green-700 hover:underline"
-              >
-                👚 Inquire about kurtis
-              </a>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="p-4 border-t border-gray-100">
-            <a
-              href={whatsappLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-full font-medium transition-colors"
-            >
-              <FaWhatsapp size={20} />
-              Start Chat
-            </a>
-          </div>
-        </div>
-      )}
-
-      {/* Main Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ${
-          isOpen
-            ? 'bg-gray-600 hover:bg-gray-700 rotate-90'
-            : 'bg-green-500 hover:bg-green-600 hover:scale-110'
-        }`}
+    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
+      {/* Instagram Button */}
+      <a
+        href={INSTAGRAM_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="w-14 h-14 rounded-full shadow-lg flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 hover:scale-110 transition-all duration-300"
+        title="Follow us on Instagram"
       >
-        {isOpen ? (
-          <FiX size={24} className="text-white" />
-        ) : (
-          <FaWhatsapp size={28} className="text-white" />
-        )}
-      </button>
+        <FaInstagram size={28} className="text-white" />
+      </a>
 
-      {/* Pulse Animation */}
-      {!isOpen && (
-        <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full animate-ping" />
-      )}
+      {/* WhatsApp Section */}
+      <div className="relative">
+        {/* Chat Popup */}
+        {isOpen && (
+          <div className="absolute bottom-16 right-0 w-72 bg-white rounded-2xl shadow-2xl overflow-hidden animate-scaleIn mb-4">
+            {/* Header */}
+            <div className="bg-green-500 p-4 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                    <FaWhatsapp size={24} />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Darshan Style Hub</p>
+                    <p className="text-xs text-green-100">Typically replies within 5 mins</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <FiX size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 bg-gray-50">
+              <div className="bg-white p-3 rounded-lg shadow-sm mb-4">
+                <p className="text-sm text-gray-600">
+                  👋 Hi there! Looking for the perfect suit or kurti? We&apos;re here to help!
+                </p>
+                <p className="text-xs text-gray-400 mt-2">Just now</p>
+              </div>
+
+              {/* Quick Messages */}
+              <div className="space-y-2 mb-4">
+                <p className="text-xs text-gray-500 font-medium">Quick Messages:</p>
+                <a
+                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI'm interested in your suits collection.\nPlease share details.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-sm text-green-600 hover:text-green-700 hover:underline"
+                >
+                  👗 Inquire about suits
+                </a>
+                <a
+                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI'm interested in your kurtis collection.\nPlease share details.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-sm text-green-600 hover:text-green-700 hover:underline"
+                >
+                  👚 Inquire about kurtis
+                </a>
+                <a
+                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI want to place a bulk order.\nPlease share details.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-sm text-green-600 hover:text-green-700 hover:underline"
+                >
+                  📦 Bulk order inquiry
+                </a>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-gray-100">
+              <a
+                href={whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-full font-medium transition-colors"
+              >
+                <FaWhatsapp size={20} />
+                Start Chat
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* Main Button */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ${
+            isOpen
+              ? 'bg-gray-600 hover:bg-gray-700 rotate-90'
+              : 'bg-green-500 hover:bg-green-600 hover:scale-110'
+          }`}
+        >
+          {isOpen ? (
+            <FiX size={24} className="text-white" />
+          ) : (
+            <FaWhatsapp size={28} className="text-white" />
+          )}
+        </button>
+
+        {/* Pulse Animation */}
+        {!isOpen && (
+          <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 rounded-full animate-ping" />
+        )}
+      </div>
     </div>
   );
 }

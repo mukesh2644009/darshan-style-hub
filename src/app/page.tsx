@@ -17,25 +17,25 @@ export default async function Home() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative h-[80vh] min-h-[600px] overflow-hidden">
+      <section className="relative min-h-[90vh] lg:min-h-[80vh] overflow-hidden">
         {/* Light cream background */}
         <div className="absolute inset-0 bg-[#FFF8F0]">
           {/* Subtle decorative border at bottom */}
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-rose-400 to-amber-400"></div>
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-          <div className="grid lg:grid-cols-2 gap-12 items-center w-full">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center py-8">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center w-full">
             {/* Text Content */}
             <div className="text-center lg:text-left animate-fadeIn">
               {/* Logo Display */}
-              <div className="mb-6 flex justify-center lg:justify-start">
+              <div className="mb-4 flex justify-center lg:justify-start">
                 <Image
                   src="/products/logo.jpeg"
                   alt="Darshan Style Hub"
-                  width={500}
-                  height={220}
-                  className="h-44 sm:h-56 lg:h-64 w-auto object-contain mix-blend-multiply"
+                  width={400}
+                  height={180}
+                  className="h-24 sm:h-32 lg:h-44 w-auto object-contain mix-blend-multiply"
                   priority
                 />
               </div>
@@ -62,25 +62,13 @@ export default async function Home() {
               </div>
             </div>
 
-            {/* Hero Image Carousel */}
-            <div className="hidden lg:block relative">
+            {/* Hero Image Carousel - Visible on all screens */}
+            <div className="relative w-full max-w-md mx-auto lg:max-w-none">
               <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border border-gray-100">
                 <HeroCarousel />
               </div>
-              {/* Floating Card */}
-              <div className="absolute -bottom-4 -left-4 bg-white p-4 rounded-xl shadow-lg border border-gray-100 z-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                    <span className="text-xl">👗</span>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900 text-sm">500+ Happy Customers</p>
-                    <p className="text-xs text-gray-500">This month</p>
-                  </div>
-                </div>
-              </div>
-              {/* Premium badge */}
-              <div className="absolute top-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-full shadow-lg text-sm font-medium z-10">
+              {/* Premium badge - hidden on mobile */}
+              <div className="hidden sm:block absolute top-4 right-4 bg-gray-900 text-white px-3 py-1.5 rounded-full shadow-lg text-xs font-medium z-10">
                 Premium Quality
               </div>
             </div>
@@ -88,45 +76,25 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Features */}
-      <section className="py-12 bg-white border-y border-accent-200">
+      {/* Features - Compact */}
+      <section className="py-4 bg-white border-y border-accent-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="flex items-center gap-3 p-4">
-              <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <FiTruck className="text-primary-600" size={24} />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900">Free Shipping</h3>
-                <p className="text-sm text-gray-500">On orders above ₹999</p>
-              </div>
+          <div className="flex flex-wrap justify-center gap-4 md:gap-8">
+            <div className="flex items-center gap-2">
+              <FiTruck className="text-primary-600" size={18} />
+              <span className="text-sm text-gray-700">Free Shipping</span>
             </div>
-            <div className="flex items-center gap-3 p-4">
-              <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <FiRefreshCw className="text-primary-600" size={24} />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900">Easy Returns</h3>
-                <p className="text-sm text-gray-500">7 days return policy</p>
-              </div>
+            <div className="flex items-center gap-2">
+              <FiRefreshCw className="text-primary-600" size={18} />
+              <span className="text-sm text-gray-700">Easy Returns</span>
             </div>
-            <div className="flex items-center gap-3 p-4">
-              <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <FiShield className="text-primary-600" size={24} />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900">Secure Payment</h3>
-                <p className="text-sm text-gray-500">100% secure checkout</p>
-              </div>
+            <div className="flex items-center gap-2">
+              <FiShield className="text-primary-600" size={18} />
+              <span className="text-sm text-gray-700">Secure Payment</span>
             </div>
-            <div className="flex items-center gap-3 p-4">
-              <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <FiHeadphones className="text-primary-600" size={24} />
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-900">24/7 Support</h3>
-                <p className="text-sm text-gray-500">Dedicated support</p>
-              </div>
+            <div className="flex items-center gap-2">
+              <FiHeadphones className="text-primary-600" size={18} />
+              <span className="text-sm text-gray-700">24/7 Support</span>
             </div>
           </div>
         </div>

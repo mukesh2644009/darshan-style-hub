@@ -34,7 +34,7 @@ export default async function Home() {
                   alt="Darshan Style Hub"
                   width={500}
                   height={220}
-                  className="h-44 sm:h-56 lg:h-64 w-auto object-contain"
+                  className="h-44 sm:h-56 lg:h-64 w-auto object-contain mix-blend-multiply"
                   priority
                 />
               </div>

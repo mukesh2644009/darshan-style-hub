@@ -53,7 +53,7 @@ export default function Navbar() {
               alt="Darshan Style Hub"
               width={60}
               height={60}
-              className="h-12 sm:h-14 w-auto object-contain"
+              className="h-12 sm:h-14 w-auto object-contain mix-blend-multiply"
               priority
             />
             <span className="font-display text-xl sm:text-2xl font-bold text-red-700 hidden sm:block">

@@ -196,19 +196,19 @@ export default function Navbar() {
       {isMenuOpen && (
         <div className="lg:hidden bg-white border-t border-accent-200 animate-slideDown">
           <div className="px-4 py-4 space-y-3">
-            <Link href="/" className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+            <Link href="/" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               Home
             </Link>
-            <Link href="/products" className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+            <Link href="/products" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               All Products
             </Link>
-            <Link href="/products?category=Suits" className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+            <Link href="/products?category=Suits" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               Suits
             </Link>
-            <Link href="/products?category=Kurtis" className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+            <Link href="/products?category=Kurtis" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               Kurtis
             </Link>
-            <Link href="/products?newArrival=true" className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+            <Link href="/products?newArrival=true" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               New Arrivals
             </Link>
             <hr className="border-accent-200" />
@@ -219,11 +219,11 @@ export default function Navbar() {
                   <p className="text-sm text-gray-500">{user?.email}</p>
                 </div>
                 {isAdmin && (
-                  <Link href="/admin" className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+                  <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
                     Admin Dashboard
                   </Link>
                 )}
-                <Link href="/my-orders" className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+                <Link href="/my-orders" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
                   My Orders
                 </Link>
                 <button
@@ -235,10 +235,10 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link href="/login" className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+                <Link href="/login" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
                   Sign In
                 </Link>
-                <Link href="/register" className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+                <Link href="/register" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
                   Create Account
                 </Link>
               </>

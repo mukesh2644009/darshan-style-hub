@@ -92,7 +92,7 @@ export default function ContactPage() {
                 </a>
 
                 <a 
-                  href="mailto:info@darshanstylehub.com" 
+                  href="mailto:darshanstylehub@gmail.com" 
                   className="flex items-center gap-4 p-3 rounded-lg hover:bg-accent-50 transition-colors"
                 >
                   <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
@@ -100,7 +100,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium text-gray-900">info@darshanstylehub.com</p>
+                    <p className="font-medium text-gray-900">darshanstylehub@gmail.com</p>
                   </div>
                 </a>
 

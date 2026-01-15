@@ -3,6 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyPassword, isLegacyPassword, hashPassword, checkRateLimit, resetRateLimit } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json();

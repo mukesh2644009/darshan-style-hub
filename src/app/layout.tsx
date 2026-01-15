@@ -19,9 +19,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'Darshan Style Hub | Sarees & Designer Suits in Jaipur',
-  description: 'Darshan Style Hub - Your trusted destination in Jaipur for premium sarees and designer suits. Shop silk sarees, Banarasi sarees, Anarkali suits, salwar suits and more.',
-  keywords: ['sarees', 'suits', 'women ethnic wear', 'silk sarees', 'Banarasi sarees', 'Anarkali suits', 'salwar kameez', 'Indian sarees', 'Jaipur sarees', 'Darshan Style Hub'],
+  title: 'Darshan Style Hub | Designer Suits & Kurtis in Jaipur',
+  description: 'Darshan Style Hub - Your trusted destination in Jaipur for premium designer suits and kurtis. Shop Anarkali suits, salwar suits, cotton kurtis, embroidered kurtis and more.',
+  keywords: ['suits', 'kurtis', 'women ethnic wear', 'Anarkali suits', 'salwar kameez', 'cotton kurtis', 'designer kurtis', 'Jaipur fashion', 'Darshan Style Hub'],
   icons: {
     icon: '/products/logo.jpeg',
     shortcut: '/products/logo.jpeg',

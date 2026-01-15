@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FiArrowRight, FiTruck, FiRefreshCw, FiShield, FiHeadphones } from 'react-icons/fi';
 import ProductCard from '@/components/ProductCard';
+import HeroCarousel from '@/components/HeroCarousel';
 import { getFeaturedProducts, getNewArrivals, getCategories } from '@/lib/products';
 
 export const dynamic = 'force-dynamic';
@@ -43,37 +44,31 @@ export default async function Home() {
                 ✨ New Collection 2026
               </span>
               <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-                Exquisite Sarees &
-                <span className="bg-gradient-to-r from-amber-600 via-rose-600 to-amber-600 bg-clip-text text-transparent block">Designer Suits</span>
+                Designer Suits &
+                <span className="bg-gradient-to-r from-amber-600 via-rose-600 to-amber-600 bg-clip-text text-transparent block">Elegant Kurtis</span>
               </h1>
               <p className="text-lg text-gray-600 mb-8 max-w-lg mx-auto lg:mx-0">
-                Discover our stunning collection of handcrafted sarees and elegant suits. 
-                From traditional silk to modern designs, find your perfect ethnic wear.
+                Discover our stunning collection of designer suits and elegant kurtis. 
+                From traditional designs to modern styles, find your perfect ethnic wear.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link href="/products?category=Sarees" className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-amber-600 to-amber-700 text-white font-medium rounded-full hover:from-amber-700 hover:to-amber-800 transition-all shadow-lg shadow-amber-200">
-                  Shop Sarees
+                <Link href="/products?category=Suits" className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-amber-600 to-amber-700 text-white font-medium rounded-full hover:from-amber-700 hover:to-amber-800 transition-all shadow-lg shadow-amber-200">
+                  Shop Suits
                   <FiArrowRight />
                 </Link>
-                <Link href="/products?category=Suits" className="inline-flex items-center justify-center gap-2 px-8 py-3 border-2 border-gray-800 text-gray-800 font-medium rounded-full hover:bg-gray-800 hover:text-white transition-all">
-                  Shop Suits
+                <Link href="/products?category=Kurtis" className="inline-flex items-center justify-center gap-2 px-8 py-3 border-2 border-gray-800 text-gray-800 font-medium rounded-full hover:bg-gray-800 hover:text-white transition-all">
+                  Shop Kurtis
                 </Link>
               </div>
             </div>
 
-            {/* Hero Image */}
+            {/* Hero Image Carousel */}
             <div className="hidden lg:block relative">
-              <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl border border-gray-100">
-                <Image
-                  src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&h=800&fit=crop"
-                  alt="Indian Saree Collection"
-                  fill
-                  className="object-cover"
-                  priority
-                />
+              <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border border-gray-100">
+                <HeroCarousel />
               </div>
               {/* Floating Card */}
-              <div className="absolute -bottom-4 -left-4 bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+              <div className="absolute -bottom-4 -left-4 bg-white p-4 rounded-xl shadow-lg border border-gray-100 z-10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
                     <span className="text-xl">👗</span>
@@ -85,7 +80,7 @@ export default async function Home() {
                 </div>
               </div>
               {/* Premium badge */}
-              <div className="absolute top-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-full shadow-lg text-sm font-medium">
+              <div className="absolute top-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-full shadow-lg text-sm font-medium z-10">
                 Premium Quality
               </div>
             </div>
@@ -137,7 +132,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Categories - Sarees, Suits & Kurtis */}
+      {/* Categories - Suits & Kurtis */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
@@ -145,30 +140,11 @@ export default async function Home() {
               Shop by Category
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Explore our beautiful collection of sarees, suits and kurtis for every occasion
+              Explore our beautiful collection of suits and kurtis for every occasion
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {/* Sarees Category */}
-            <Link
-              href="/products?category=Sarees"
-              className="group relative aspect-[3/4] rounded-3xl overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-pink-400 via-rose-500 to-red-600" />
-              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
-                <span className="text-5xl mb-4">🥻</span>
-                <h3 className="font-display text-2xl sm:text-3xl font-bold mb-2">Sarees</h3>
-                <p className="text-white/80 text-center text-sm mb-4">
-                  Silk, Banarasi, Cotton & Wedding
-                </p>
-                <span className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm font-medium group-hover:bg-white/30 transition-all">
-                  Explore <FiArrowRight />
-                </span>
-              </div>
-            </Link>
-
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {/* Suits Category */}
             <Link
               href="/products?category=Suits"

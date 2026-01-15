@@ -34,7 +34,7 @@ export default function Footer() {
           <div>
             <h4 className="font-display text-2xl font-bold text-white mb-4">Darshan Style Hub</h4>
             <p className="text-accent-300 mb-4 leading-relaxed">
-              Your trusted destination for premium sarees and designer suits in Jaipur. 
+              Your trusted destination for premium suits and kurtis in Jaipur. 
               Quality fabrics, timeless designs, and exceptional service since 2010.
             </p>
             <div className="flex gap-3">
@@ -60,11 +60,6 @@ export default function Footer() {
               <li>
                 <Link href="/products" className="text-accent-300 hover:text-white transition-colors">
                   All Products
-                </Link>
-              </li>
-              <li>
-                <Link href="/products?category=Sarees" className="text-accent-300 hover:text-white transition-colors">
-                  Sarees
                 </Link>
               </li>
               <li>

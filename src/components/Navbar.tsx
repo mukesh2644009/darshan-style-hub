@@ -69,9 +69,6 @@ export default function Navbar() {
             <Link href="/products" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
               All Products
             </Link>
-            <Link href="/products?category=Sarees" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
-              Sarees
-            </Link>
             <Link href="/products?category=Suits" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
               Suits
             </Link>
@@ -204,9 +201,6 @@ export default function Navbar() {
             </Link>
             <Link href="/products" className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               All Products
-            </Link>
-            <Link href="/products?category=Sarees" className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
-              Sarees
             </Link>
             <Link href="/products?category=Suits" className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               Suits

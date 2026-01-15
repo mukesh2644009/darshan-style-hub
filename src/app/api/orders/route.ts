@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin, getCurrentUser } from '@/lib/auth';
 
+export const dynamic = 'force-dynamic';
+
 // ✅ Admin only - get all orders
 export async function GET() {
   try {

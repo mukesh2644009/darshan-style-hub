@@ -5,7 +5,7 @@ import { hashPassword } from '@/lib/auth';
 // This endpoint seeds the database - DISABLED after initial setup
 // To re-enable, change SEED_ENABLED to true
 
-const SEED_ENABLED = true; // ⚠️ TEMPORARILY ENABLED - Disable after seeding!
+const SEED_ENABLED = false; // ✅ DISABLED - Database is seeded
 
 export async function GET(request: Request) {
   // Seed is disabled for security

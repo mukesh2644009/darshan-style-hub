@@ -22,6 +22,11 @@ export const metadata: Metadata = {
   title: 'Darshan Style Hub | Sarees & Designer Suits in Jaipur',
   description: 'Darshan Style Hub - Your trusted destination in Jaipur for premium sarees and designer suits. Shop silk sarees, Banarasi sarees, Anarkali suits, salwar suits and more.',
   keywords: ['sarees', 'suits', 'women ethnic wear', 'silk sarees', 'Banarasi sarees', 'Anarkali suits', 'salwar kameez', 'Indian sarees', 'Jaipur sarees', 'Darshan Style Hub'],
+  icons: {
+    icon: '/products/logo.jpeg',
+    shortcut: '/products/logo.jpeg',
+    apple: '/products/logo.jpeg',
+  },
 };
 
 export default function RootLayout({

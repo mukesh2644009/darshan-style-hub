@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { FiShoppingBag, FiSearch, FiMenu, FiX, FiUser, FiHeart, FiLogOut, FiSettings } from 'react-icons/fi';
@@ -46,8 +47,16 @@ export default function Navbar() {
           </button>
 
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="font-display text-2xl sm:text-3xl font-bold text-primary-700">
+          <Link href="/" className="flex items-center gap-3">
+            <Image
+              src="/products/logo.jpeg"
+              alt="Darshan Style Hub"
+              width={60}
+              height={60}
+              className="h-12 sm:h-14 w-auto object-contain"
+              priority
+            />
+            <span className="font-display text-xl sm:text-2xl font-bold text-red-700 hidden sm:block">
               Darshan Style Hub
             </span>
           </Link>

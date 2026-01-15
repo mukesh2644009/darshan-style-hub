@@ -17,39 +17,45 @@ export default async function Home() {
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative h-[80vh] min-h-[600px] overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-50 via-accent-50 to-primary-100">
-          <div className="absolute inset-0 opacity-10">
-            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-              <pattern id="pattern" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
-                <circle cx="1" cy="1" r="1" fill="currentColor" className="text-primary-600" />
-              </pattern>
-              <rect x="0" y="0" width="100" height="100" fill="url(#pattern)" />
-            </svg>
-          </div>
+        {/* Clean white background to match logo */}
+        <div className="absolute inset-0 bg-white">
+          {/* Subtle decorative border at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-rose-400 to-amber-400"></div>
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 items-center w-full">
             {/* Text Content */}
             <div className="text-center lg:text-left animate-fadeIn">
-              <span className="inline-block bg-primary-100 text-primary-700 px-4 py-1.5 rounded-full text-sm font-medium mb-6">
+              {/* Logo Display */}
+              <div className="mb-6 flex justify-center lg:justify-start">
+                <Image
+                  src="/products/logo.jpeg"
+                  alt="Darshan Style Hub"
+                  width={500}
+                  height={220}
+                  className="h-44 sm:h-56 lg:h-64 w-auto object-contain"
+                  priority
+                />
+              </div>
+              
+              <span className="inline-block bg-amber-50 text-amber-800 px-4 py-1.5 rounded-full text-sm font-medium mb-6 border border-amber-200">
                 ✨ New Collection 2026
               </span>
               <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
                 Exquisite Sarees &
-                <span className="text-gradient block">Designer Suits</span>
+                <span className="bg-gradient-to-r from-amber-600 via-rose-600 to-amber-600 bg-clip-text text-transparent block">Designer Suits</span>
               </h1>
               <p className="text-lg text-gray-600 mb-8 max-w-lg mx-auto lg:mx-0">
                 Discover our stunning collection of handcrafted sarees and elegant suits. 
                 From traditional silk to modern designs, find your perfect ethnic wear.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link href="/products?category=Sarees" className="btn-primary inline-flex items-center justify-center gap-2">
+                <Link href="/products?category=Sarees" className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-amber-600 to-amber-700 text-white font-medium rounded-full hover:from-amber-700 hover:to-amber-800 transition-all shadow-lg shadow-amber-200">
                   Shop Sarees
                   <FiArrowRight />
                 </Link>
-                <Link href="/products?category=Suits" className="btn-outline inline-flex items-center justify-center gap-2">
+                <Link href="/products?category=Suits" className="inline-flex items-center justify-center gap-2 px-8 py-3 border-2 border-gray-800 text-gray-800 font-medium rounded-full hover:bg-gray-800 hover:text-white transition-all">
                   Shop Suits
                 </Link>
               </div>
@@ -57,7 +63,7 @@ export default async function Home() {
 
             {/* Hero Image */}
             <div className="hidden lg:block relative">
-              <div className="relative w-full aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl transform rotate-2 hover:rotate-0 transition-transform duration-500">
+              <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden shadow-2xl border border-gray-100">
                 <Image
                   src="https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=600&h=800&fit=crop"
                   alt="Indian Saree Collection"
@@ -67,16 +73,20 @@ export default async function Home() {
                 />
               </div>
               {/* Floating Card */}
-              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl animate-float">
+              <div className="absolute -bottom-4 -left-4 bg-white p-4 rounded-xl shadow-lg border border-gray-100">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                    <span className="text-2xl">👗</span>
+                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                    <span className="text-xl">👗</span>
                   </div>
                   <div>
-                    <p className="font-bold text-gray-900">500+ Happy Customers</p>
-                    <p className="text-sm text-gray-500">This month</p>
+                    <p className="font-semibold text-gray-900 text-sm">500+ Happy Customers</p>
+                    <p className="text-xs text-gray-500">This month</p>
                   </div>
                 </div>
+              </div>
+              {/* Premium badge */}
+              <div className="absolute top-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-full shadow-lg text-sm font-medium">
+                Premium Quality
               </div>
             </div>
           </div>

@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import { FiShoppingBag, FiSearch, FiMenu, FiX, FiUser, FiHeart, FiLogOut, FiSettings } from 'react-icons/fi';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
+import { useWishlistStore } from '@/store/wishlistStore';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -15,7 +16,9 @@ export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { openCart, getTotalItems } = useCartStore();
   const { user, isAuthenticated, isAdmin, logout, checkAuth } = useAuthStore();
+  const { getTotalItems: getWishlistItems } = useWishlistStore();
   const totalItems = getTotalItems();
+  const wishlistItems = getWishlistItems();
 
   // Check auth on mount and on route change
   useEffect(() => {
@@ -91,8 +94,13 @@ export default function Navbar() {
             >
               <FiSearch size={20} />
             </button>
-            <Link href="/wishlist" className="p-2 hover:bg-accent-100 rounded-full transition-colors hidden sm:block">
+            <Link href="/wishlist" className="p-2 hover:bg-accent-100 rounded-full transition-colors hidden sm:block relative">
               <FiHeart size={20} />
+              {wishlistItems > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                  {wishlistItems}
+                </span>
+              )}
             </Link>
             
             {/* User Menu */}

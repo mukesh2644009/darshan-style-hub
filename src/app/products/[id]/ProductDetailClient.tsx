@@ -7,6 +7,7 @@ import { FiHeart, FiShare2, FiMinus, FiPlus, FiStar, FiTruck, FiRefreshCw, FiShi
 import { FaWhatsapp } from 'react-icons/fa';
 import { Product } from '@/lib/products';
 import { useCartStore } from '@/store/cartStore';
+import { useWishlistStore } from '@/store/wishlistStore';
 import ProductCard from '@/components/ProductCard';
 import { createWhatsAppOrderLink, createWhatsAppShareLink } from '@/components/WhatsAppButton';
 
@@ -17,12 +18,13 @@ interface ProductDetailClientProps {
 
 export default function ProductDetailClient({ product, relatedProducts }: ProductDetailClientProps) {
   const { addItem, openCart } = useCartStore();
+  const { toggleItem, isInWishlist } = useWishlistStore();
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const isWishlisted = isInWishlist(product.id);
   const [showShareMenu, setShowShareMenu] = useState(false);
 
   const discount = product.originalPrice
@@ -116,7 +118,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 </span>
               )}
               <button
-                onClick={() => setIsWishlisted(!isWishlisted)}
+                onClick={() => toggleItem(product)}
                 className={`absolute top-4 right-4 p-3 rounded-full transition-all ${
                   isWishlisted ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 hover:bg-accent-100'
                 }`}

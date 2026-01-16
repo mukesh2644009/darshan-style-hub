@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { FiHeart, FiShoppingBag, FiStar } from 'react-icons/fi';
 import { Product } from '@/lib/products';
 import { useCartStore } from '@/store/cartStore';
+import { useWishlistStore } from '@/store/wishlistStore';
 import { useState } from 'react';
 
 interface ProductCardProps {
@@ -13,8 +14,9 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { addItem, openCart } = useCartStore();
+  const { toggleItem, isInWishlist } = useWishlistStore();
   const [isHovered, setIsHovered] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const isWishlisted = isInWishlist(product.id);
 
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -30,7 +32,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsWishlisted(!isWishlisted);
+    toggleItem(product);
   };
 
   return (

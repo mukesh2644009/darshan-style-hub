@@ -116,18 +116,22 @@ export default async function Home() {
             {/* Suits Category */}
             <Link
               href="/products?category=Suits"
-              className="group relative aspect-[3/4] rounded-3xl overflow-hidden"
+              className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-xl"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-400 via-indigo-500 to-blue-600" />
-              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
-                <span className="text-5xl mb-4">👗</span>
+              <Image
+                src="/products/1.jpeg"
+                alt="Designer Suits Collection"
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                 <h3 className="font-display text-2xl sm:text-3xl font-bold mb-2">Suits</h3>
-                <p className="text-white/80 text-center text-sm mb-4">
+                <p className="text-white/80 text-sm mb-4">
                   Anarkali, Salwar & Party Wear
                 </p>
-                <span className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm font-medium group-hover:bg-white/30 transition-all">
-                  Explore <FiArrowRight />
+                <span className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium group-hover:bg-white/30 transition-all">
+                  Explore Collection <FiArrowRight />
                 </span>
               </div>
             </Link>
@@ -135,18 +139,22 @@ export default async function Home() {
             {/* Kurtis Category */}
             <Link
               href="/products?category=Kurtis"
-              className="group relative aspect-[3/4] rounded-3xl overflow-hidden"
+              className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-xl"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-400 via-orange-500 to-yellow-600" />
-              <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-colors" />
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-white p-6">
-                <span className="text-5xl mb-4">👚</span>
+              <Image
+                src="/products/kurti-golden-print.jpg"
+                alt="Elegant Kurtis Collection"
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                 <h3 className="font-display text-2xl sm:text-3xl font-bold mb-2">Kurtis</h3>
-                <p className="text-white/80 text-center text-sm mb-4">
+                <p className="text-white/80 text-sm mb-4">
                   Cotton, Printed & Embroidered
                 </p>
-                <span className="inline-flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full text-sm font-medium group-hover:bg-white/30 transition-all">
-                  Explore <FiArrowRight />
+                <span className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium group-hover:bg-white/30 transition-all">
+                  Explore Collection <FiArrowRight />
                 </span>
               </div>
             </Link>

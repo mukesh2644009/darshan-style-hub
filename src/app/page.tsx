@@ -142,7 +142,7 @@ export default async function Home() {
               className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-xl"
             >
               <Image
-                src="/products/kurti-golden-print.jpg"
+                src="/products/FIONAAQUA_3.webp"
                 alt="Elegant Kurtis Collection"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-500"

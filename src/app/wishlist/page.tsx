@@ -73,7 +73,7 @@ export default function WishlistPage() {
               return (
                 <div key={product.id} className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
                   {/* Image */}
-                  <Link href={`/products/${product.id}`} className="block relative aspect-[3/4]">
+                  <Link href={`/products/${product.slug || product.id}`} className="block relative aspect-[3/4]">
                     <Image
                       src={product.images[0]}
                       alt={product.name}
@@ -89,7 +89,7 @@ export default function WishlistPage() {
 
                   {/* Info */}
                   <div className="p-4">
-                    <Link href={`/products/${product.id}`}>
+                    <Link href={`/products/${product.slug || product.id}`}>
                       <h3 className="font-medium text-gray-900 mb-1 line-clamp-1 hover:text-primary-600 transition-colors">
                         {product.name}
                       </h3>

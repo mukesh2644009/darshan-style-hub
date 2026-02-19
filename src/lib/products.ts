@@ -2,6 +2,7 @@ import prisma from './prisma';
 
 export interface Product {
   id: string;
+  slug: string | null;
   name: string;
   description: string;
   price: number;
@@ -27,6 +28,7 @@ export interface Category {
 function transformProduct(dbProduct: any): Product {
   return {
     id: dbProduct.id,
+    slug: dbProduct.slug,
     name: dbProduct.name,
     description: dbProduct.description,
     price: dbProduct.price,
@@ -93,6 +95,26 @@ export async function getProducts(filters?: {
 export async function getProductById(id: string): Promise<Product | null> {
   const product = await prisma.product.findUnique({
     where: { id },
+    include: {
+      images: true,
+      sizes: true,
+      colors: true,
+    },
+  });
+
+  if (!product) return null;
+  return transformProduct(product);
+}
+
+// Get product by slug or ID (for SEO-friendly URLs)
+export async function getProductBySlugOrId(slugOrId: string): Promise<Product | null> {
+  const product = await prisma.product.findFirst({
+    where: {
+      OR: [
+        { id: slugOrId },
+        { slug: slugOrId },
+      ],
+    },
     include: {
       images: true,
       sizes: true,

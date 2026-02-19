@@ -54,6 +54,7 @@ model Address {
 model Product {
   id            String    @id @default(cuid())
   sku           String    @unique
+  slug          String?   @unique  // SEO-friendly URL: green-embroidered-cotton-suit-set
   name          String
   description   String
   price         Float

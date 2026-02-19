@@ -5,6 +5,7 @@ import { FiPackage, FiEdit, FiPlus, FiEye } from 'react-icons/fi';
 import WhatsAppShareButton from './WhatsAppShareButton';
 import DeleteAllButton from './DeleteAllButton';
 import DeleteProductButton from './DeleteProductButton';
+import BackfillSlugsButton from './BackfillSlugsButton';
 
 async function getProducts() {
   return prisma.product.findMany({
@@ -28,6 +29,7 @@ export default async function ProductsPage() {
           <p className="text-gray-600 mt-1">Manage your product catalog</p>
         </div>
         <div className="flex items-center gap-3">
+          <BackfillSlugsButton />
           <DeleteAllButton />
           <Link 
             href="/admin/products/new"
@@ -237,6 +239,7 @@ export default async function ProductsPage() {
                         <WhatsAppShareButton 
                           product={{
                             id: product.id,
+                            slug: product.slug,
                             name: product.name,
                             price: product.price,
                             originalPrice: product.originalPrice,

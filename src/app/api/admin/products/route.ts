@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { slugify, generateUniqueSlug } from '@/lib/slug';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,10 +60,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // Generate SEO-friendly slug
+    const baseSlug = slugify(name);
+    const existingSlugs = await prisma.product.findMany({
+      where: { slug: { not: null } },
+      select: { slug: true }
+    }).then(rows => rows.map(r => r.slug).filter(Boolean) as string[]);
+    const slug = generateUniqueSlug(baseSlug, existingSlugs);
+
     // Create product with related data
     const product = await prisma.product.create({
       data: {
         sku,
+        slug,
         name,
         description,
         price: parseFloat(price.toString()),

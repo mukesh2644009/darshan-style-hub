@@ -6,6 +6,7 @@ import { FiCopy, FiCheck, FiX } from 'react-icons/fi';
 
 interface Product {
   id: string;
+  slug?: string | null;
   name: string;
   price: number;
   originalPrice: number | null;
@@ -18,7 +19,7 @@ interface Props {
 
 // Your WhatsApp number
 const WHATSAPP_NUMBER = '919019076335';
-const STORE_URL = 'https://darshan-style-hub.vercel.app';
+const STORE_URL = 'https://www.darshanstylehub.com';
 
 export default function WhatsAppShareButton({ product }: Props) {
   const [showModal, setShowModal] = useState(false);
@@ -29,7 +30,7 @@ export default function WhatsAppShareButton({ product }: Props) {
     ? Math.round((1 - product.price / product.originalPrice) * 100)
     : 0;
 
-  const productUrl = `${STORE_URL}/products/${product.id}`;
+  const productUrl = `${STORE_URL}/products/${product.slug || product.id}`;
 
   const generateMessage = () => {
     let message = `*${product.name}*\n\n`;

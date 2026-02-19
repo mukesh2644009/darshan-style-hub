@@ -42,6 +42,7 @@ export async function GET(request: Request) {
     // Transform to match expected format
     const transformedProducts = products.map(product => ({
       id: product.id,
+      slug: product.slug,
       name: product.name,
       description: product.description,
       price: product.price,

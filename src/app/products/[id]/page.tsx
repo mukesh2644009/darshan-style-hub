@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getProductById, getRelatedProducts } from '@/lib/products';
+import { getProductBySlugOrId, getRelatedProducts } from '@/lib/products';
 import ProductDetailClient from './ProductDetailClient';
 import type { Metadata } from 'next';
 
@@ -12,7 +12,7 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const product = await getProductById(params.id);
+  const product = await getProductBySlugOrId(params.id);
   
   if (!product) {
     return { title: 'Product Not Found' };
@@ -26,14 +26,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? `${SITE_URL}${product.images[0].startsWith('/') ? '' : '/'}${product.images[0]}`
     : `${SITE_URL}/products/logo.jpeg`;
 
+  const canonicalUrl = `${SITE_URL}/products/${product.slug || params.id}`;
+
   return {
     title,
     description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
     openGraph: {
       title,
       description,
       images: [imageUrl],
-      url: `${SITE_URL}/products/${params.id}`,
+      url: canonicalUrl,
       siteName: 'Darshan Style Hub',
       type: 'website',
     },
@@ -47,13 +52,21 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ProductDetailPage({ params }: PageProps) {
-  const product = await getProductById(params.id);
+  const product = await getProductBySlugOrId(params.id);
   
   if (!product) {
     notFound();
   }
 
-  const relatedProducts = await getRelatedProducts(params.id, product.category, 4);
+  // Redirect to SEO-friendly URL if user visited via old ID
+  const slug = product.slug || params.id;
+  if (product.slug && params.id !== product.slug) {
+    const { redirect } = await import('next/navigation');
+    redirect(`/products/${product.slug}`);
+  }
+
+  const relatedProducts = await getRelatedProducts(product.id, product.category, 4);
+  const canonicalUrl = `${SITE_URL}/products/${product.slug || params.id}`;
 
   // Product schema for rich results in Google
   const productSchema = {
@@ -71,7 +84,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     },
     offers: {
       '@type': 'Offer',
-      url: `${SITE_URL}/products/${params.id}`,
+      url: canonicalUrl,
       priceCurrency: 'INR',
       price: product.price,
       availability: product.inStock 

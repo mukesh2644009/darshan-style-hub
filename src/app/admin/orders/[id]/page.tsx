@@ -151,7 +151,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
           </div>
 
           {/* Update Status */}
-          <OrderStatusUpdater orderId={order.id} currentStatus={order.status} />
+          <OrderStatusUpdater orderId={order.id} currentStatus={order.status} currentPaymentStatus={order.paymentStatus} />
         </div>
 
         {/* Sidebar */}

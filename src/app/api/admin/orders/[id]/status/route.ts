@@ -18,20 +18,32 @@ export async function PATCH(
       );
     }
 
-    const { status } = await request.json();
+    const { status, paymentStatus } = await request.json();
 
     const validStatuses = ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+    const validPaymentStatuses = ['PENDING', 'PAID', 'FAILED', 'REFUNDED'];
     
-    if (!validStatuses.includes(status)) {
+    if (status && !validStatuses.includes(status)) {
       return NextResponse.json(
-        { error: 'Invalid status' },
+        { error: 'Invalid order status' },
         { status: 400 }
       );
     }
 
+    if (paymentStatus && !validPaymentStatuses.includes(paymentStatus)) {
+      return NextResponse.json(
+        { error: 'Invalid payment status' },
+        { status: 400 }
+      );
+    }
+
+    const updateData: Record<string, string> = {};
+    if (status) updateData.status = status;
+    if (paymentStatus) updateData.paymentStatus = paymentStatus;
+
     const order = await prisma.order.update({
       where: { id: params.id },
-      data: { status },
+      data: updateData,
     });
 
     return NextResponse.json({ success: true, order });

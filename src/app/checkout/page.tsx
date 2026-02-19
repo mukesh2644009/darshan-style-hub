@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiChevronLeft, FiSmartphone, FiTruck, FiAlertCircle, FiLoader, FiLock } from 'react-icons/fi';
+import { FiChevronLeft, FiSmartphone, FiTruck, FiAlertCircle, FiLoader, FiLock, FiCopy, FiCheck, FiInfo } from 'react-icons/fi';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
 import { validateEmail } from '@/lib/validation';
@@ -28,6 +28,17 @@ export default function CheckoutPage() {
     pincode: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [orderTotal, setOrderTotal] = useState(0);
+  const [orderPaymentMethod, setOrderPaymentMethod] = useState('');
+  const [upiCopied, setUpiCopied] = useState(false);
+
+  const UPI_ID = 'parvati23@boi';
+
+  const copyUpiId = () => {
+    navigator.clipboard.writeText(UPI_ID);
+    setUpiCopied(true);
+    setTimeout(() => setUpiCopied(false), 2000);
+  };
 
   useEffect(() => {
     checkAuth();
@@ -145,6 +156,8 @@ export default function CheckoutPage() {
       
       if (response.ok) {
         setOrderId(data.id || '');
+        setOrderTotal(data.total || total);
+        setOrderPaymentMethod(paymentMethod === 'cod' ? 'COD' : 'UPI');
         setOrderPlaced(true);
         clearCart();
       } else {
@@ -158,6 +171,70 @@ export default function CheckoutPage() {
   };
 
   if (orderPlaced) {
+    // UPI Payment Screen
+    if (orderPaymentMethod === 'UPI') {
+      return (
+        <div className="min-h-screen bg-accent-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-2xl p-8 shadow-lg">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FiSmartphone className="w-8 h-8 text-blue-600" />
+              </div>
+              <h1 className="font-display text-2xl font-bold text-gray-900 mb-1">
+                Complete Your Payment
+              </h1>
+              {orderId && (
+                <p className="text-sm text-gray-500">
+                  Order ID: <span className="font-medium text-gray-900">#{orderId.slice(0, 8).toUpperCase()}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Amount */}
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center mb-6">
+              <p className="text-sm text-blue-600 mb-1">Amount to Pay</p>
+              <p className="text-3xl font-bold text-blue-700">₹{orderTotal.toLocaleString('en-IN')}</p>
+            </div>
+
+            {/* UPI ID */}
+            <div className="bg-gray-50 rounded-xl p-4 mb-4">
+              <p className="text-sm text-gray-500 mb-2 text-center">Pay to this UPI ID</p>
+              <div className="flex items-center justify-between bg-white border-2 border-dashed border-primary-300 rounded-lg px-4 py-3">
+                <span className="font-mono font-bold text-lg text-gray-900">{UPI_ID}</span>
+                <button
+                  onClick={copyUpiId}
+                  className="flex items-center gap-1 px-3 py-1.5 bg-primary-100 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-200 transition-colors"
+                >
+                  {upiCopied ? <><FiCheck className="w-4 h-4" /> Copied!</> : <><FiCopy className="w-4 h-4" /> Copy</>}
+                </button>
+              </div>
+            </div>
+
+            {/* Steps */}
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+              <p className="text-sm font-medium text-amber-800 mb-2">How to pay:</p>
+              <ol className="text-sm text-amber-700 space-y-1.5">
+                <li>1. Open <strong>GPay / PhonePe / Paytm</strong></li>
+                <li>2. Tap <strong>"Pay to UPI ID"</strong></li>
+                <li>3. Enter UPI ID: <strong>{UPI_ID}</strong></li>
+                <li>4. Enter amount: <strong>₹{orderTotal.toLocaleString('en-IN')}</strong></li>
+                <li>5. Complete the payment</li>
+              </ol>
+            </div>
+
+            <p className="text-xs text-gray-500 text-center mb-4">
+              Order confirmation will be sent to your email once payment is verified.
+            </p>
+
+            <Link href="/products" className="btn-primary w-full text-center inline-block">
+              Continue Shopping
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
+    // COD Success Screen
     return (
       <div className="min-h-screen bg-accent-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl p-8 text-center shadow-lg">
@@ -167,14 +244,19 @@ export default function CheckoutPage() {
           <h1 className="font-display text-2xl font-bold text-gray-900 mb-2">
             Order Placed Successfully!
           </h1>
-          <p className="text-gray-600 mb-6">
+          <p className="text-gray-600 mb-4">
             Thank you for shopping with Darshan Style Hub. Order confirmation has been sent to your email.
           </p>
           {orderId && (
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-gray-500 mb-2">
               Order ID: <span className="font-medium text-gray-900">#{orderId.slice(0, 8).toUpperCase()}</span>
             </p>
           )}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-6">
+            <p className="text-sm text-amber-800">
+              <strong>Cash on Delivery</strong> — Please keep <strong>₹{orderTotal.toLocaleString('en-IN')}</strong> ready at the time of delivery.
+            </p>
+          </div>
           <Link href="/products" className="btn-primary inline-block">
             Continue Shopping
           </Link>
@@ -386,9 +468,18 @@ export default function CheckoutPage() {
                   <FiTruck size={24} className="text-primary-600" />
                   <div>
                     <p className="font-medium text-gray-900">Cash on Delivery (COD)</p>
-                    <p className="text-sm text-gray-500">Pay when you receive • ₹10 extra charge</p>
+                    <p className="text-sm text-gray-500">Pay when you receive</p>
                   </div>
                 </label>
+
+                {paymentMethod === 'cod' && (
+                  <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+                    <FiInfo className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm">
+                      <strong>₹10 extra charge</strong> will be added for Cash on Delivery. Choose UPI to avoid this charge.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

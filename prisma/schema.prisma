@@ -90,10 +90,11 @@ model ProductImage {
   @@index([productId])
 }
 
-// Product sizes
+// Product sizes with quantity
 model ProductSize {
   id          String    @id @default(cuid())
   size        String
+  quantity    Int       @default(0)
   productId   String
   product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
 

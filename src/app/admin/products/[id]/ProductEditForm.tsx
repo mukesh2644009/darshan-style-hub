@@ -4,6 +4,12 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiSave, FiLoader, FiCheck } from 'react-icons/fi';
 
+interface ProductSize {
+  id: string;
+  size: string;
+  quantity: number;
+}
+
 interface Product {
   id: string;
   sku: string;
@@ -15,6 +21,7 @@ interface Product {
   subcategory: string | null;
   featured: boolean;
   newArrival: boolean;
+  sizes?: ProductSize[];
 }
 
 interface Props {
@@ -37,6 +44,24 @@ export default function ProductEditForm({ product }: Props) {
     newArrival: product.newArrival,
   });
 
+  const [sizeQuantities, setSizeQuantities] = useState<Record<string, { id: string; quantity: number }>>(
+    (product.sizes || []).reduce((acc, size) => ({
+      ...acc,
+      [size.size]: { id: size.id, quantity: size.quantity || 0 }
+    }), {})
+  );
+
+  const updateSizeQuantity = (size: string, quantity: number) => {
+    setSizeQuantities(prev => ({
+      ...prev,
+      [size]: { ...prev[size], quantity: Math.max(0, quantity) }
+    }));
+  };
+
+  const getTotalQuantity = () => {
+    return Object.values(sizeQuantities).reduce((sum, s) => sum + s.quantity, 0);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
@@ -51,13 +76,23 @@ export default function ProductEditForm({ product }: Props) {
     setLoading(true);
     setMessage('');
 
+    // Prepare sizes with quantities
+    const sizesData = Object.entries(sizeQuantities).map(([size, data]) => ({
+      id: data.id,
+      size,
+      quantity: data.quantity
+    }));
+
     try {
       const response = await fetch(`/api/admin/products/${product.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          sizes: sizesData,
+        }),
       });
 
       if (response.ok) {
@@ -74,11 +109,10 @@ export default function ProductEditForm({ product }: Props) {
     }
   };
 
-  const categories = ['Sarees', 'Suits', 'Kurtis'];
+  const categories = ['Suits', 'Kurtis'];
   const subcategories: Record<string, string[]> = {
-    'Sarees': ['Silk Sarees', 'Cotton Sarees', 'Banarasi Sarees', 'Designer Sarees', 'Wedding Sarees'],
-    'Suits': ['Anarkali Suits', 'Salwar Suits', 'Palazzo Suits', 'Churidar Suits', 'Party Wear Suits'],
-    'Kurtis': ['Cotton Kurtis', 'Printed Kurtis', 'Embroidered Kurtis', 'Party Wear Kurtis', 'Casual Kurtis'],
+    'Suits': ['Anarkali Suits', 'Salwar Suits', 'Palazzo Suits', 'Churidar Suits', 'Party Wear Suits', 'Designer Suits'],
+    'Kurtis': ['Cotton Kurtis', 'Printed Kurtis', 'Embroidered Kurtis', 'Party Wear Kurtis', 'Casual Kurtis', 'Designer Kurtis'],
   };
 
   return (
@@ -224,6 +258,37 @@ export default function ProductEditForm({ product }: Props) {
           </div>
         )}
       </div>
+
+      {/* Inventory / Stock */}
+      {Object.keys(sizeQuantities).length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-gray-900">Inventory / Stock</h2>
+            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+              getTotalQuantity() === 0 ? 'bg-red-100 text-red-800' :
+              getTotalQuantity() < 10 ? 'bg-yellow-100 text-yellow-800' :
+              'bg-green-100 text-green-800'
+            }`}>
+              Total Stock: {getTotalQuantity()} pcs
+            </span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {Object.entries(sizeQuantities).map(([size, data]) => (
+              <div key={size} className="flex items-center gap-2 bg-gray-50 rounded-lg p-3">
+                <span className="font-medium text-gray-800 min-w-[60px]">{size}:</span>
+                <input
+                  type="number"
+                  min="0"
+                  value={data.quantity}
+                  onChange={(e) => updateSizeQuantity(size, parseInt(e.target.value) || 0)}
+                  className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                />
+                <span className="text-sm text-gray-500">pcs</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Status Flags */}
       <div className="bg-white rounded-xl shadow-sm p-6">

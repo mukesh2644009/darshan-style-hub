@@ -88,18 +88,31 @@ export default async function ProductEditPage({ params }: { params: { id: string
             </div>
           </div>
 
-          {/* Available Sizes */}
+          {/* Stock Summary */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Available Sizes</h2>
-            <div className="flex flex-wrap gap-2">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Stock Summary</h2>
+            <div className="space-y-2">
               {product.sizes.map((size) => (
-                <span
+                <div
                   key={size.id}
-                  className="px-3 py-1 bg-gray-100 rounded-lg text-sm text-gray-700"
+                  className="flex justify-between items-center px-3 py-2 bg-gray-50 rounded-lg"
                 >
-                  {size.size}
-                </span>
+                  <span className="font-medium text-gray-700">{size.size}</span>
+                  <span className={`px-2 py-0.5 rounded text-sm ${
+                    (size.quantity || 0) === 0 ? 'bg-red-100 text-red-800' :
+                    (size.quantity || 0) < 5 ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-green-100 text-green-800'
+                  }`}>
+                    {size.quantity || 0} pcs
+                  </span>
+                </div>
               ))}
+              <div className="border-t pt-2 mt-2 flex justify-between items-center font-bold">
+                <span className="text-gray-900">Total</span>
+                <span className="text-primary-600">
+                  {product.sizes.reduce((sum, s) => sum + (s.quantity || 0), 0)} pcs
+                </span>
+              </div>
             </div>
           </div>
 

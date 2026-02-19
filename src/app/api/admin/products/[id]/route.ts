@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { unlink } from 'fs/promises';
+import { join } from 'path';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,7 +52,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival } = body;
+    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival, sizes } = body;
 
     // Validate required fields
     if (!sku || !name || !description || price === undefined) {
@@ -68,6 +70,7 @@ export async function PATCH(
       );
     }
 
+    // Update product basic info
     const product = await prisma.product.update({
       where: { id: params.id },
       data: {
@@ -88,7 +91,29 @@ export async function PATCH(
       },
     });
 
-    return NextResponse.json({ success: true, product });
+    // Update size quantities if provided
+    if (sizes && Array.isArray(sizes)) {
+      for (const sizeData of sizes) {
+        if (sizeData.id) {
+          await prisma.productSize.update({
+            where: { id: sizeData.id },
+            data: { quantity: sizeData.quantity || 0 }
+          });
+        }
+      }
+    }
+
+    // Refetch product with updated sizes
+    const updatedProduct = await prisma.product.findUnique({
+      where: { id: params.id },
+      include: {
+        images: true,
+        sizes: true,
+        colors: true,
+      },
+    });
+
+    return NextResponse.json({ success: true, product: updatedProduct });
   } catch (error) {
     console.error('Error updating product:', error);
     return NextResponse.json(
@@ -103,7 +128,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // ✅ Require admin authentication
+    // Require admin authentication
     const authResult = await requireAdmin();
     if ('error' in authResult) {
       return NextResponse.json(
@@ -112,7 +137,25 @@ export async function DELETE(
       );
     }
 
-    // Delete related records first
+    // Get product images before deleting
+    const images = await prisma.productImage.findMany({
+      where: { productId: params.id }
+    });
+
+    // Delete image files from filesystem
+    for (const image of images) {
+      try {
+        // Image URLs are like /products/kurtis/kurti-1/1.jpg
+        const imagePath = join(process.cwd(), 'public', image.url);
+        await unlink(imagePath);
+        console.log(`Deleted image: ${imagePath}`);
+      } catch (fileError) {
+        // Log but don't fail if file doesn't exist
+        console.log(`Could not delete image file: ${image.url}`, fileError);
+      }
+    }
+
+    // Delete related records
     await prisma.productImage.deleteMany({ where: { productId: params.id } });
     await prisma.productSize.deleteMany({ where: { productId: params.id } });
     await prisma.productColor.deleteMany({ where: { productId: params.id } });
@@ -122,7 +165,7 @@ export async function DELETE(
       where: { id: params.id },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, deletedImages: images.length });
   } catch (error) {
     console.error('Error deleting product:', error);
     return NextResponse.json(

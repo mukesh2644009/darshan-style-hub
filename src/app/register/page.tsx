@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FiUser, FiMail, FiPhone, FiLock, FiLoader, FiAlertCircle } from 'react-icons/fi';
 import { useAuthStore } from '@/store/authStore';
+import { validateEmail } from '@/lib/validation';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -31,6 +32,12 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');

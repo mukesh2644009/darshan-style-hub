@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { FiMail, FiPhone, FiMapPin, FiSend, FiCheck } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
+import { validateEmail } from '@/lib/validation';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -18,8 +19,15 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+
+    const emailError = validateEmail(formData.email);
+    if (emailError) {
+      setError(emailError);
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const response = await fetch('/api/contact', {

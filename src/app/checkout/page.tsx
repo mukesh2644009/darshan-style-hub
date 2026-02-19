@@ -3,21 +3,49 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiChevronLeft, FiCreditCard, FiSmartphone, FiTruck } from 'react-icons/fi';
+import { FiChevronLeft, FiSmartphone, FiTruck, FiAlertCircle } from 'react-icons/fi';
 import { useCartStore } from '@/store/cartStore';
+import { validateEmail } from '@/lib/validation';
 
 export default function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCartStore();
-  const [step, setStep] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cod'>('upi');
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    pincode: '',
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const subtotal = getTotalPrice();
   const shipping = subtotal >= 999 ? 0 : 99;
-  const total = subtotal + shipping;
+  const codCharge = paymentMethod === 'cod' ? 10 : 0;
+  const total = subtotal + shipping + codCharge;
 
   const handlePlaceOrder = () => {
-    // Simulate order placement
+    const newErrors: Record<string, string> = {};
+    
+    const emailError = validateEmail(formData.email);
+    if (emailError) {
+      newErrors.email = emailError;
+    }
+    if (!formData.firstName?.trim()) newErrors.firstName = 'First name is required';
+    if (!formData.lastName?.trim()) newErrors.lastName = 'Last name is required';
+    if (!formData.phone?.trim()) newErrors.phone = 'Phone number is required';
+    if (!formData.address?.trim()) newErrors.address = 'Address is required';
+    if (!formData.city?.trim()) newErrors.city = 'City is required';
+    if (!formData.pincode?.trim()) newErrors.pincode = 'Pincode is required';
+    
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+    
     setOrderPlaced(true);
     clearCart();
   };
@@ -92,34 +120,99 @@ export default function CheckoutPage() {
                 Shipping Information
               </h2>
 
+              {Object.keys(errors).length > 0 && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 text-red-700">
+                  <FiAlertCircle className="flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">Please fix the following:</p>
+                    <ul className="mt-1 text-sm list-disc list-inside">
+                      {Object.values(errors).map((msg, i) => (
+                        <li key={i}>{msg}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                  <input type="text" className="input-field" placeholder="John" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                  <input
+                    type="text"
+                    value={formData.firstName}
+                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                    className={`input-field ${errors.firstName ? 'border-red-500' : ''}`}
+                    placeholder="John"
+                  />
+                  {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                  <input type="text" className="input-field" placeholder="Doe" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                  <input
+                    type="text"
+                    value={formData.lastName}
+                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                    className={`input-field ${errors.lastName ? 'border-red-500' : ''}`}
+                    placeholder="Doe"
+                  />
+                  {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                  <input type="email" className="input-field" placeholder="john@example.com" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value });
+                      if (errors.email) setErrors({ ...errors, email: '' });
+                    }}
+                    className={`input-field ${errors.email ? 'border-red-500' : ''}`}
+                    placeholder="john@example.com"
+                  />
+                  {errors.email && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><FiAlertCircle className="w-3 h-3" />{errors.email}</p>}
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                  <input type="tel" className="input-field" placeholder="+91 98765 43210" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className={`input-field ${errors.phone ? 'border-red-500' : ''}`}
+                    placeholder="+91 98765 43210"
+                  />
+                  {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                  <input type="text" className="input-field" placeholder="123 Main Street" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Address *</label>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className={`input-field ${errors.address ? 'border-red-500' : ''}`}
+                    placeholder="123 Main Street"
+                  />
+                  {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-                  <input type="text" className="input-field" placeholder="Bangalore" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
+                  <input
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    className={`input-field ${errors.city ? 'border-red-500' : ''}`}
+                    placeholder="Bangalore"
+                  />
+                  {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pincode</label>
-                  <input type="text" className="input-field" placeholder="560001" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Pincode *</label>
+                  <input
+                    type="text"
+                    value={formData.pincode}
+                    onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                    className={`input-field ${errors.pincode ? 'border-red-500' : ''}`}
+                    placeholder="560001"
+                  />
+                  {errors.pincode && <p className="text-red-500 text-xs mt-1">{errors.pincode}</p>}
                 </div>
               </div>
             </div>
@@ -136,28 +229,6 @@ export default function CheckoutPage() {
               <div className="space-y-3">
                 <label
                   className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    paymentMethod === 'card'
-                      ? 'border-primary-600 bg-primary-50'
-                      : 'border-accent-200 hover:border-primary-300'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value="card"
-                    checked={paymentMethod === 'card'}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="accent-primary-600"
-                  />
-                  <FiCreditCard size={24} className="text-primary-600" />
-                  <div>
-                    <p className="font-medium text-gray-900">Credit / Debit Card</p>
-                    <p className="text-sm text-gray-500">Visa, Mastercard, RuPay</p>
-                  </div>
-                </label>
-
-                <label
-                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     paymentMethod === 'upi'
                       ? 'border-primary-600 bg-primary-50'
                       : 'border-accent-200 hover:border-primary-300'
@@ -168,7 +239,7 @@ export default function CheckoutPage() {
                     name="payment"
                     value="upi"
                     checked={paymentMethod === 'upi'}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'upi' | 'cod')}
                     className="accent-primary-600"
                   />
                   <FiSmartphone size={24} className="text-primary-600" />
@@ -190,35 +261,16 @@ export default function CheckoutPage() {
                     name="payment"
                     value="cod"
                     checked={paymentMethod === 'cod'}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'upi' | 'cod')}
                     className="accent-primary-600"
                   />
                   <FiTruck size={24} className="text-primary-600" />
                   <div>
-                    <p className="font-medium text-gray-900">Cash on Delivery</p>
-                    <p className="text-sm text-gray-500">Pay when you receive</p>
+                    <p className="font-medium text-gray-900">Cash on Delivery (COD)</p>
+                    <p className="text-sm text-gray-500">Pay when you receive • ₹10 extra charge</p>
                   </div>
                 </label>
               </div>
-
-              {paymentMethod === 'card' && (
-                <div className="mt-6 space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
-                    <input type="text" className="input-field" placeholder="1234 5678 9012 3456" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Expiry</label>
-                      <input type="text" className="input-field" placeholder="MM/YY" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">CVV</label>
-                      <input type="text" className="input-field" placeholder="123" />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -283,6 +335,12 @@ export default function CheckoutPage() {
                   <p className="text-xs text-primary-600">
                     Add ₹{(999 - subtotal).toLocaleString()} more for free shipping
                   </p>
+                )}
+                {codCharge > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>COD Charge</span>
+                    <span>₹{codCharge}</span>
+                  </div>
                 )}
                 <div className="flex justify-between text-lg font-bold border-t border-accent-200 pt-3">
                   <span>Total</span>

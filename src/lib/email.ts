@@ -134,7 +134,7 @@ function getWelcomeEmailTemplate(customerName: string): string {
                 Thank you for joining the ${SHOP_NAME} family! We're thrilled to have you with us.
               </p>
               <p style="color: #4b5563; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">
-                Get ready to explore our exquisite collection of traditional Indian wear - from beautiful sarees to elegant suits and trendy kurtis.
+                Get ready to explore our exquisite collection of traditional Indian wear - elegant suits and trendy kurtis.
               </p>
               
               <!-- Special Offer Box -->
@@ -163,14 +163,6 @@ function getWelcomeEmailTemplate(customerName: string): string {
               </p>
               <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
                 <tr>
-                  <td style="padding: 10px; text-align: center;">
-                    <a href="${SHOP_WEBSITE}/products?category=Sarees" style="text-decoration: none;">
-                      <div style="background-color: #fce7f3; padding: 20px; border-radius: 12px;">
-                        <p style="font-size: 32px; margin: 0 0 5px;">🥻</p>
-                        <p style="color: #be185d; font-weight: 600; margin: 0;">Sarees</p>
-                      </div>
-                    </a>
-                  </td>
                   <td style="padding: 10px; text-align: center;">
                     <a href="${SHOP_WEBSITE}/products?category=Suits" style="text-decoration: none;">
                       <div style="background-color: #ede9fe; padding: 20px; border-radius: 12px;">
@@ -240,10 +232,18 @@ interface OrderEmailProps {
     name: string;
     quantity: number;
     price: number;
+    size?: string | null;
+    color?: string | null;
   }>;
+  shippingAddress?: string;
+  shippingPhone?: string;
+  shippingEmail?: string;
+  paymentMethod?: string;
+  isAdminCopy?: boolean;
 }
 
-export async function sendOrderConfirmationEmail({ to, customerName, orderId, total, items }: OrderEmailProps) {
+export async function sendOrderConfirmationEmail(props: OrderEmailProps) {
+  const { to, customerName, orderId, total, items, shippingAddress, shippingPhone, shippingEmail, paymentMethod, isAdminCopy } = props;
   const service = getEmailService();
   
   if (!service) {
@@ -251,7 +251,8 @@ export async function sendOrderConfirmationEmail({ to, customerName, orderId, to
     return { success: false, error: 'Email not configured' };
   }
 
-  const htmlContent = getOrderConfirmationTemplate(customerName, orderId, total, items);
+  const htmlContent = getOrderConfirmationTemplate(customerName, orderId, total, items, shippingAddress, shippingPhone, shippingEmail, paymentMethod, isAdminCopy);
+  const subjectPrefix = isAdminCopy ? '[NEW ORDER] ' : 'Order Confirmed! ';
 
   // Try Resend first (for custom domain: info@darshanstylehub.com)
   if (service === 'resend') {
@@ -262,7 +263,7 @@ export async function sendOrderConfirmationEmail({ to, customerName, orderId, to
       const { data, error } = await resend.emails.send({
         from: `${SHOP_NAME} <info@darshanstylehub.com>`,
         to: [to],
-        subject: `Order Confirmed! #${orderId.slice(0, 8).toUpperCase()} 🛍️`,
+        subject: `${subjectPrefix}#${orderId.slice(0, 8).toUpperCase()}`,
         html: htmlContent,
       });
 
@@ -286,7 +287,7 @@ export async function sendOrderConfirmationEmail({ to, customerName, orderId, to
       const info = await transporter.sendMail({
         from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`,
         to: to,
-        subject: `Order Confirmed! #${orderId.slice(0, 8).toUpperCase()} 🛍️`,
+        subject: `${subjectPrefix}#${orderId.slice(0, 8).toUpperCase()}`,
         html: htmlContent,
       });
       console.log('Order email sent via Gmail:', info.messageId);
@@ -300,18 +301,57 @@ export async function sendOrderConfirmationEmail({ to, customerName, orderId, to
   return { success: false, error: 'All email services failed' };
 }
 
-function getOrderConfirmationTemplate(customerName: string, orderId: string, total: number, items: Array<{ name: string; quantity: number; price: number }>): string {
-  const itemsHtml = items.map(item => `
+function getOrderConfirmationTemplate(
+  customerName: string,
+  orderId: string,
+  total: number,
+  items: Array<{ name: string; quantity: number; price: number; size?: string | null; color?: string | null }>,
+  shippingAddress?: string,
+  shippingPhone?: string,
+  shippingEmail?: string,
+  paymentMethod?: string,
+  isAdminCopy?: boolean,
+): string {
+  const itemsHtml = items.map(item => {
+    const details = [
+      item.size ? `Size: ${item.size}` : '',
+      item.color ? `Color: ${item.color}` : '',
+      `Qty: ${item.quantity}`,
+    ].filter(Boolean).join(' | ');
+
+    return `
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb;">
         <p style="margin: 0; color: #1f2937; font-weight: 500;">${item.name}</p>
-        <p style="margin: 5px 0 0; color: #6b7280; font-size: 14px;">Qty: ${item.quantity}</p>
+        <p style="margin: 5px 0 0; color: #6b7280; font-size: 14px;">${details}</p>
       </td>
       <td style="padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: right;">
         <p style="margin: 0; color: #1f2937; font-weight: 600;">₹${(item.price * item.quantity).toLocaleString('en-IN')}</p>
       </td>
-    </tr>
-  `).join('');
+    </tr>`;
+  }).join('');
+
+  const headerBg = isAdminCopy 
+    ? 'background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);'
+    : 'background: linear-gradient(135deg, #059669 0%, #10b981 100%);';
+  
+  const headerTitle = isAdminCopy ? 'New Order Received!' : 'Order Confirmed!';
+  const headerIcon = isAdminCopy ? '🔔' : '✅';
+  const greeting = isAdminCopy 
+    ? `New order from <strong>${customerName}</strong>`
+    : `Hi ${customerName},`;
+  const subtext = isAdminCopy
+    ? 'A new order has been placed on your store. Details below:'
+    : 'Thank you for your order! We\'re preparing your items with care.';
+
+  const shippingSection = (shippingAddress || shippingPhone || shippingEmail || paymentMethod) ? `
+              <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+                <p style="margin: 0 0 12px; color: #1f2937; font-weight: 600; font-size: 16px;">Shipping Details</p>
+                ${shippingAddress ? `<p style="margin: 0 0 6px; color: #4b5563; font-size: 14px;">📍 ${shippingAddress}</p>` : ''}
+                ${shippingPhone ? `<p style="margin: 0 0 6px; color: #4b5563; font-size: 14px;">📞 ${shippingPhone}</p>` : ''}
+                ${shippingEmail ? `<p style="margin: 0 0 6px; color: #4b5563; font-size: 14px;">✉️ ${shippingEmail}</p>` : ''}
+                ${paymentMethod ? `<p style="margin: 0; color: #4b5563; font-size: 14px;">💳 Payment: <strong>${paymentMethod}</strong></p>` : ''}
+              </div>` : '';
 
   return `
 <!DOCTYPE html>
@@ -319,7 +359,7 @@ function getOrderConfirmationTemplate(customerName: string, orderId: string, tot
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Order Confirmation</title>
+  <title>${headerTitle}</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f4f0;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -327,33 +367,31 @@ function getOrderConfirmationTemplate(customerName: string, orderId: string, tot
       <td align="center" style="padding: 40px 0;">
         <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           
-          <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 40px 30px; text-align: center;">
-              <p style="font-size: 48px; margin: 0 0 10px;">✅</p>
+            <td style="${headerBg} padding: 40px 30px; text-align: center;">
+              <p style="font-size: 48px; margin: 0 0 10px;">${headerIcon}</p>
               <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
-                Order Confirmed!
+                ${headerTitle}
               </h1>
             </td>
           </tr>
           
-          <!-- Content -->
           <tr>
             <td style="padding: 40px 30px;">
               <p style="color: #4b5563; line-height: 1.6; margin: 0 0 20px; font-size: 16px;">
-                Hi ${customerName},
+                ${greeting}
               </p>
               <p style="color: #4b5563; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">
-                Thank you for your order! We're preparing your items with care.
+                ${subtext}
               </p>
               
-              <!-- Order ID -->
               <div style="background-color: #f3f4f6; padding: 15px 20px; border-radius: 8px; margin-bottom: 30px;">
                 <p style="margin: 0; color: #6b7280; font-size: 14px;">Order ID</p>
                 <p style="margin: 5px 0 0; color: #1f2937; font-size: 20px; font-weight: bold;">#${orderId.slice(0, 8).toUpperCase()}</p>
               </div>
+
+              ${shippingSection}
               
-              <!-- Items -->
               <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
                 <thead>
                   <tr>
@@ -366,7 +404,6 @@ function getOrderConfirmationTemplate(customerName: string, orderId: string, tot
                 </tbody>
               </table>
               
-              <!-- Total -->
               <div style="background-color: #fef3c7; padding: 15px 20px; border-radius: 8px; text-align: right;">
                 <p style="margin: 0; color: #92400e; font-size: 14px;">Total Amount</p>
                 <p style="margin: 5px 0 0; color: #78350f; font-size: 24px; font-weight: bold;">₹${total.toLocaleString('en-IN')}</p>
@@ -374,16 +411,16 @@ function getOrderConfirmationTemplate(customerName: string, orderId: string, tot
             </td>
           </tr>
           
-          <!-- Footer -->
           <tr>
             <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="color: #6b7280; margin: 0 0 10px; font-size: 14px;">
-                Questions about your order?
+                ${isAdminCopy ? 'Manage orders in your admin panel' : 'Questions about your order?'}
               </p>
-              <p style="color: #9f1239; margin: 0 0 20px; font-size: 16px; font-weight: 600;">
-                📞 +91 98765 43210
-              </p>
-              <p style="color: #9ca3af; margin: 0; font-size: 12px;">
+              ${isAdminCopy 
+                ? `<a href="https://www.darshanstylehub.com/admin/orders" style="color: #9f1239; font-weight: 600; font-size: 16px; text-decoration: none;">View All Orders →</a>`
+                : `<p style="color: #9f1239; margin: 0 0 20px; font-size: 16px; font-weight: 600;">📞 +91 90190 76335</p>`
+              }
+              <p style="color: #9ca3af; margin: 15px 0 0; font-size: 12px;">
                 ${SHOP_NAME} | Johari Bazaar, Jaipur
               </p>
             </td>

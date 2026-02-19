@@ -61,6 +61,7 @@ export async function POST(request: Request) {
     const {
       items,
       shippingName,
+      shippingEmail,
       shippingPhone,
       shippingAddress,
       shippingCity,
@@ -69,8 +70,14 @@ export async function POST(request: Request) {
       paymentMethod = 'COD',
     } = body;
 
-    // Get current user if logged in
+    // Require logged-in user
     const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Please login to place an order' },
+        { status: 401 }
+      );
+    }
 
     // Validate required fields
     if (!items || !items.length) {
@@ -80,11 +87,22 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!shippingName || !shippingPhone || !shippingAddress || !shippingCity || !shippingState || !shippingPincode) {
+    if (!shippingName || !shippingPhone || !shippingAddress || !shippingCity || !shippingPincode) {
       return NextResponse.json(
         { error: 'Shipping details are required' },
         { status: 400 }
       );
+    }
+
+    // Validate email
+    if (shippingEmail) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(shippingEmail)) {
+        return NextResponse.json(
+          { error: 'Please enter a valid email address' },
+          { status: 400 }
+        );
+      }
     }
 
     // Validate phone number format
@@ -139,12 +157,13 @@ export async function POST(request: Request) {
     }
 
     const shipping = subtotal >= 999 ? 0 : 99;
-    const total = subtotal + shipping;
+    const codCharge = paymentMethod === 'COD' ? 10 : 0;
+    const total = subtotal + shipping + codCharge;
 
     // Create order
     const order = await prisma.order.create({
       data: {
-        userId: user?.id || null, // ✅ Use authenticated user's ID
+        userId: user.id,
         status: 'PENDING',
         paymentStatus: 'PENDING',
         paymentMethod,
@@ -171,26 +190,69 @@ export async function POST(request: Request) {
       },
     });
 
-    // Send order confirmation email
-    if (user?.email) {
-      try {
-        const { sendOrderConfirmationEmail } = await import('@/lib/email');
+    // Send order confirmation emails
+    const customerEmail = shippingEmail || user?.email;
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub@gmail.com';
+    const fullAddress = `${shippingAddress}, ${shippingCity}, ${shippingState} - ${shippingPincode}`;
+    const emailItems = orderItems.map((item, index) => ({
+      name: order.items[index].product.name,
+      quantity: item.quantity,
+      price: item.price,
+      size: item.size,
+      color: item.color,
+    }));
+
+    try {
+      const { sendOrderConfirmationEmail } = await import('@/lib/email');
+      const { sendOrderWhatsAppNotification } = await import('@/lib/whatsapp');
+
+      // Send email to customer
+      if (customerEmail) {
         sendOrderConfirmationEmail({
-          to: user.email,
+          to: customerEmail,
           customerName: shippingName,
           orderId: order.id,
           total: order.total,
-          items: orderItems.map((item, index) => ({
-            name: order.items[index].product.name,
-            quantity: item.quantity,
-            price: item.price,
-          })),
+          items: emailItems,
+          shippingAddress: fullAddress,
+          shippingPhone: shippingPhone,
+          paymentMethod,
         }).catch((err) => {
-          console.error('Failed to send order email:', err);
+          console.error('Failed to send customer order email:', err);
         });
-      } catch (emailError) {
-        console.log('Email service not available');
       }
+
+      // Send email to admin (owner)
+      sendOrderConfirmationEmail({
+        to: adminEmail,
+        customerName: shippingName,
+        orderId: order.id,
+        total: order.total,
+        items: emailItems,
+        shippingAddress: fullAddress,
+        shippingPhone: shippingPhone,
+        shippingEmail: customerEmail || undefined,
+        paymentMethod,
+        isAdminCopy: true,
+      }).catch((err) => {
+        console.error('Failed to send admin order email:', err);
+      });
+
+      // Send WhatsApp notification to admin
+      sendOrderWhatsAppNotification({
+        orderId: order.id,
+        customerName: shippingName,
+        customerPhone: shippingPhone,
+        customerEmail: customerEmail || undefined,
+        items: emailItems,
+        total: order.total,
+        paymentMethod,
+        shippingAddress: fullAddress,
+      }).catch((err) => {
+        console.error('Failed to send WhatsApp notification:', err);
+      });
+    } catch (notificationError) {
+      console.log('Notification service not available');
     }
 
     return NextResponse.json(order, { status: 201 });

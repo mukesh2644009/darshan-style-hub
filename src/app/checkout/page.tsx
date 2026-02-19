@@ -1,16 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiChevronLeft, FiSmartphone, FiTruck, FiAlertCircle } from 'react-icons/fi';
+import { useRouter } from 'next/navigation';
+import { FiChevronLeft, FiSmartphone, FiTruck, FiAlertCircle, FiLoader, FiLock } from 'react-icons/fi';
 import { useCartStore } from '@/store/cartStore';
+import { useAuthStore } from '@/store/authStore';
 import { validateEmail } from '@/lib/validation';
 
 export default function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCartStore();
+  const { user, isAuthenticated, isLoading, checkAuth } = useAuthStore();
+  const router = useRouter();
   const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cod'>('upi');
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [orderId, setOrderId] = useState('');
+  const [orderLoading, setOrderLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -18,16 +24,81 @@ export default function CheckoutPage() {
     phone: '',
     address: '',
     city: '',
+    state: 'Rajasthan',
     pincode: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  // Pre-fill form with logged-in user data
+  useEffect(() => {
+    if (user) {
+      const nameParts = (user.name || '').split(' ');
+      setFormData(prev => ({
+        ...prev,
+        firstName: prev.firstName || nameParts[0] || '',
+        lastName: prev.lastName || nameParts.slice(1).join(' ') || '',
+        email: prev.email || user.email || '',
+        phone: prev.phone || user.phone || '',
+      }));
+    }
+  }, [user]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-accent-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <FiLoader className="w-10 h-10 text-primary-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-accent-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl p-8 text-center shadow-lg">
+          <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <FiLock className="w-8 h-8 text-primary-600" />
+          </div>
+          <h1 className="font-display text-2xl font-bold text-gray-900 mb-2">
+            Login Required
+          </h1>
+          <p className="text-gray-600 mb-6">
+            Please login or create an account to place your order. Your cart items will be saved.
+          </p>
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/login?redirect=/checkout"
+              className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors inline-block"
+            >
+              Login to Continue
+            </Link>
+            <Link
+              href="/register?redirect=/checkout"
+              className="w-full py-3 border-2 border-primary-600 text-primary-600 rounded-xl font-medium hover:bg-primary-50 transition-colors inline-block"
+            >
+              Create Account
+            </Link>
+          </div>
+          <Link href="/products" className="text-sm text-gray-500 hover:text-gray-700 mt-4 inline-block">
+            Continue Shopping
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const subtotal = getTotalPrice();
   const shipping = subtotal >= 999 ? 0 : 99;
   const codCharge = paymentMethod === 'cod' ? 10 : 0;
   const total = subtotal + shipping + codCharge;
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     const newErrors: Record<string, string> = {};
     
     const emailError = validateEmail(formData.email);
@@ -45,9 +116,45 @@ export default function CheckoutPage() {
     if (Object.keys(newErrors).length > 0) {
       return;
     }
+
+    setOrderLoading(true);
     
-    setOrderPlaced(true);
-    clearCart();
+    try {
+      const response = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: items.map(item => ({
+            productId: item.product.id,
+            quantity: item.quantity,
+            size: item.selectedSize,
+            color: item.selectedColor,
+          })),
+          shippingName: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
+          shippingEmail: formData.email.trim(),
+          shippingPhone: formData.phone.trim().replace(/\s/g, '').replace(/^\+91/, ''),
+          shippingAddress: formData.address.trim(),
+          shippingCity: formData.city.trim(),
+          shippingState: formData.state.trim(),
+          shippingPincode: formData.pincode.trim(),
+          paymentMethod: paymentMethod === 'cod' ? 'COD' : 'UPI',
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setOrderId(data.id || '');
+        setOrderPlaced(true);
+        clearCart();
+      } else {
+        setErrors({ form: data.error || 'Failed to place order. Please try again.' });
+      }
+    } catch (error) {
+      setErrors({ form: 'Something went wrong. Please try again.' });
+    } finally {
+      setOrderLoading(false);
+    }
   };
 
   if (orderPlaced) {
@@ -61,11 +168,13 @@ export default function CheckoutPage() {
             Order Placed Successfully!
           </h1>
           <p className="text-gray-600 mb-6">
-            Thank you for shopping with Darshan Style Hub. Your order confirmation has been sent to your email.
+            Thank you for shopping with Darshan Style Hub. Order confirmation has been sent to your email.
           </p>
-          <p className="text-sm text-gray-500 mb-6">
-            Order ID: <span className="font-medium text-gray-900">#DSH{Date.now()}</span>
-          </p>
+          {orderId && (
+            <p className="text-sm text-gray-500 mb-6">
+              Order ID: <span className="font-medium text-gray-900">#{orderId.slice(0, 8).toUpperCase()}</span>
+            </p>
+          )}
           <Link href="/products" className="btn-primary inline-block">
             Continue Shopping
           </Link>
@@ -199,9 +308,19 @@ export default function CheckoutPage() {
                     value={formData.city}
                     onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                     className={`input-field ${errors.city ? 'border-red-500' : ''}`}
-                    placeholder="Bangalore"
+                    placeholder="Jaipur"
                   />
                   {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                  <input
+                    type="text"
+                    value={formData.state}
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    className="input-field"
+                    placeholder="Rajasthan"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Pincode *</label>
@@ -210,7 +329,7 @@ export default function CheckoutPage() {
                     value={formData.pincode}
                     onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
                     className={`input-field ${errors.pincode ? 'border-red-500' : ''}`}
-                    placeholder="560001"
+                    placeholder="302001"
                   />
                   {errors.pincode && <p className="text-red-500 text-xs mt-1">{errors.pincode}</p>}
                 </div>
@@ -348,8 +467,22 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              <button onClick={handlePlaceOrder} className="w-full btn-primary mt-6">
-                Place Order
+              {errors.form && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
+                  <FiAlertCircle /> {errors.form}
+                </div>
+              )}
+
+              <button 
+                onClick={handlePlaceOrder} 
+                disabled={orderLoading}
+                className={`w-full mt-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors ${
+                  orderLoading 
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                    : 'bg-primary-600 text-white hover:bg-primary-700'
+                }`}
+              >
+                {orderLoading ? 'Placing Order...' : 'Place Order'}
               </button>
 
               <p className="text-xs text-gray-500 text-center mt-4">

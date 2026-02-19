@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiHome, FiShoppingBag, FiPackage, FiUsers, FiSettings, FiArrowLeft, FiMessageSquare } from 'react-icons/fi';
+import { FiHome, FiShoppingBag, FiPackage, FiUsers, FiSettings, FiArrowLeft, FiMessageSquare, FiLoader, FiLogOut } from 'react-icons/fi';
 
 const adminNavItems = [
   { name: 'Dashboard', href: '/admin', icon: FiHome },
@@ -13,12 +15,79 @@ const adminNavItems = [
   { name: 'Settings', href: '/admin/settings', icon: FiSettings },
 ];
 
+interface User {
+  id: string;
+  email: string;
+  name: string | null;
+  role: string;
+}
+
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user && data.user.role === 'ADMIN') {
+          setUser(data.user);
+        } else {
+          // Not admin, redirect to login
+          router.push('/login?redirect=/admin&error=admin_required');
+        }
+      } else {
+        // Not logged in, redirect to login
+        router.push('/login?redirect=/admin');
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      router.push('/login?redirect=/admin');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <FiLoader className="w-12 h-12 text-primary-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -33,7 +102,14 @@ export default function AdminLayout({
           <h1 className="text-xl font-bold">Darshan Style Hub - Admin</h1>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-400">Welcome, Admin</span>
+          <span className="text-sm text-gray-400">Welcome, {user.name || user.email}</span>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-300 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
+          >
+            <FiLogOut className="w-4 h-4" />
+            Logout
+          </button>
         </div>
       </header>
 

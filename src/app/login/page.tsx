@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { FiMail, FiLock, FiLoader, FiAlertCircle } from 'react-icons/fi';
+import { FiMail, FiLock, FiLoader, FiAlertCircle, FiShield } from 'react-icons/fi';
 import { useAuthStore } from '@/store/authStore';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, isAuthenticated, isAdmin, checkAuth } = useAuthStore();
   
   const [email, setEmail] = useState('');
@@ -15,19 +16,33 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const redirectUrl = searchParams.get('redirect');
+  const errorType = searchParams.get('error');
+
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
 
   useEffect(() => {
     if (isAuthenticated) {
-      if (isAdmin) {
+      if (redirectUrl) {
+        // If there's a redirect URL and user is admin (for admin pages)
+        if (redirectUrl.startsWith('/admin') && isAdmin) {
+          router.push(redirectUrl);
+        } else if (!redirectUrl.startsWith('/admin')) {
+          router.push(redirectUrl);
+        } else if (isAdmin) {
+          router.push('/admin');
+        } else {
+          router.push('/my-orders');
+        }
+      } else if (isAdmin) {
         router.push('/admin');
       } else {
         router.push('/my-orders');
       }
     }
-  }, [isAuthenticated, isAdmin, router]);
+  }, [isAuthenticated, isAdmin, router, redirectUrl]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +65,13 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
           <p className="text-gray-600">Sign in to your account</p>
         </div>
+
+        {errorType === 'admin_required' && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-center gap-3 text-yellow-800">
+            <FiShield className="flex-shrink-0" />
+            <span>Admin access required. Please login with an admin account.</span>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700">
@@ -115,27 +137,11 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/register" className="text-primary-600 hover:text-primary-700 font-medium">
               Create Account
             </Link>
           </p>
-        </div>
-
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <p className="text-sm text-gray-500 text-center mb-4">Demo Accounts:</p>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="font-medium text-gray-900">Admin</p>
-              <p className="text-gray-600">admin@darshan.com</p>
-              <p className="text-gray-600">admin123</p>
-            </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="font-medium text-gray-900">Customer</p>
-              <p className="text-gray-600">user@darshan.com</p>
-              <p className="text-gray-600">user123</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

@@ -15,15 +15,21 @@ export async function POST() {
       );
     }
 
-    const products = await prisma.product.findMany({
-      where: { slug: null },
-      select: { id: true, name: true }
+    // Get all products - backfill those with null, empty, or id-like slugs
+    const allProducts = await prisma.product.findMany({
+      select: { id: true, name: true, slug: true }
     });
 
-    const existingSlugs = await prisma.product.findMany({
-      where: { slug: { not: null } },
-      select: { slug: true }
-    }).then(rows => rows.map(r => r.slug).filter(Boolean) as string[]);
+    const needsSlug = (slug: string | null) => {
+      if (!slug || slug.trim() === '') return true;
+      if (/^c[a-z0-9]{24}$/i.test(slug)) return true; // slug is same as id
+      return false;
+    };
+
+    const products = allProducts.filter(p => needsSlug(p.slug));
+    const existingSlugs = allProducts
+      .filter(p => !needsSlug(p.slug))
+      .map(p => p.slug!).filter(Boolean);
 
     let updated = 0;
     for (const product of products) {
@@ -38,10 +44,17 @@ export async function POST() {
       updated++;
     }
 
+    const message = updated > 0 
+      ? `Backfilled slugs for ${updated} products` 
+      : allProducts.length === 0
+        ? 'No products found in database'
+        : `All ${allProducts.length} products already have slugs`;
+
     return NextResponse.json({
       success: true,
-      message: `Backfilled slugs for ${updated} products`,
-      updated
+      message,
+      updated,
+      total: allProducts.length
     });
   } catch (error) {
     console.error('Error backfilling slugs:', error);

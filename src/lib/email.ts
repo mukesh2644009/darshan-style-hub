@@ -202,7 +202,7 @@ function getWelcomeEmailTemplate(customerName: string): string {
                 Need help? Contact us anytime!
               </p>
               <p style="color: #9f1239; margin: 0 0 20px; font-size: 16px; font-weight: 600;">
-                📞 +91 98765 43210
+                📞 +91 90190 76335
               </p>
               <p style="color: #9ca3af; margin: 0; font-size: 12px;">
                 ${SHOP_NAME} | Johari Bazaar, Jaipur, Rajasthan 302001

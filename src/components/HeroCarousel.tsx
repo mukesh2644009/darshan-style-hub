@@ -4,10 +4,10 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 
 const heroImages = [
-  '/products/1.jpeg',
-  '/products/2.jpeg',
-  '/products/3.jpeg',
-  '/products/4.jpeg',
+  '/products/kurtis/kurti-1/1.jpeg',
+  '/products/kurtis/kurti-1/2.jpeg',
+  '/products/kurtis/kurti-2/1.jpeg',
+  '/products/kurtis/kurti-2/2.jpeg',
 ];
 
 export default function HeroCarousel() {

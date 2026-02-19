@@ -9,11 +9,11 @@ export default function BackfillSlugsButton() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  const handleBackfill = async () => {
+  const handleBackfill = async (force = false) => {
     setLoading(true);
     setMessage('');
     try {
-      const response = await fetch('/api/admin/products/backfill-slugs', {
+      const response = await fetch(`/api/admin/products/backfill-slugs${force ? '?force=true' : ''}`, {
         method: 'POST',
       });
       const data = await response.json();
@@ -34,10 +34,10 @@ export default function BackfillSlugsButton() {
   return (
     <div className="flex items-center gap-2">
       <button
-        onClick={handleBackfill}
+        onClick={() => handleBackfill(false)}
         disabled={loading}
         className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors disabled:opacity-50"
-        title="Generate SEO-friendly URLs for products"
+        title="Generate SEO-friendly URLs for products missing slugs"
       >
         {loading ? (
           <FiLoader className="w-4 h-4 animate-spin" />
@@ -45,6 +45,14 @@ export default function BackfillSlugsButton() {
           <FiLink className="w-4 h-4" />
         )}
         Generate SEO Slugs
+      </button>
+      <button
+        onClick={() => handleBackfill(true)}
+        disabled={loading}
+        className="inline-flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+        title="Regenerate slugs for ALL products (fix broken URLs)"
+      >
+        Force Regenerate
       </button>
       {message && (
         <span className="text-sm text-green-600 flex items-center gap-1">

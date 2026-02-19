@@ -5,7 +5,7 @@ import { slugify, generateUniqueSlug } from '@/lib/slug';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const authResult = await requireAdmin();
     if ('error' in authResult) {
@@ -15,19 +15,23 @@ export async function POST() {
       );
     }
 
-    // Get all products - backfill those with null, empty, or id-like slugs
+    const { searchParams } = new URL(request.url);
+    const force = searchParams.get('force') === 'true';
+
+    // Get all products
     const allProducts = await prisma.product.findMany({
       select: { id: true, name: true, slug: true }
     });
 
     const needsSlug = (slug: string | null) => {
+      if (force) return true; // Regenerate all
       if (!slug || slug.trim() === '') return true;
       if (/^c[a-z0-9]{24}$/i.test(slug)) return true; // slug is same as id
       return false;
     };
 
     const products = allProducts.filter(p => needsSlug(p.slug));
-    const existingSlugs = allProducts
+    const existingSlugs = force ? [] : allProducts
       .filter(p => !needsSlug(p.slug))
       .map(p => p.slug!).filter(Boolean);
 

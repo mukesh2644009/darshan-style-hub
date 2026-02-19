@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiPackage, FiEdit, FiPlus, FiEye } from 'react-icons/fi';
+import { FiPackage, FiEdit, FiPlus, FiEye, FiExternalLink } from 'react-icons/fi';
 import WhatsAppShareButton from './WhatsAppShareButton';
 import DeleteAllButton from './DeleteAllButton';
 import DeleteProductButton from './DeleteProductButton';
@@ -130,6 +130,17 @@ export default async function ProductsPage() {
                         <div>
                           <p className="font-medium text-gray-900">{product.name}</p>
                           <p className="text-sm text-gray-500 truncate max-w-xs">{product.subcategory}</p>
+                          {product.slug && (
+                            <a
+                              href={`https://www.darshanstylehub.com/products/${product.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1"
+                            >
+                              <FiExternalLink className="w-3 h-3" />
+                              /products/{product.slug}
+                            </a>
+                          )}
                         </div>
                       </div>
                     </td>

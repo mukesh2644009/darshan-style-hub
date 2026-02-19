@@ -1,0 +1,14 @@
+# Darshan Style Hub - robots.txt
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /admin/
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+Disallow: /my-orders
+Disallow: /checkout
+
+# Sitemap
+Sitemap: https://www.darshanstylehub.com/sitemap.xml

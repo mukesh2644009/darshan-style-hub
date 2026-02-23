@@ -78,12 +78,12 @@ export default function WhatsAppButton() {
                   👗 Inquire about suits
                 </a>
                 <a
-                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI'm interested in your kurtis collection.\nPlease share details.`)}`}
+                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI'm interested in your co ord sets collection.\nPlease share details.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-sm text-green-600 hover:text-green-700 hover:underline"
                 >
-                  👚 Inquire about kurtis
+                  👚 Inquire about co ord sets
                 </a>
                 <a
                   href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI want to place a bulk order.\nPlease share details.`)}`}

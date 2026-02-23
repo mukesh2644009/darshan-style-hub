@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiSave, FiLoader, FiCheck, FiPlus, FiX, FiImage } from 'react-icons/fi';
+import Image from 'next/image';
+import { FiSave, FiLoader, FiCheck, FiPlus, FiX, FiImage, FiUploadCloud, FiTrash2 } from 'react-icons/fi';
 
 const AVAILABLE_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'Free Size'];
 
@@ -37,7 +38,7 @@ export default function ProductAddForm() {
     description: '',
     price: 0,
     originalPrice: 0,
-    category: 'Kurtis',
+    category: 'Co Ord Sets',
     subcategory: '',
     featured: false,
     newArrival: true,
@@ -45,7 +46,37 @@ export default function ProductAddForm() {
 
   const [sizeQuantities, setSizeQuantities] = useState<Record<string, number>>({});
   const [selectedColors, setSelectedColors] = useState<{ name: string; hex: string }[]>([]);
-  const [imageUrls, setImageUrls] = useState<string[]>(['']);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [uploadedImagePaths, setUploadedImagePaths] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleImageSelect = (files: FileList | null) => {
+    if (!files) return;
+    const newFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (newFiles.length === 0) return;
+
+    setImageFiles(prev => [...prev, ...newFiles]);
+    newFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreviews(prev => [...prev, e.target?.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    handleImageSelect(e.dataTransfer.files);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -87,20 +118,32 @@ export default function ProductAddForm() {
     );
   };
 
-  const addImageUrl = () => {
-    setImageUrls(prev => [...prev, '']);
-  };
+  const uploadImages = async (): Promise<string[]> => {
+    if (imageFiles.length === 0) return [];
 
-  const removeImageUrl = (index: number) => {
-    setImageUrls(prev => prev.filter((_, i) => i !== index));
-  };
+    setUploading(true);
+    const uploadFormData = new FormData();
+    imageFiles.forEach(file => uploadFormData.append('images', file));
+    uploadFormData.append('category', formData.category);
 
-  const updateImageUrl = (index: number, value: string) => {
-    setImageUrls(prev => {
-      const updated = [...prev];
-      updated[index] = value;
-      return updated;
-    });
+    const slug = formData.name
+      ? formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      : '';
+    uploadFormData.append('productFolder', slug || `product-${Date.now()}`);
+
+    try {
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      setUploading(false);
+      return data.images;
+    } catch (err) {
+      setUploading(false);
+      throw err;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -108,11 +151,8 @@ export default function ProductAddForm() {
     setLoading(true);
     setMessage('');
 
-    // Filter out empty image URLs
-    const validImages = imageUrls.filter(url => url.trim() !== '');
-
-    if (validImages.length === 0) {
-      setMessage('Please add at least one product image');
+    if (imageFiles.length === 0 && uploadedImagePaths.length === 0) {
+      setMessage('Please upload at least one product image');
       setMessageType('error');
       setLoading(false);
       return;
@@ -133,21 +173,23 @@ export default function ProductAddForm() {
       return;
     }
 
-    // Prepare sizes with quantities
     const sizesWithQuantity = selectedSizes.map(size => ({
       size,
       quantity: sizeQuantities[size] || 0
     }));
 
     try {
+      setMessage('Uploading images...');
+      setMessageType('success');
+      const imagePaths = imageFiles.length > 0 ? await uploadImages() : [];
+      const allImages = [...uploadedImagePaths, ...imagePaths];
+
       const response = await fetch('/api/admin/products', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          images: validImages,
+          images: allImages,
           sizes: sizesWithQuantity,
           colors: selectedColors,
         }),
@@ -166,17 +208,17 @@ export default function ProductAddForm() {
         setMessageType('error');
       }
     } catch (error) {
-      setMessage('Error creating product');
+      setMessage(error instanceof Error ? error.message : 'Error creating product');
       setMessageType('error');
     } finally {
       setLoading(false);
     }
   };
 
-  const categories = ['Suits', 'Kurtis'];
+  const categories = ['Suits', 'Co Ord Sets'];
   const subcategories: Record<string, string[]> = {
     'Suits': ['Anarkali Suits', 'Salwar Suits', 'Palazzo Suits', 'Churidar Suits', 'Party Wear Suits', 'Designer Suits'],
-    'Kurtis': ['Cotton Kurtis', 'Printed Kurtis', 'Embroidered Kurtis', 'Party Wear Kurtis', 'Casual Kurtis', 'Designer Kurtis'],
+    'Co Ord Sets': ['Printed Co Ord Sets', 'Embroidered Co Ord Sets', 'Party Wear Co Ord Sets', 'Casual Co Ord Sets', 'Cotton Co Ord Sets', 'Designer Co Ord Sets'],
   };
 
   return (
@@ -276,38 +318,71 @@ export default function ProductAddForm() {
           Product Images
         </h2>
         <p className="text-sm text-gray-500 mb-4">
-          Add image paths like: <code className="bg-gray-100 px-2 py-1 rounded">/products/kurtis/kurti-1/1.jpg</code>
+          Upload images from your phone or computer. They&apos;ll be saved automatically in the <strong>{formData.category.toLowerCase()}</strong> folder.
         </p>
-        <div className="space-y-3">
-          {imageUrls.map((url, index) => (
-            <div key={index} className="flex gap-2">
-              <input
-                type="text"
-                value={url}
-                onChange={(e) => updateImageUrl(index, e.target.value)}
-                placeholder={`/products/kurtis/kurti-${index + 1}/1.jpg`}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              />
-              {imageUrls.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeImageUrl(index)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                >
-                  <FiX className="w-5 h-5" />
-                </button>
-              )}
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={addImageUrl}
-            className="inline-flex items-center gap-2 px-4 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-          >
+
+        {/* Drag & Drop Area */}
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+            dragOver
+              ? 'border-primary-500 bg-primary-50'
+              : 'border-gray-300 hover:border-gray-400'
+          }`}
+        >
+          <FiUploadCloud className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+          <p className="text-gray-600 font-medium">Drag & drop images here</p>
+          <p className="text-gray-400 text-sm mt-1">or</p>
+          <label className="mt-3 inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 cursor-pointer transition-colors">
             <FiPlus className="w-4 h-4" />
-            Add Another Image
-          </button>
+            Choose Files
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => handleImageSelect(e.target.files)}
+              className="hidden"
+            />
+          </label>
+          <p className="text-xs text-gray-400 mt-3">JPG, PNG, WebP — Max 5MB per image</p>
         </div>
+
+        {/* Image Previews */}
+        {imagePreviews.length > 0 && (
+          <div className="mt-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">
+              {imagePreviews.length} image{imagePreviews.length > 1 ? 's' : ''} selected
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {imagePreviews.map((preview, index) => (
+                <div key={index} className="relative group rounded-lg overflow-hidden border border-gray-200">
+                  <Image
+                    src={preview}
+                    alt={`Preview ${index + 1}`}
+                    width={200}
+                    height={160}
+                    className="w-full h-40 object-cover"
+                    unoptimized
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-2 py-1">
+                    {imageFiles[index]?.name}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sizes */}
@@ -498,17 +573,17 @@ export default function ProductAddForm() {
         </div>
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || uploading}
           className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
-            loading
+            loading || uploading
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
               : 'bg-primary-600 text-white hover:bg-primary-700'
           }`}
         >
-          {loading ? (
+          {loading || uploading ? (
             <>
               <FiLoader className="w-5 h-5 animate-spin" />
-              Creating...
+              {uploading ? 'Uploading Images...' : 'Creating...'}
             </>
           ) : (
             <>

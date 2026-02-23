@@ -34,7 +34,7 @@ export default function Footer() {
           <div>
             <h4 className="font-display text-2xl font-bold text-white mb-4">Darshan Style Hub</h4>
             <p className="text-accent-300 mb-4 leading-relaxed">
-              Your trusted destination for premium suits and kurtis in Jaipur. 
+              Your trusted destination for premium suits and co ord sets in Jaipur. 
               Quality fabrics, timeless designs, and exceptional service since 2010.
             </p>
             <div className="flex gap-3">
@@ -73,8 +73,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/products?category=Kurtis" className="text-accent-300 hover:text-white transition-colors">
-                  Kurtis
+                <Link href="/products?category=Co Ord Sets" className="text-accent-300 hover:text-white transition-colors">
+                  Co Ord Sets
                 </Link>
               </li>
               <li>

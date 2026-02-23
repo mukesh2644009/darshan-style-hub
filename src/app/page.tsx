@@ -45,10 +45,10 @@ export default async function Home() {
               </span>
               <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
                 Designer Suits &
-                <span className="bg-gradient-to-r from-amber-600 via-rose-600 to-amber-600 bg-clip-text text-transparent block">Elegant Kurtis</span>
+                <span className="bg-gradient-to-r from-amber-600 via-rose-600 to-amber-600 bg-clip-text text-transparent block">Co Ord Sets</span>
               </h1>
               <p className="text-lg text-gray-600 mb-8 max-w-lg mx-auto lg:mx-0">
-                Discover our stunning collection of designer suits and elegant kurtis. 
+                Discover our stunning collection of designer suits and co ord sets. 
                 From traditional designs to modern styles, find your perfect ethnic wear.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -56,8 +56,8 @@ export default async function Home() {
                   Shop Suits
                   <FiArrowRight />
                 </Link>
-                <Link href="/products?category=Kurtis" className="inline-flex items-center justify-center gap-2 px-8 py-3 border-2 border-gray-800 text-gray-800 font-medium rounded-full hover:bg-gray-800 hover:text-white transition-all">
-                  Shop Kurtis
+                <Link href="/products?category=Co Ord Sets" className="inline-flex items-center justify-center gap-2 px-8 py-3 border-2 border-gray-800 text-gray-800 font-medium rounded-full hover:bg-gray-800 hover:text-white transition-all">
+                  Shop Co Ord Sets
                 </Link>
               </div>
             </div>
@@ -100,7 +100,7 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Categories - Suits & Kurtis */}
+      {/* Categories - Suits & Co Ord Sets */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
@@ -108,7 +108,7 @@ export default async function Home() {
               Shop by Category
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Explore our beautiful collection of suits and kurtis for every occasion
+              Explore our beautiful collection of suits and co ord sets for every occasion
             </p>
           </div>
 
@@ -119,7 +119,7 @@ export default async function Home() {
               className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-xl"
             >
               <Image
-                src="/products/kurtis/kurti-1/1.jpeg"
+                src="/products/kurtis/kurti-2/1.jpeg"
                 alt="Designer Suits Collection"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -136,22 +136,22 @@ export default async function Home() {
               </div>
             </Link>
 
-            {/* Kurtis Category */}
+            {/* Co Ord Sets Category */}
             <Link
-              href="/products?category=Kurtis"
+              href="/products?category=Co Ord Sets"
               className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-xl"
             >
               <Image
-                src="/products/kurtis/kurti-2/1.jpeg"
-                alt="Elegant Kurtis Collection"
+                src="/products/kurtis/kurti-1/1.jpeg"
+                alt="Co Ord Sets Collection"
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-500"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                <h3 className="font-display text-2xl sm:text-3xl font-bold mb-2">Kurtis</h3>
+                <h3 className="font-display text-2xl sm:text-3xl font-bold mb-2">Co Ord Sets</h3>
                 <p className="text-white/80 text-sm mb-4">
-                  Cotton, Printed & Embroidered
+                  Printed, Embroidered & Designer
                 </p>
                 <span className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium group-hover:bg-white/30 transition-all">
                   Explore Collection <FiArrowRight />

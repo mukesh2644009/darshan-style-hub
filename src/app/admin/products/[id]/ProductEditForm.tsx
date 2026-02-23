@@ -2,12 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiSave, FiLoader, FiCheck } from 'react-icons/fi';
+import Image from 'next/image';
+import { FiSave, FiLoader, FiCheck, FiPlus, FiUploadCloud, FiTrash2, FiImage } from 'react-icons/fi';
 
 interface ProductSize {
   id: string;
   size: string;
   quantity: number;
+}
+
+interface ProductImage {
+  id: string;
+  url: string;
 }
 
 interface Product {
@@ -22,6 +28,7 @@ interface Product {
   featured: boolean;
   newArrival: boolean;
   sizes?: ProductSize[];
+  images?: ProductImage[];
 }
 
 interface Props {
@@ -32,6 +39,7 @@ export default function ProductEditForm({ product }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState<'success' | 'error'>('success');
   const [formData, setFormData] = useState({
     sku: product.sku,
     name: product.name,
@@ -50,6 +58,70 @@ export default function ProductEditForm({ product }: Props) {
       [size.size]: { id: size.id, quantity: size.quantity || 0 }
     }), {})
   );
+
+  const [existingImages, setExistingImages] = useState<ProductImage[]>(product.images || []);
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  const handleImageSelect = (files: FileList | null) => {
+    if (!files) return;
+    const validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    if (validFiles.length === 0) return;
+
+    setNewImageFiles(prev => [...prev, ...validFiles]);
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setNewImagePreviews(prev => [...prev, e.target?.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeNewImage = (index: number) => {
+    setNewImageFiles(prev => prev.filter((_, i) => i !== index));
+    setNewImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (imageId: string) => {
+    setExistingImages(prev => prev.filter(img => img.id !== imageId));
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    handleImageSelect(e.dataTransfer.files);
+  };
+
+  const uploadImages = async (): Promise<string[]> => {
+    if (newImageFiles.length === 0) return [];
+
+    setUploading(true);
+    const uploadFormData = new FormData();
+    newImageFiles.forEach(file => uploadFormData.append('images', file));
+    uploadFormData.append('category', formData.category);
+
+    const slug = formData.name
+      ? formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      : '';
+    uploadFormData.append('productFolder', slug || `product-${Date.now()}`);
+
+    try {
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: uploadFormData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      setUploading(false);
+      return data.images;
+    } catch (err) {
+      setUploading(false);
+      throw err;
+    }
+  };
 
   const updateSizeQuantity = (size: string, quantity: number) => {
     setSizeQuantities(prev => ({
@@ -76,7 +148,6 @@ export default function ProductEditForm({ product }: Props) {
     setLoading(true);
     setMessage('');
 
-    // Prepare sizes with quantities
     const sizesData = Object.entries(sizeQuantities).map(([size, data]) => ({
       id: data.id,
       size,
@@ -84,35 +155,49 @@ export default function ProductEditForm({ product }: Props) {
     }));
 
     try {
+      let newUploadedPaths: string[] = [];
+      if (newImageFiles.length > 0) {
+        setMessage('Uploading images...');
+        setMessageType('success');
+        newUploadedPaths = await uploadImages();
+      }
+
+      const allImageUrls = [
+        ...existingImages.map(img => img.url),
+        ...newUploadedPaths,
+      ];
+
       const response = await fetch(`/api/admin/products/${product.id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
           sizes: sizesData,
+          images: allImageUrls,
         }),
       });
 
       if (response.ok) {
         setMessage('Product updated successfully!');
+        setMessageType('success');
         router.refresh();
       } else {
         const data = await response.json();
         setMessage(data.error || 'Failed to update product');
+        setMessageType('error');
       }
     } catch (error) {
-      setMessage('Error updating product');
+      setMessage(error instanceof Error ? error.message : 'Error updating product');
+      setMessageType('error');
     } finally {
       setLoading(false);
     }
   };
 
-  const categories = ['Suits', 'Kurtis'];
+  const categories = ['Suits', 'Co Ord Sets'];
   const subcategories: Record<string, string[]> = {
     'Suits': ['Anarkali Suits', 'Salwar Suits', 'Palazzo Suits', 'Churidar Suits', 'Party Wear Suits', 'Designer Suits'],
-    'Kurtis': ['Cotton Kurtis', 'Printed Kurtis', 'Embroidered Kurtis', 'Party Wear Kurtis', 'Casual Kurtis', 'Designer Kurtis'],
+    'Co Ord Sets': ['Printed Co Ord Sets', 'Embroidered Co Ord Sets', 'Party Wear Co Ord Sets', 'Casual Co Ord Sets', 'Cotton Co Ord Sets', 'Designer Co Ord Sets'],
   };
 
   return (
@@ -131,7 +216,7 @@ export default function ProductEditForm({ product }: Props) {
               value={formData.sku}
               onChange={handleChange}
               required
-              placeholder="e.g., DSH-SAR-001"
+              placeholder="e.g., DSH-KUR-001"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 font-mono"
             />
             <p className="text-xs text-gray-500 mt-1">Unique serial number for barcode generation</p>
@@ -203,9 +288,109 @@ export default function ProductEditForm({ product }: Props) {
         </div>
       </div>
 
+      {/* Product Images */}
+      <div className="bg-white rounded-xl shadow-sm p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">
+          <FiImage className="inline mr-2" />
+          Product Images
+        </h2>
+
+        {/* Existing Images */}
+        {existingImages.length > 0 && (
+          <div className="mb-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">Current Images</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {existingImages.map((img) => (
+                <div key={img.id} className="relative group rounded-lg overflow-hidden border border-gray-200">
+                  <Image
+                    src={img.url}
+                    alt="Product"
+                    width={200}
+                    height={200}
+                    className="w-full h-40 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(img.id)}
+                      className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Upload New Images */}
+        <div
+          onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors ${
+            dragOver
+              ? 'border-primary-500 bg-primary-50'
+              : 'border-gray-300 hover:border-gray-400'
+          }`}
+        >
+          <FiUploadCloud className="w-10 h-10 mx-auto text-gray-400 mb-2" />
+          <p className="text-gray-600 font-medium">Add more images</p>
+          <p className="text-gray-400 text-sm mt-1">Drag & drop or click to browse</p>
+          <label className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 cursor-pointer transition-colors text-sm">
+            <FiPlus className="w-4 h-4" />
+            Choose Files
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => handleImageSelect(e.target.files)}
+              className="hidden"
+            />
+          </label>
+          <p className="text-xs text-gray-400 mt-2">JPG, PNG, WebP — Max 5MB per image</p>
+        </div>
+
+        {/* New Image Previews */}
+        {newImagePreviews.length > 0 && (
+          <div className="mt-4">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">
+              New images to upload ({newImagePreviews.length})
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {newImagePreviews.map((preview, index) => (
+                <div key={index} className="relative group rounded-lg overflow-hidden border-2 border-green-300">
+                  <Image
+                    src={preview}
+                    alt={`New ${index + 1}`}
+                    width={200}
+                    height={160}
+                    className="w-full h-40 object-cover"
+                    unoptimized
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => removeNewImage(index)}
+                      className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded">
+                    NEW
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Pricing */}
       <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">💰 Pricing</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Pricing</h2>
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -250,7 +435,7 @@ export default function ProductEditForm({ product }: Props) {
         {formData.originalPrice > formData.price && (
           <div className="mt-4 p-3 bg-green-50 rounded-lg">
             <p className="text-green-800 text-sm font-medium">
-              🏷️ Discount: {Math.round((1 - formData.price / formData.originalPrice) * 100)}% OFF
+              Discount: {Math.round((1 - formData.price / formData.originalPrice) * 100)}% OFF
               <span className="text-green-600 ml-2">
                 (Save ₹{(formData.originalPrice - formData.price).toLocaleString('en-IN')})
               </span>
@@ -318,7 +503,7 @@ export default function ProductEditForm({ product }: Props) {
             />
             <div>
               <span className="font-medium text-gray-900">New Arrival</span>
-              <p className="text-xs text-gray-500">Show "New" badge on product</p>
+              <p className="text-xs text-gray-500">Show &quot;New&quot; badge on product</p>
             </div>
           </label>
         </div>
@@ -329,26 +514,26 @@ export default function ProductEditForm({ product }: Props) {
         <div>
           {message && (
             <p className={`text-sm font-medium ${
-              message.includes('success') ? 'text-green-600' : 'text-red-600'
+              messageType === 'success' ? 'text-green-600' : 'text-red-600'
             }`}>
-              {message.includes('success') && <FiCheck className="inline mr-1" />}
+              {messageType === 'success' && <FiCheck className="inline mr-1" />}
               {message}
             </p>
           )}
         </div>
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || uploading}
           className={`inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-colors ${
-            loading
+            loading || uploading
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
               : 'bg-primary-600 text-white hover:bg-primary-700'
           }`}
         >
-          {loading ? (
+          {loading || uploading ? (
             <>
               <FiLoader className="w-5 h-5 animate-spin" />
-              Saving...
+              {uploading ? 'Uploading Images...' : 'Saving...'}
             </>
           ) : (
             <>
@@ -361,4 +546,3 @@ export default function ProductEditForm({ product }: Props) {
     </form>
   );
 }
-

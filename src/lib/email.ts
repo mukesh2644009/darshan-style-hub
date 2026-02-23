@@ -134,7 +134,7 @@ function getWelcomeEmailTemplate(customerName: string): string {
                 Thank you for joining the ${SHOP_NAME} family! We're thrilled to have you with us.
               </p>
               <p style="color: #4b5563; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">
-                Get ready to explore our exquisite collection of traditional Indian wear - elegant suits and trendy kurtis.
+                Get ready to explore our exquisite collection of traditional Indian wear - elegant suits and trendy co ord sets.
               </p>
               
               <!-- Special Offer Box -->
@@ -172,10 +172,10 @@ function getWelcomeEmailTemplate(customerName: string): string {
                     </a>
                   </td>
                   <td style="padding: 10px; text-align: center;">
-                    <a href="${SHOP_WEBSITE}/products?category=Kurtis" style="text-decoration: none;">
+                    <a href="${SHOP_WEBSITE}/products?category=Co Ord Sets" style="text-decoration: none;">
                       <div style="background-color: #fef3c7; padding: 20px; border-radius: 12px;">
                         <p style="font-size: 32px; margin: 0 0 5px;">👚</p>
-                        <p style="color: #d97706; font-weight: 600; margin: 0;">Kurtis</p>
+                        <p style="color: #d97706; font-weight: 600; margin: 0;">Co Ord Sets</p>
                       </div>
                     </a>
                   </td>

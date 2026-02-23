@@ -1,15 +1,122 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiHeart, FiShare2, FiMinus, FiPlus, FiStar, FiTruck, FiRefreshCw, FiShield, FiChevronRight } from 'react-icons/fi';
+import { FiHeart, FiShare2, FiMinus, FiPlus, FiStar, FiTruck, FiRefreshCw, FiShield, FiChevronRight, FiCheck, FiX } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { Product } from '@/lib/products';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import ProductCard from '@/components/ProductCard';
 import { createWhatsAppOrderLink, createWhatsAppShareLink } from '@/components/WhatsAppButton';
+
+function stripEmojis(text: string): string {
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]|[\uFE00-\uFE0F]|[\u200D]|[\u20E3]|[\u2300-\u23FF]|[\u2B50-\u2B55]|[\u25A0-\u25FF]/g, '').trim();
+}
+
+function DescriptionSection({ product }: { product: Product }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <section>
+        <div className="grid md:grid-cols-2 gap-8">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm h-48 animate-pulse" />
+          <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm h-48 animate-pulse" />
+        </div>
+      </section>
+    );
+  }
+
+  const headingPattern = /^[\s]*(?:product\s+description|description|key\s+features?|features?|highlights?|details?|specifications?|about\s+this\s+product|package\s+contains?)\s*:?\s*$/i;
+  const bulletPattern = /^[\s]*[-•*]+\s*/;
+
+  const lines = product.description
+    .split(/\n/)
+    .map(l => stripEmojis(l).trim())
+    .filter(l => l.length > 0);
+
+  const descLines: string[] = [];
+  const featureLines: string[] = [];
+  let inFeatures = false;
+
+  for (const line of lines) {
+    if (headingPattern.test(line)) {
+      if (/key\s+features?|features?|highlights?|specifications?|package\s+contains?/i.test(line)) {
+        inFeatures = true;
+      }
+      continue;
+    }
+
+    const cleaned = line.replace(bulletPattern, '').trim();
+    if (!cleaned) continue;
+
+    if (inFeatures || bulletPattern.test(line)) {
+      featureLines.push(cleaned);
+      inFeatures = true;
+    } else {
+      descLines.push(cleaned);
+    }
+  }
+
+  return (
+    <section>
+      <div className="grid md:grid-cols-2 gap-8">
+        <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm">
+          <h2 className="font-display text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="w-1 h-6 bg-primary-600 rounded-full" />
+            Product Description
+          </h2>
+          <div className="text-gray-600 leading-relaxed space-y-3">
+            {descLines.length > 0 ? (
+              descLines.map((line, idx) => <p key={idx}>{line}</p>)
+            ) : (
+              <p>{stripEmojis(product.description)}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm">
+          <h2 className="font-display text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="w-1 h-6 bg-primary-600 rounded-full" />
+            Key Features
+          </h2>
+
+          {featureLines.length > 0 && (
+            <div className="space-y-2.5 mb-6">
+              {featureLines.map((feat, idx) => (
+                <div key={idx} className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 mt-0.5 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <FiCheck size={12} />
+                  </span>
+                  <span className="text-gray-700 text-sm leading-relaxed">{feat}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-0 border border-gray-100 rounded-xl overflow-hidden">
+            {[
+              { label: 'Category', value: product.category },
+              ...(product.subcategory ? [{ label: 'Type', value: product.subcategory }] : []),
+              { label: 'Available Sizes', value: product.sizes.join(', ') },
+              { label: 'Available Colors', value: product.colors.map(c => c.name).join(', ') },
+              { label: 'Availability', value: product.inStock ? 'In Stock' : 'Out of Stock' },
+            ].map((item, idx) => (
+              <div key={idx} className={`flex items-start justify-between px-4 py-2.5 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                <span className="text-gray-500 text-sm">{item.label}</span>
+                <span className="text-gray-900 text-sm font-medium text-right max-w-[55%]">{item.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 interface ProductDetailClientProps {
   product: Product;
@@ -25,7 +132,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const isWishlisted = isInWishlist(product.id);
-  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -99,8 +206,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-10">
           {/* Images */}
           <div className="space-y-4">
             {/* Main Image */}
@@ -178,14 +285,11 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
               )}
             </div>
 
-            {/* Description */}
-            <p className="text-gray-600 mb-8 leading-relaxed">{product.description}</p>
-
             {/* Size Selection */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-medium text-gray-900">Select Size</h3>
-                <button className="text-sm text-primary-600 hover:text-primary-700">Size Guide</button>
+                <button type="button" onClick={() => setShowSizeGuide(true)} className="text-sm text-primary-600 hover:text-primary-700 underline">Size Guide</button>
               </div>
               <div className="flex flex-wrap gap-3">
                 {product.sizes.map((size) => (
@@ -325,6 +429,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
           </div>
         </div>
 
+        {/* Description & Key Features */}
+        <DescriptionSection product={product} />
+
         {/* Related Products */}
         {relatedProducts.length > 0 && (
           <section className="mt-16">
@@ -339,6 +446,96 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
           </section>
         )}
       </div>
+      {/* Size Guide Modal */}
+      {showSizeGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowSizeGuide(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white rounded-t-2xl border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">Size Guide</h2>
+              <button
+                type="button"
+                onClick={() => setShowSizeGuide(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Size Chart */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">
+                  {product.category} Size Chart
+                </h3>
+                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-primary-50 text-primary-900">
+                        <th className="px-4 py-2.5 text-left font-semibold">Size</th>
+                        <th className="px-4 py-2.5 text-center font-semibold">Bust (in)</th>
+                        <th className="px-4 py-2.5 text-center font-semibold">Waist (in)</th>
+                        <th className="px-4 py-2.5 text-center font-semibold">Hip (in)</th>
+                        <th className="px-4 py-2.5 text-center font-semibold">Length (in)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { size: 'XS', bust: '32', waist: '26', hip: '35', length: '42' },
+                        { size: 'S', bust: '34', waist: '28', hip: '37', length: '43' },
+                        { size: 'M', bust: '36', waist: '30', hip: '39', length: '44' },
+                        { size: 'L', bust: '38', waist: '32', hip: '41', length: '45' },
+                        { size: 'XL', bust: '40', waist: '34', hip: '43', length: '46' },
+                        { size: 'XXL', bust: '42', waist: '36', hip: '45', length: '47' },
+                        { size: 'XXXL', bust: '44', waist: '38', hip: '47', length: '48' },
+                      ].map((row, idx) => (
+                        <tr key={row.size} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} ${product.sizes.includes(row.size) ? '' : 'opacity-40'}`}>
+                          <td className="px-4 py-2.5 font-medium text-gray-900">{row.size}</td>
+                          <td className="px-4 py-2.5 text-center text-gray-600">{row.bust}</td>
+                          <td className="px-4 py-2.5 text-center text-gray-600">{row.waist}</td>
+                          <td className="px-4 py-2.5 text-center text-gray-600">{row.hip}</td>
+                          <td className="px-4 py-2.5 text-center text-gray-600">{row.length}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-gray-400 mt-2">Sizes not available for this product are faded.</p>
+              </div>
+
+              {/* How to Measure */}
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">How to Measure</h3>
+                <div className="space-y-2.5 text-sm text-gray-600">
+                  <div className="flex items-start gap-2">
+                    <span className="w-5 h-5 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">1</span>
+                    <span><strong>Bust:</strong> Measure around the fullest part of your chest.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-5 h-5 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">2</span>
+                    <span><strong>Waist:</strong> Measure around the narrowest part of your waist.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-5 h-5 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">3</span>
+                    <span><strong>Hip:</strong> Measure around the fullest part of your hips.</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="w-5 h-5 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-bold">4</span>
+                    <span><strong>Length:</strong> Measure from the shoulder to the desired length.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tips */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <p className="text-sm text-amber-800">
+                  <strong>Tip:</strong> If you are between sizes, we recommend choosing the larger size for a comfortable fit. For any sizing help, chat with us on WhatsApp.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

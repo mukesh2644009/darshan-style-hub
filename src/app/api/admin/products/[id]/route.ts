@@ -52,7 +52,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival, sizes } = body;
+    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival, sizes, images } = body;
 
     // Validate required fields
     if (!sku || !name || !description || price === undefined) {
@@ -100,6 +100,19 @@ export async function PATCH(
             data: { quantity: sizeData.quantity || 0 }
           });
         }
+      }
+    }
+
+    // Update images if provided
+    if (images && Array.isArray(images)) {
+      await prisma.productImage.deleteMany({ where: { productId: params.id } });
+      for (const url of images) {
+        await prisma.productImage.create({
+          data: {
+            url,
+            productId: params.id,
+          },
+        });
       }
     }
 

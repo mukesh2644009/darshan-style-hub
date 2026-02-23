@@ -54,9 +54,9 @@ export default async function ProductsPage() {
           </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm p-4">
-          <p className="text-sm text-gray-500">Kurtis</p>
+          <p className="text-sm text-gray-500">Co Ord Sets</p>
           <p className="text-2xl font-bold text-orange-600">
-            {products.filter(p => p.category === 'Kurtis').length}
+            {products.filter(p => p.category === 'Co Ord Sets').length}
           </p>
         </div>
       </div>

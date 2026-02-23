@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: 'Product Not Found' };
   }
 
-  const title = `${product.name} | Darshan Style Hub - Designer Suits & Kurtis`;
+  const title = `${product.name} | Darshan Style Hub - Designer Suits & Co Ord Sets`;
   const description = product.description.length > 160 
     ? product.description.slice(0, 157) + '...' 
     : product.description;

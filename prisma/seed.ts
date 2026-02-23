@@ -55,14 +55,14 @@ async function main() {
 
   await prisma.category.create({
     data: {
-      name: 'Kurtis',
+      name: 'Co Ord Sets',
       subcategories: {
         create: [
-          { name: 'Cotton Kurtis' },
-          { name: 'Printed Kurtis' },
-          { name: 'Embroidered Kurtis' },
-          { name: 'Party Wear Kurtis' },
-          { name: 'Casual Kurtis' },
+          { name: 'Printed Co Ord Sets' },
+          { name: 'Embroidered Co Ord Sets' },
+          { name: 'Party Wear Co Ord Sets' },
+          { name: 'Casual Co Ord Sets' },
+          { name: 'Cotton Co Ord Sets' },
         ],
       },
     },
@@ -235,8 +235,8 @@ async function main() {
       description: 'Elegant cream kurti with beautiful golden block print design. Features button placket and 3/4 sleeves. Perfect with churidar or leggings.',
       price: 1299,
       originalPrice: 1799,
-      category: 'Kurtis',
-      subcategory: 'Printed Kurtis',
+      category: 'Co Ord Sets',
+      subcategory: 'Printed Co Ord Sets',
       featured: true,
       newArrival: true,
       rating: 4.7,
@@ -257,8 +257,8 @@ async function main() {
       description: 'Trendy patchwork kurti with colorful geometric patterns. Made from soft cotton with lace trim on sleeves. Stylish with jeans or pants.',
       price: 999,
       originalPrice: 1499,
-      category: 'Kurtis',
-      subcategory: 'Cotton Kurtis',
+      category: 'Co Ord Sets',
+      subcategory: 'Cotton Co Ord Sets',
       featured: true,
       newArrival: true,
       rating: 4.5,
@@ -279,8 +279,8 @@ async function main() {
       description: 'Beautiful short kurti with traditional paisley print in golden. Features lace detailing on placket and sleeves. Perfect casual wear.',
       price: 899,
       originalPrice: 1299,
-      category: 'Kurtis',
-      subcategory: 'Casual Kurtis',
+      category: 'Co Ord Sets',
+      subcategory: 'Casual Co Ord Sets',
       featured: true,
       newArrival: true,
       rating: 4.4,
@@ -301,8 +301,8 @@ async function main() {
       description: 'Elegant Lucknowi chikankari hand-embroidered kurti. Delicate white thread work on soft cotton. Timeless traditional elegance.',
       price: 1599,
       originalPrice: 2199,
-      category: 'Kurtis',
-      subcategory: 'Embroidered Kurtis',
+      category: 'Co Ord Sets',
+      subcategory: 'Embroidered Co Ord Sets',
       featured: true,
       newArrival: false,
       rating: 4.8,
@@ -323,8 +323,8 @@ async function main() {
       description: 'Stunning party wear kurti with mirror work and sequin embellishments. Perfect for festivals and celebrations.',
       price: 1999,
       originalPrice: 2799,
-      category: 'Kurtis',
-      subcategory: 'Party Wear Kurtis',
+      category: 'Co Ord Sets',
+      subcategory: 'Party Wear Co Ord Sets',
       featured: true,
       newArrival: false,
       rating: 4.6,
@@ -345,8 +345,8 @@ async function main() {
       description: 'Comfortable A-line cotton kurti for daily wear. Simple and elegant with side pockets. Breathable fabric for all-day comfort.',
       price: 799,
       originalPrice: 1099,
-      category: 'Kurtis',
-      subcategory: 'Cotton Kurtis',
+      category: 'Co Ord Sets',
+      subcategory: 'Cotton Co Ord Sets',
       featured: false,
       newArrival: false,
       rating: 4.3,
@@ -390,7 +390,7 @@ async function main() {
     });
   }
 
-  console.log('✓ Created 14 products (4 Sarees + 3 Suits + 7 Kurtis)');
+  console.log('✓ Created 14 products (4 Sarees + 3 Suits + 7 Co Ord Sets)');
 
   // Create Admin user
   await prisma.user.create({

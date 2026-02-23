@@ -203,7 +203,7 @@ export const products: Product[] = [
 ];
 
 export const categories = [
-  { name: "Women", subcategories: ["Sarees", "Lehengas", "Suits", "Kurtis"] },
+  { name: "Women", subcategories: ["Sarees", "Lehengas", "Suits", "Co Ord Sets"] },
   { name: "Men", subcategories: ["Kurtas", "Sherwanis", "Jackets", "Dhotis"] },
   { name: "Kids", subcategories: ["Traditional", "Casual", "Party Wear"] },
   { name: "Accessories", subcategories: ["Dupattas", "Stoles", "Jewelry"] }

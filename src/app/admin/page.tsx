@@ -6,13 +6,15 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function getStats() {
-  const [ordersCount, productsCount, customersCount, orders] = await Promise.all([
+  const [ordersCount, productsCount, customersCount, orders, suitsCount, coOrdSetsCount] = await Promise.all([
     prisma.order.count(),
     prisma.product.count(),
     prisma.user.count(),
     prisma.order.findMany({
       select: { total: true },
     }),
+    prisma.product.count({ where: { category: 'Suits' } }),
+    prisma.product.count({ where: { category: 'Co Ord Sets' } }),
   ]);
 
   const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
@@ -22,6 +24,8 @@ async function getStats() {
     productsCount,
     customersCount,
     totalRevenue,
+    suitsCount,
+    coOrdSetsCount,
   };
 }
 
@@ -112,6 +116,40 @@ export default async function AdminDashboard() {
             </div>
           </Link>
         ))}
+      </div>
+
+      {/* Category Breakdown */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <Link
+          href="/admin/products"
+          className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow border-l-4 border-purple-500"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500 font-medium">Suits</p>
+              <p className="text-3xl font-bold text-purple-600 mt-1">{stats.suitsCount}</p>
+              <p className="text-xs text-gray-400 mt-1">products listed</p>
+            </div>
+            <div className="bg-purple-100 p-4 rounded-xl">
+              <FiPackage className="w-8 h-8 text-purple-600" />
+            </div>
+          </div>
+        </Link>
+        <Link
+          href="/admin/products"
+          className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow border-l-4 border-orange-500"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500 font-medium">Co Ord Sets</p>
+              <p className="text-3xl font-bold text-orange-600 mt-1">{stats.coOrdSetsCount}</p>
+              <p className="text-xs text-gray-400 mt-1">products listed</p>
+            </div>
+            <div className="bg-orange-100 p-4 rounded-xl">
+              <FiPackage className="w-8 h-8 text-orange-600" />
+            </div>
+          </div>
+        </Link>
       </div>
 
       {/* Recent Orders */}

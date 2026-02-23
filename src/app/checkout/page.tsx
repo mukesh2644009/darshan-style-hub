@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiChevronLeft, FiSmartphone, FiTruck, FiAlertCircle, FiLoader, FiLock, FiCopy, FiCheck, FiInfo } from 'react-icons/fi';
+import { FiChevronLeft, FiTruck, FiAlertCircle, FiLoader, FiLock, FiCheck, FiInfo } from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
 import { validateEmail } from '@/lib/validation';
@@ -13,7 +14,8 @@ export default function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCartStore();
   const { user, isAuthenticated, isLoading, checkAuth } = useAuthStore();
   const router = useRouter();
-  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cod'>('upi');
+  const WHATSAPP_NUMBER = '919019076335';
+  const [paymentMethod, setPaymentMethod] = useState<'whatsapp' | 'cod'>('whatsapp');
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [orderLoading, setOrderLoading] = useState(false);
@@ -30,16 +32,6 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [orderTotal, setOrderTotal] = useState(0);
   const [orderPaymentMethod, setOrderPaymentMethod] = useState('');
-  const [upiCopied, setUpiCopied] = useState(false);
-  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
-
-  const UPI_ID = 'parvati23@boi';
-
-  const copyUpiId = () => {
-    navigator.clipboard.writeText(UPI_ID);
-    setUpiCopied(true);
-    setTimeout(() => setUpiCopied(false), 2000);
-  };
 
   useEffect(() => {
     checkAuth();
@@ -108,6 +100,7 @@ export default function CheckoutPage() {
   const subtotal = getTotalPrice();
   const shipping = subtotal >= 999 ? 0 : 99;
   const codCharge = paymentMethod === 'cod' ? 10 : 0;
+  const isWhatsApp = paymentMethod === 'whatsapp';
   const total = subtotal + shipping + codCharge;
 
   const handlePlaceOrder = async () => {
@@ -149,7 +142,7 @@ export default function CheckoutPage() {
           shippingCity: formData.city.trim(),
           shippingState: formData.state.trim(),
           shippingPincode: formData.pincode.trim(),
-          paymentMethod: paymentMethod === 'cod' ? 'COD' : 'UPI',
+          paymentMethod: paymentMethod === 'cod' ? 'COD' : 'UPI (WhatsApp)',
         }),
       });
 
@@ -158,7 +151,7 @@ export default function CheckoutPage() {
       if (response.ok) {
         setOrderId(data.id || '');
         setOrderTotal(data.total || total);
-        setOrderPaymentMethod(paymentMethod === 'cod' ? 'COD' : 'UPI');
+        setOrderPaymentMethod(paymentMethod === 'cod' ? 'COD' : 'WHATSAPP');
         setOrderPlaced(true);
         clearCart();
       } else {
@@ -172,71 +165,63 @@ export default function CheckoutPage() {
   };
 
   if (orderPlaced) {
-    // UPI: Show payment screen first, then confirmation after "I have paid"
-    if (orderPaymentMethod === 'UPI' && !paymentConfirmed) {
+    const orderIdShort = orderId ? `#${orderId.slice(0, 8).toUpperCase()}` : '';
+    const whatsappPaymentMsg = `Hi! I just placed an order on Darshan Style Hub.\n\nOrder ID: ${orderIdShort}\nAmount: ₹${orderTotal.toLocaleString('en-IN')}\nName: ${formData.firstName} ${formData.lastName}\nPhone: ${formData.phone}\n\nPlease share the payment QR code or link.\n\n🌐 Website: https://www.darshanstylehub.com\n📸 Instagram: https://www.instagram.com/stylehubjaipur/\n📘 Facebook: https://www.facebook.com/profile.php?id=61587889244337`;
+    const whatsappLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappPaymentMsg)}`;
+
+    // WhatsApp payment: show WhatsApp redirect screen
+    if (orderPaymentMethod === 'WHATSAPP') {
       return (
         <div className="min-h-screen bg-accent-50 flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-white rounded-2xl p-8 shadow-lg">
             <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiSmartphone className="w-8 h-8 text-blue-600" />
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FaWhatsapp className="w-8 h-8 text-green-600" />
               </div>
-              <h1 className="font-display text-2xl font-bold text-gray-900 mb-1">
-                Complete Your Payment
+              <h1 className="font-display text-2xl font-bold text-gray-900 mb-2">
+                Order Placed Successfully!
               </h1>
               {orderId && (
                 <p className="text-sm text-gray-500">
-                  Order ID: <span className="font-medium text-gray-900">#{orderId.slice(0, 8).toUpperCase()}</span>
+                  Order ID: <span className="font-medium text-gray-900">{orderIdShort}</span>
                 </p>
               )}
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center mb-6">
-              <p className="text-sm text-blue-600 mb-1">Amount to Pay</p>
-              <p className="text-3xl font-bold text-blue-700">₹{orderTotal.toLocaleString('en-IN')}</p>
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center mb-6">
+              <p className="text-sm text-green-600 mb-1">Amount to Pay</p>
+              <p className="text-3xl font-bold text-green-700">₹{orderTotal.toLocaleString('en-IN')}</p>
             </div>
 
-            <div className="bg-gray-50 rounded-xl p-4 mb-4">
-              <p className="text-sm text-gray-500 mb-2 text-center">Pay to this UPI ID</p>
-              <div className="flex items-center justify-between bg-white border-2 border-dashed border-primary-300 rounded-lg px-4 py-3">
-                <span className="font-mono font-bold text-lg text-gray-900">{UPI_ID}</span>
-                <button
-                  onClick={copyUpiId}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-primary-100 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-200 transition-colors"
-                >
-                  {upiCopied ? <><FiCheck className="w-4 h-4" /> Copied!</> : <><FiCopy className="w-4 h-4" /> Copy</>}
-                </button>
-              </div>
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+              <p className="text-sm text-green-800 text-center">
+                Tap the button below to connect with us on WhatsApp. We&apos;ll send you a <strong>payment QR code / link</strong> to complete your order.
+              </p>
             </div>
 
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-              <p className="text-sm font-medium text-amber-800 mb-2">How to pay:</p>
-              <ol className="text-sm text-amber-700 space-y-1.5">
-                <li>1. Open <strong>GPay / PhonePe / Paytm</strong></li>
-                <li>2. Tap <strong>&quot;Pay to UPI ID&quot;</strong></li>
-                <li>3. Enter UPI ID: <strong>{UPI_ID}</strong></li>
-                <li>4. Enter amount: <strong>₹{orderTotal.toLocaleString('en-IN')}</strong></li>
-                <li>5. Complete the payment</li>
-              </ol>
-            </div>
-
-            <button
-              onClick={() => setPaymentConfirmed(true)}
-              className="w-full py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+            <a
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-3.5 bg-green-500 hover:bg-green-600 text-white rounded-xl font-medium flex items-center justify-center gap-2 transition-colors text-lg"
             >
-              <FiCheck className="w-5 h-5" />
-              I Have Completed the Payment
-            </button>
+              <FaWhatsapp className="w-6 h-6" />
+              Chat on WhatsApp to Pay
+            </a>
 
-            <p className="text-xs text-gray-400 text-center mt-3">
-              Please complete the payment before clicking this button
+            <p className="text-xs text-gray-400 text-center mt-4 mb-6">
+              Order confirmation has also been sent to your email
             </p>
+
+            <Link href="/products" className="w-full py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors text-center inline-block">
+              Continue Shopping
+            </Link>
           </div>
         </div>
       );
     }
 
-    // Order Confirmation Screen (shown for COD, or UPI after payment confirmed)
+    // COD Confirmation Screen
     return (
       <div className="min-h-screen bg-accent-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl p-8 text-center shadow-lg">
@@ -251,23 +236,14 @@ export default function CheckoutPage() {
           </p>
           {orderId && (
             <p className="text-sm text-gray-500 mb-4">
-              Order ID: <span className="font-medium text-gray-900">#{orderId.slice(0, 8).toUpperCase()}</span>
+              Order ID: <span className="font-medium text-gray-900">{orderIdShort}</span>
             </p>
           )}
-          {orderPaymentMethod === 'COD' && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-6">
-              <p className="text-sm text-amber-800">
-                <strong>Cash on Delivery</strong> — Please keep <strong>₹{orderTotal.toLocaleString('en-IN')}</strong> ready at the time of delivery.
-              </p>
-            </div>
-          )}
-          {orderPaymentMethod === 'UPI' && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-6">
-              <p className="text-sm text-green-800">
-                <strong>UPI Payment</strong> — Your payment of <strong>₹{orderTotal.toLocaleString('en-IN')}</strong> will be verified shortly.
-              </p>
-            </div>
-          )}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-6">
+            <p className="text-sm text-amber-800">
+              <strong>Cash on Delivery</strong> — Please keep <strong>₹{orderTotal.toLocaleString('en-IN')}</strong> ready at the time of delivery.
+            </p>
+          </div>
           <Link href="/products" className="btn-primary inline-block">
             Continue Shopping
           </Link>
@@ -441,23 +417,23 @@ export default function CheckoutPage() {
               <div className="space-y-3">
                 <label
                   className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                    paymentMethod === 'upi'
-                      ? 'border-primary-600 bg-primary-50'
-                      : 'border-accent-200 hover:border-primary-300'
+                    paymentMethod === 'whatsapp'
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-accent-200 hover:border-green-300'
                   }`}
                 >
                   <input
                     type="radio"
                     name="payment"
-                    value="upi"
-                    checked={paymentMethod === 'upi'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'upi' | 'cod')}
-                    className="accent-primary-600"
+                    value="whatsapp"
+                    checked={paymentMethod === 'whatsapp'}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'whatsapp' | 'cod')}
+                    className="accent-green-600"
                   />
-                  <FiSmartphone size={24} className="text-primary-600" />
+                  <FaWhatsapp size={24} className="text-green-600" />
                   <div>
-                    <p className="font-medium text-gray-900">UPI</p>
-                    <p className="text-sm text-gray-500">GPay, PhonePe, Paytm</p>
+                    <p className="font-medium text-gray-900">Pay via WhatsApp</p>
+                    <p className="text-sm text-gray-500">We&apos;ll send you payment QR/link on WhatsApp</p>
                   </div>
                 </label>
 
@@ -473,7 +449,7 @@ export default function CheckoutPage() {
                     name="payment"
                     value="cod"
                     checked={paymentMethod === 'cod'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'upi' | 'cod')}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'whatsapp' | 'cod')}
                     className="accent-primary-600"
                   />
                   <FiTruck size={24} className="text-primary-600" />
@@ -487,7 +463,7 @@ export default function CheckoutPage() {
                   <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
                     <FiInfo className="w-5 h-5 flex-shrink-0 mt-0.5" />
                     <p className="text-sm">
-                      <strong>₹10 extra charge</strong> will be added for Cash on Delivery. Choose UPI to avoid this charge.
+                      <strong>₹10 extra charge</strong> will be added for Cash on Delivery. Choose &quot;Pay via WhatsApp&quot; to avoid this charge.
                     </p>
                   </div>
                 )}

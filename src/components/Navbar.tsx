@@ -75,8 +75,8 @@ export default function Navbar() {
             <Link href="/products?category=Suits" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
               Suits
             </Link>
-            <Link href="/products?category=Kurtis" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
-              Kurtis
+            <Link href="/products?category=Co Ord Sets" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
+              Co Ord Sets
             </Link>
             <Link href="/products?newArrival=true" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
               New Arrivals
@@ -216,8 +216,8 @@ export default function Navbar() {
             <Link href="/products?category=Suits" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               Suits
             </Link>
-            <Link href="/products?category=Kurtis" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
-              Kurtis
+            <Link href="/products?category=Co Ord Sets" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+              Co Ord Sets
             </Link>
             <Link href="/products?newArrival=true" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               New Arrivals

@@ -48,21 +48,25 @@ export default async function ProductEditPage({ params }: { params: { id: string
         <div className="space-y-6">
           {/* Product Image Preview */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Current Image</h2>
-            <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-              {product.images[0] ? (
-                <Image
-                  src={product.images[0].url}
-                  alt={product.name}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                  <FiPackage className="w-16 h-16" />
-                </div>
-              )}
-            </div>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Current Images ({product.images.length})</h2>
+            {product.images.length > 0 ? (
+              <div className="space-y-3">
+                {product.images.map((img, idx) => (
+                  <div key={img.id} className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                    <Image
+                      src={img.url}
+                      alt={`${product.name} - ${idx + 1}`}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="aspect-square bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
+                <FiPackage className="w-16 h-16" />
+              </div>
+            )}
           </div>
 
           {/* Quick Info */}

@@ -405,7 +405,7 @@ async function main() {
           name: 'Store',
           phone: '+91 98765 43210',
           addressLine1: 'Johari Bazaar',
-          addressLine2: 'Near Hawa Mahal',
+          addressLine2: '',
           city: 'Jaipur',
           state: 'Rajasthan',
           pincode: '302001',

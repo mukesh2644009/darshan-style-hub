@@ -119,7 +119,7 @@ export default function ContactPage() {
                   <div>
                     <p className="text-sm text-gray-500">Address</p>
                     <p className="font-medium text-gray-900">
-                      Johari Bazaar, Near Hawa Mahal<br />
+                      Johari Bazaar,<br />
                       Jaipur, Rajasthan 302001
                     </p>
                   </div>

@@ -134,7 +134,7 @@ export default function Footer() {
               <li className="flex items-start gap-3">
                 <FiMapPin className="mt-1 flex-shrink-0 text-primary-400" />
                 <span className="text-accent-300">
-                  Johari Bazaar, Near Hawa Mahal<br />
+                  Johari Bazaar,<br />
                   Jaipur, Rajasthan 302001
                 </span>
               </li>

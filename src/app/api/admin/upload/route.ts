@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
-import { put } from '@vercel/blob';
+import { writeFile, mkdir } from 'fs/promises';
+import path from 'path';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
@@ -29,6 +29,9 @@ export async function POST(request: Request) {
 
     const categoryFolder = category.toLowerCase().replace(/\s+/g, '-');
     const folder = productFolder || `product-${Date.now()}`;
+    const dirPath = path.join(process.cwd(), 'public', 'products', categoryFolder, folder);
+
+    await mkdir(dirPath, { recursive: true });
 
     const uploadedPaths: string[] = [];
 
@@ -47,13 +50,13 @@ export async function POST(request: Request) {
       }
 
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const blobPath = `products/${categoryFolder}/${folder}/${i + 1}.${ext}`;
+      const fileName = `${i + 1}.${ext}`;
+      const filePath = path.join(dirPath, fileName);
 
-      const blob = await put(blobPath, file, {
-        access: 'public',
-      });
+      const bytes = await file.arrayBuffer();
+      await writeFile(filePath, Buffer.from(bytes));
 
-      uploadedPaths.push(blob.url);
+      uploadedPaths.push(`/products/${categoryFolder}/${folder}/${fileName}`);
     }
 
     if (uploadedPaths.length === 0) {

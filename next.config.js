@@ -33,7 +33,6 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  transpilePackages: ['@vercel/blob'],
   images: {
     remotePatterns: [
       {
@@ -47,10 +46,6 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.public.blob.vercel-storage.com',
       },
     ],
   },

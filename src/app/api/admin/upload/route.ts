@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
+import { put } from '@vercel/blob';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 export async function POST(request: Request) {
   try {
@@ -27,11 +27,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const categoryFolder = category.toLowerCase();
+    const categoryFolder = category.toLowerCase().replace(/\s+/g, '-');
     const folder = productFolder || `product-${Date.now()}`;
-    const uploadDir = join(process.cwd(), 'public', 'products', categoryFolder, folder);
-
-    await mkdir(uploadDir, { recursive: true });
 
     const uploadedPaths: string[] = [];
 
@@ -50,14 +47,13 @@ export async function POST(request: Request) {
       }
 
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `${i + 1}.${ext}`;
-      const filePath = join(uploadDir, fileName);
+      const blobPath = `products/${categoryFolder}/${folder}/${i + 1}.${ext}`;
 
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      await writeFile(filePath, buffer);
+      const blob = await put(blobPath, file, {
+        access: 'public',
+      });
 
-      uploadedPaths.push(`/products/${categoryFolder}/${folder}/${fileName}`);
+      uploadedPaths.push(blob.url);
     }
 
     if (uploadedPaths.length === 0) {
@@ -70,13 +66,14 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       images: uploadedPaths,
-      folder: `/products/${categoryFolder}/${folder}`,
+      folder: `products/${categoryFolder}/${folder}`,
       count: uploadedPaths.length,
     });
   } catch (error) {
     console.error('Upload error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to upload images';
     return NextResponse.json(
-      { error: 'Failed to upload images' },
+      { error: message },
       { status: 500 }
     );
   }

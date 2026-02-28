@@ -113,7 +113,13 @@ export default function ProductEditForm({ product }: Props) {
         method: 'POST',
         body: uploadFormData,
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error('Upload failed — server returned an invalid response. If on Vercel, file uploads to filesystem are not supported. Upload images locally and push via git.');
+      }
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       setUploading(false);
       return data.images;

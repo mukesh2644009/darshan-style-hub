@@ -9,6 +9,7 @@ import { FaWhatsapp } from 'react-icons/fa';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
 import { validateEmail } from '@/lib/validation';
+import { fbInitiateCheckout, fbPurchase } from '@/lib/facebook-pixel';
 
 export default function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCartStore();
@@ -50,6 +51,16 @@ export default function CheckoutPage() {
       }));
     }
   }, [user]);
+
+  useEffect(() => {
+    if (items.length > 0) {
+      fbInitiateCheckout(
+        items.map(item => item.product.id),
+        getTotalPrice(),
+        items.reduce((sum, item) => sum + item.quantity, 0)
+      );
+    }
+  }, []);
 
   if (isLoading) {
     return (
@@ -153,6 +164,16 @@ export default function CheckoutPage() {
         setOrderTotal(data.total || total);
         setOrderPaymentMethod(paymentMethod === 'cod' ? 'COD' : 'WHATSAPP');
         setOrderPlaced(true);
+
+        fbPurchase(
+          data.id || '',
+          items.map(item => item.product.id),
+          data.total || total,
+          items.reduce((sum, item) => sum + item.quantity, 0),
+          formData.email,
+          formData.phone
+        );
+
         clearCart();
       } else {
         setErrors({ form: data.error || 'Failed to place order. Please try again.' });

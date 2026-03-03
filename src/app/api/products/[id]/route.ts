@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { trackViewContent } from '@/lib/facebook-capi';
 
 export async function GET(
   request: Request,
@@ -21,6 +22,17 @@ export async function GET(
         { status: 404 }
       );
     }
+
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
+    const ua = request.headers.get('user-agent') || '';
+    trackViewContent(
+      product.id,
+      product.name,
+      product.category,
+      product.price,
+      `https://darshanstylehub.com/products/${product.id}`,
+      { clientIpAddress: ip, clientUserAgent: ua }
+    ).catch(() => {});
 
     return NextResponse.json(product);
   } catch (error) {

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Product } from '@/lib/products';
+import { fbAddToCart } from '@/lib/facebook-pixel';
 
 export interface CartItem {
   product: Product;
@@ -47,6 +48,8 @@ export const useCartStore = create<CartState>()(
             items: [...items, { product, quantity: 1, selectedSize: size, selectedColor: color }],
           });
         }
+
+        fbAddToCart(product.id, product.name, product.category, product.price);
       },
 
       removeItem: (productId, size, color) => {

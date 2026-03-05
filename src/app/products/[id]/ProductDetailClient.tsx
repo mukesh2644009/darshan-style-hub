@@ -216,7 +216,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 src={product.images[selectedImage]}
                 alt={product.name}
                 fill
-                className="object-cover"
+                className="object-cover object-top"
                 priority
               />
               {discount > 0 && (
@@ -245,7 +245,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                       selectedImage === index ? 'border-primary-600' : 'border-transparent'
                     }`}
                   >
-                    <Image src={image} alt={`${product.name} ${index + 1}`} fill className="object-cover" />
+                    <Image src={image} alt={`${product.name} ${index + 1}`} fill className="object-cover object-top" />
                   </button>
                 ))}
               </div>

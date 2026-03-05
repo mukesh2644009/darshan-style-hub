@@ -75,9 +75,13 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Upload error:', error);
     const message = error instanceof Error ? error.message : 'Failed to upload images';
+    const isReadOnlyFs = message.includes('ENOENT') || message.includes('EROFS') || message.includes('read-only');
     return NextResponse.json(
-      { error: message },
-      { status: 500 }
+      { error: isReadOnlyFs
+          ? 'Image upload is only available when running locally. Please upload images locally (npm run dev), then push to deploy.'
+          : message
+      },
+      { status: isReadOnlyFs ? 400 : 500 }
     );
   }
 }

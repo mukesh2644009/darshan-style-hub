@@ -28,6 +28,22 @@ export const metadata: Metadata = {
     shortcut: '/products/logo.jpeg',
     apple: '/products/logo.jpeg',
   },
+  openGraph: {
+    title: 'Darshan Style Hub | Designer Suits & Co Ord Sets in Jaipur',
+    description: 'Your trusted destination in Jaipur for premium designer suits and co ord sets. Shop Anarkali suits, salwar suits, printed co ord sets, embroidered co ord sets and more.',
+    url: 'https://www.darshanstylehub.com',
+    siteName: 'Darshan Style Hub',
+    images: [
+      {
+        url: 'https://www.darshanstylehub.com/products/logo.jpeg',
+        width: 800,
+        height: 800,
+        alt: 'Darshan Style Hub - Designer Suits & Co Ord Sets',
+      },
+    ],
+    locale: 'en_IN',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({

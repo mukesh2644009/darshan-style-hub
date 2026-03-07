@@ -38,6 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${outfit.variable} ${playfair.variable}`}>
       <head>
+        <meta name="facebook-domain-verification" content="qy5yj0z1grhtj5512r97bdlf8sofiw" />
         <Script id="meta-pixel" strategy="afterInteractive">
           {`
             !function(f,b,e,v,n,t,s)

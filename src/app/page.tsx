@@ -215,7 +215,7 @@ export default async function Home() {
                   Wedding Season Sale
                 </h2>
                 <p className="text-white/80 mb-6 text-lg">
-                  Get up to 40% off on bridal sarees and party wear suits. Use code <span className="font-bold">BRIDE40</span> at checkout.
+                  Get up to 40% off on party wear suits and co ord sets. Explore our exclusive wedding collection.
                 </p>
                 <Link
                   href="/products"

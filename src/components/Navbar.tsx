@@ -36,7 +36,7 @@ export default function Navbar() {
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-accent-200">
       {/* Top Bar */}
       <div className="bg-primary-700 text-white text-center py-2 text-sm">
-        <p>✨ Free Shipping on orders above ₹999 | Use code <span className="font-semibold">DARSHAN10</span> for 10% off</p>
+        <p>✨ Free Shipping on orders above ₹999 | Shop Designer Suits & Co Ord Sets</p>
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

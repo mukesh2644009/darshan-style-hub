@@ -137,26 +137,6 @@ function getWelcomeEmailTemplate(customerName: string): string {
                 Get ready to explore our exquisite collection of traditional Indian wear - elegant suits and trendy co ord sets.
               </p>
               
-              <!-- Special Offer Box -->
-              <table role="presentation" style="width: 100%; border-collapse: collapse; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; margin-bottom: 30px;">
-                <tr>
-                  <td style="padding: 25px; text-align: center;">
-                    <p style="color: #92400e; margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
-                      🎁 Your Exclusive Welcome Gift
-                    </p>
-                    <p style="color: #78350f; margin: 0 0 10px; font-size: 28px; font-weight: bold;">
-                      10% OFF
-                    </p>
-                    <p style="color: #92400e; margin: 0 0 15px; font-size: 14px;">
-                      Use code at checkout:
-                    </p>
-                    <div style="background-color: #ffffff; display: inline-block; padding: 12px 30px; border-radius: 8px; border: 2px dashed #d97706;">
-                      <span style="color: #d97706; font-size: 20px; font-weight: bold; letter-spacing: 2px;">WELCOME10</span>
-                    </div>
-                  </td>
-                </tr>
-              </table>
-              
               <!-- Shop Categories -->
               <p style="color: #1f2937; font-weight: 600; margin: 0 0 15px; font-size: 16px;">
                 Explore Our Collections:

@@ -123,7 +123,6 @@ export default function CheckoutPage() {
       newErrors.email = emailError;
     }
     if (!formData.firstName?.trim()) newErrors.firstName = 'First name is required';
-    if (!formData.lastName?.trim()) newErrors.lastName = 'Last name is required';
     if (!formData.phone?.trim()) newErrors.phone = 'Phone number is required';
     if (!formData.address?.trim()) newErrors.address = 'Address is required';
     if (!formData.city?.trim()) newErrors.city = 'City is required';
@@ -510,7 +509,7 @@ export default function CheckoutPage() {
                   {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
                   <input
                     type="text"
                     value={formData.lastName}
@@ -710,20 +709,6 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 ))}
-              </div>
-
-              {/* Coupon */}
-              <div className="mb-6">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    className="input-field flex-1 text-sm"
-                    placeholder="Enter coupon code"
-                  />
-                  <button className="px-4 py-2 bg-accent-100 text-accent-700 rounded-xl font-medium hover:bg-accent-200 transition-colors text-sm">
-                    Apply
-                  </button>
-                </div>
               </div>
 
               {/* Totals */}

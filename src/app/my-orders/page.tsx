@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FiPackage, FiShoppingBag, FiLoader, FiArrowLeft, FiTrash2 } from 'react-icons/fi';
+import { FiPackage, FiShoppingBag, FiLoader, FiArrowLeft, FiTrash2, FiDownload } from 'react-icons/fi';
 import { useAuthStore } from '@/store/authStore';
+import { downloadReceipt } from '@/lib/generate-receipt';
 
 interface OrderItem {
   id: string;
@@ -21,8 +22,16 @@ interface Order {
   id: string;
   status: string;
   paymentStatus: string;
+  paymentMethod: string;
   total: number;
   createdAt: string;
+  shippingName: string;
+  shippingEmail: string;
+  shippingPhone: string;
+  shippingAddress: string;
+  shippingCity: string;
+  shippingState: string;
+  shippingPincode: string;
   items: OrderItem[];
 }
 
@@ -77,6 +86,38 @@ export default function MyOrdersPage() {
     } catch (error) {
       console.error('Error cancelling order:', error);
     }
+  };
+
+  const handleDownloadReceipt = (order: Order) => {
+    const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const shipping = subtotal >= 999 ? 0 : 99;
+    const codCharge = order.paymentMethod === 'COD' ? 10 : 0;
+    const nameParts = order.shippingName.split(' ');
+
+    downloadReceipt({
+      orderId: order.id,
+      orderDate: new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+      customerName: order.shippingName,
+      customerEmail: order.shippingEmail,
+      customerPhone: order.shippingPhone,
+      shippingAddress: order.shippingAddress,
+      shippingCity: order.shippingCity,
+      shippingState: order.shippingState,
+      shippingPincode: order.shippingPincode,
+      paymentMethod: order.paymentMethod || 'N/A',
+      paymentStatus: order.paymentStatus || 'Pending',
+      items: order.items.map(item => ({
+        name: item.product.name,
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        price: item.price,
+      })),
+      subtotal,
+      shipping,
+      codCharge,
+      total: order.total,
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -172,10 +213,17 @@ export default function MyOrdersPage() {
                         })}
                       </p>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
                       <p className="text-lg font-bold text-gray-900">
                         Total: ₹{order.total.toLocaleString('en-IN')}
                       </p>
+                      <button
+                        onClick={() => handleDownloadReceipt(order)}
+                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors text-sm"
+                      >
+                        <FiDownload className="w-4 h-4" />
+                        Receipt
+                      </button>
                       {order.status === 'PENDING' && (
                         <button
                           onClick={() => cancelOrder(order.id)}

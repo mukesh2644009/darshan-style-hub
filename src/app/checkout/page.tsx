@@ -10,13 +10,15 @@ import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
 import { validateEmail } from '@/lib/validation';
 import { fbInitiateCheckout, fbPurchase } from '@/lib/facebook-pixel';
+import { downloadReceipt } from '@/lib/generate-receipt';
+import { FiDownload } from 'react-icons/fi';
 
 export default function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCartStore();
   const { user, isAuthenticated, isLoading, checkAuth } = useAuthStore();
   const router = useRouter();
   const WHATSAPP_NUMBER = '919019076335';
-  const [paymentMethod, setPaymentMethod] = useState<'whatsapp' | 'cod'>('whatsapp');
+  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'whatsapp' | 'cod'>('upi');
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [orderLoading, setOrderLoading] = useState(false);
@@ -111,7 +113,6 @@ export default function CheckoutPage() {
   const subtotal = getTotalPrice();
   const shipping = subtotal >= 999 ? 0 : 99;
   const codCharge = paymentMethod === 'cod' ? 10 : 0;
-  const isWhatsApp = paymentMethod === 'whatsapp';
   const total = subtotal + shipping + codCharge;
 
   const handlePlaceOrder = async () => {
@@ -153,28 +154,32 @@ export default function CheckoutPage() {
           shippingCity: formData.city.trim(),
           shippingState: formData.state.trim(),
           shippingPincode: formData.pincode.trim(),
-          paymentMethod: paymentMethod === 'cod' ? 'COD' : 'UPI (WhatsApp)',
+          paymentMethod: paymentMethod === 'cod' ? 'COD' : paymentMethod === 'upi' ? 'UPI (Razorpay)' : 'UPI (WhatsApp)',
         }),
       });
 
       const data = await response.json();
       
       if (response.ok) {
-        setOrderId(data.id || '');
-        setOrderTotal(data.total || total);
-        setOrderPaymentMethod(paymentMethod === 'cod' ? 'COD' : 'WHATSAPP');
-        setOrderPlaced(true);
+        if (paymentMethod === 'upi') {
+          await initiateRazorpay(data.id, data.total || total);
+        } else {
+          setOrderId(data.id || '');
+          setOrderTotal(data.total || total);
+          setOrderPaymentMethod(paymentMethod === 'cod' ? 'COD' : 'WHATSAPP');
+          setOrderPlaced(true);
 
-        fbPurchase(
-          data.id || '',
-          items.map(item => item.product.id),
-          data.total || total,
-          items.reduce((sum, item) => sum + item.quantity, 0),
-          formData.email,
-          formData.phone
-        );
+          fbPurchase(
+            data.id || '',
+            items.map(item => item.product.id),
+            data.total || total,
+            items.reduce((sum, item) => sum + item.quantity, 0),
+            formData.email,
+            formData.phone
+          );
 
-        clearCart();
+          clearCart();
+        }
       } else {
         setErrors({ form: data.error || 'Failed to place order. Please try again.' });
       }
@@ -185,10 +190,158 @@ export default function CheckoutPage() {
     }
   };
 
+  const initiateRazorpay = async (orderDbId: string, amount: number) => {
+    try {
+      const res = await fetch('/api/razorpay/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, orderId: orderDbId }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setErrors({ form: data.error || 'Failed to initiate payment' });
+        return;
+      }
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'Darshan Style Hub',
+        description: `Order Payment`,
+        order_id: data.orderId,
+        prefill: {
+          name: `${formData.firstName} ${formData.lastName}`,
+          email: formData.email,
+          contact: formData.phone,
+        },
+        theme: { color: '#9F580A' },
+        handler: async function (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) {
+          const verifyRes = await fetch('/api/razorpay/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              orderId: orderDbId,
+            }),
+          });
+          const verifyData = await verifyRes.json();
+          if (verifyData.success) {
+            setOrderId(orderDbId);
+            setOrderTotal(amount);
+            setOrderPaymentMethod('UPI');
+            setOrderPlaced(true);
+
+            fbPurchase(
+              orderDbId,
+              items.map(item => item.product.id),
+              amount,
+              items.reduce((sum, item) => sum + item.quantity, 0),
+              formData.email,
+              formData.phone
+            );
+
+            clearCart();
+          } else {
+            setErrors({ form: 'Payment verification failed. Please contact support.' });
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setErrors({ form: 'Payment was cancelled. Your order has been saved — you can retry payment.' });
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      setErrors({ form: 'Failed to initiate payment. Please try again.' });
+    }
+  };
+
+  const handleDownloadReceipt = () => {
+    const subtotalVal = items.length > 0
+      ? items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+      : orderTotal;
+    const shippingVal = subtotalVal >= 999 ? 0 : 99;
+    const codVal = orderPaymentMethod === 'COD' ? 10 : 0;
+
+    downloadReceipt({
+      orderId: orderId,
+      orderDate: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+      customerName: `${formData.firstName} ${formData.lastName}`,
+      customerEmail: formData.email,
+      customerPhone: formData.phone,
+      shippingAddress: formData.address,
+      shippingCity: formData.city,
+      shippingState: formData.state,
+      shippingPincode: formData.pincode,
+      paymentMethod: orderPaymentMethod === 'UPI' ? 'UPI (Razorpay)' : orderPaymentMethod === 'WHATSAPP' ? 'UPI (WhatsApp)' : 'Cash on Delivery',
+      paymentStatus: orderPaymentMethod === 'UPI' ? 'Paid' : 'Pending',
+      items: items.length > 0
+        ? items.map(item => ({
+            name: item.product.name,
+            size: item.selectedSize,
+            color: item.selectedColor,
+            quantity: item.quantity,
+            price: item.product.price,
+          }))
+        : [{ name: 'Order Items', size: '-', color: '', quantity: 1, price: orderTotal }],
+      subtotal: subtotalVal,
+      shipping: shippingVal,
+      codCharge: codVal,
+      total: orderTotal,
+    });
+  };
+
   if (orderPlaced) {
     const orderIdShort = orderId ? `#${orderId.slice(0, 8).toUpperCase()}` : '';
     const whatsappPaymentMsg = `Hi! I just placed an order on Darshan Style Hub.\n\nOrder ID: ${orderIdShort}\nAmount: ₹${orderTotal.toLocaleString('en-IN')}\nName: ${formData.firstName} ${formData.lastName}\nPhone: ${formData.phone}\n\nPlease share the payment QR code or link.\n\n🌐 Website: https://www.darshanstylehub.com\n📸 Instagram: https://www.instagram.com/stylehubjaipur/\n📘 Facebook: https://www.facebook.com/profile.php?id=61587889244337`;
     const whatsappLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappPaymentMsg)}`;
+
+    // UPI Payment Success Screen
+    if (orderPaymentMethod === 'UPI') {
+      return (
+        <div className="min-h-screen bg-accent-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-2xl p-8 text-center shadow-lg">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FiCheck className="w-10 h-10 text-green-600" />
+            </div>
+            <h1 className="font-display text-2xl font-bold text-gray-900 mb-2">
+              Payment Successful!
+            </h1>
+            <p className="text-gray-600 mb-4">
+              Thank you for shopping with Darshan Style Hub. Your payment has been confirmed.
+            </p>
+            {orderId && (
+              <p className="text-sm text-gray-500 mb-4">
+                Order ID: <span className="font-medium text-gray-900">{orderIdShort}</span>
+              </p>
+            )}
+            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+              <p className="text-sm text-green-600 mb-1">Amount Paid</p>
+              <p className="text-3xl font-bold text-green-700">₹{orderTotal.toLocaleString('en-IN')}</p>
+              <p className="text-xs text-green-600 mt-1">Paid via UPI</p>
+            </div>
+            <p className="text-sm text-gray-500 mb-6">
+              Order confirmation has been sent to your email.
+            </p>
+            <button
+              onClick={handleDownloadReceipt}
+              className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 mb-3"
+            >
+              <FiDownload /> Download Receipt
+            </button>
+            <Link href="/products" className="w-full py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors text-center inline-block">
+              Continue Shopping
+            </Link>
+          </div>
+        </div>
+      );
+    }
 
     // WhatsApp payment: show WhatsApp redirect screen
     if (orderPaymentMethod === 'WHATSAPP') {
@@ -234,6 +387,12 @@ export default function CheckoutPage() {
               Order confirmation has also been sent to your email
             </p>
 
+            <button
+              onClick={handleDownloadReceipt}
+              className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 mb-3"
+            >
+              <FiDownload /> Download Receipt
+            </button>
             <Link href="/products" className="w-full py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors text-center inline-block">
               Continue Shopping
             </Link>
@@ -265,7 +424,13 @@ export default function CheckoutPage() {
               <strong>Cash on Delivery</strong> — Please keep <strong>₹{orderTotal.toLocaleString('en-IN')}</strong> ready at the time of delivery.
             </p>
           </div>
-          <Link href="/products" className="btn-primary inline-block">
+          <button
+            onClick={handleDownloadReceipt}
+            className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 mb-3"
+          >
+            <FiDownload /> Download Receipt
+          </button>
+          <Link href="/products" className="w-full py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors text-center inline-block">
             Continue Shopping
           </Link>
         </div>
@@ -438,6 +603,28 @@ export default function CheckoutPage() {
               <div className="space-y-3">
                 <label
                   className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                    paymentMethod === 'upi'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-accent-200 hover:border-blue-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="upi"
+                    checked={paymentMethod === 'upi'}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'upi' | 'whatsapp' | 'cod')}
+                    className="accent-blue-600"
+                  />
+                  <FiLock size={24} className="text-blue-600" />
+                  <div>
+                    <p className="font-medium text-gray-900">Pay Online (UPI / Card / Net Banking)</p>
+                    <p className="text-sm text-gray-500">Secure payment via Razorpay</p>
+                  </div>
+                </label>
+
+                <label
+                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     paymentMethod === 'whatsapp'
                       ? 'border-green-500 bg-green-50'
                       : 'border-accent-200 hover:border-green-300'
@@ -448,7 +635,7 @@ export default function CheckoutPage() {
                     name="payment"
                     value="whatsapp"
                     checked={paymentMethod === 'whatsapp'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'whatsapp' | 'cod')}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'upi' | 'whatsapp' | 'cod')}
                     className="accent-green-600"
                   />
                   <FaWhatsapp size={24} className="text-green-600" />
@@ -470,7 +657,7 @@ export default function CheckoutPage() {
                     name="payment"
                     value="cod"
                     checked={paymentMethod === 'cod'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'whatsapp' | 'cod')}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'upi' | 'whatsapp' | 'cod')}
                     className="accent-primary-600"
                   />
                   <FiTruck size={24} className="text-primary-600" />
@@ -484,7 +671,7 @@ export default function CheckoutPage() {
                   <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
                     <FiInfo className="w-5 h-5 flex-shrink-0 mt-0.5" />
                     <p className="text-sm">
-                      <strong>₹10 extra charge</strong> will be added for Cash on Delivery. Choose &quot;Pay via WhatsApp&quot; to avoid this charge.
+                      <strong>₹10 extra charge</strong> will be added for Cash on Delivery. Choose online payment to avoid this charge.
                     </p>
                   </div>
                 )}

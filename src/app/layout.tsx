@@ -55,6 +55,7 @@ export default function RootLayout({
     <html lang="en" className={`${outfit.variable} ${playfair.variable}`}>
       <head>
         <meta name="facebook-domain-verification" content="qy5yj0z1grhtj55l2r97bdlf8sofiw" />
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         <Script id="meta-pixel" strategy="afterInteractive">
           {`
             !function(f,b,e,v,n,t,s)

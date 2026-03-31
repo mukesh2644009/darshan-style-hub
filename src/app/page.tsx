@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { FiArrowRight, FiTruck, FiRefreshCw, FiShield, FiHeadphones } from 'react-icons/fi';
 import ProductCard from '@/components/ProductCard';
 import HeroCarousel from '@/components/HeroCarousel';
+import AnimatedSection from '@/components/AnimatedSection';
 import { getFeaturedProducts, getNewArrivals, getCategories } from '@/lib/products';
 
 export const dynamic = 'force-dynamic';
@@ -103,20 +104,21 @@ export default async function Home() {
       {/* Categories - Suits & Co Ord Sets */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
+          <AnimatedSection className="text-center mb-12">
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
               Shop by Category
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
               Explore our beautiful collection of suits and co ord sets for every occasion
             </p>
-          </div>
+          </AnimatedSection>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {/* Suits Category */}
+            <AnimatedSection delay={0.1}>
             <Link
               href="/products?category=Suits"
-              className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-xl"
+              className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-xl block"
             >
               <Image
                 src="/products/kurtis/kurti-2/1.jpeg"
@@ -135,11 +137,13 @@ export default async function Home() {
                 </span>
               </div>
             </Link>
+            </AnimatedSection>
 
             {/* Co Ord Sets Category */}
+            <AnimatedSection delay={0.2}>
             <Link
               href="/products?category=Co Ord Sets"
-              className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-xl"
+              className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-xl block"
             >
               <Image
                 src="/products/kurtis/kurti-1/1.jpeg"
@@ -158,6 +162,7 @@ export default async function Home() {
                 </span>
               </div>
             </Link>
+            </AnimatedSection>
           </div>
         </div>
       </section>
@@ -165,7 +170,7 @@ export default async function Home() {
       {/* Featured Products */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-12">
+          <AnimatedSection className="flex items-center justify-between mb-12">
             <div>
               <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
                 Featured Collection
@@ -178,7 +183,7 @@ export default async function Home() {
             >
               View All <FiArrowRight />
             </Link>
-          </div>
+          </AnimatedSection>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {featuredProducts.slice(0, 4).map((product) => (
@@ -197,6 +202,7 @@ export default async function Home() {
       {/* Banner */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <AnimatedSection>
           <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-primary-700 to-primary-500">
             <div className="absolute inset-0 opacity-10">
               <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -232,6 +238,7 @@ export default async function Home() {
               </div>
             </div>
           </div>
+          </AnimatedSection>
         </div>
       </section>
 
@@ -239,7 +246,7 @@ export default async function Home() {
       {newArrivals.length > 0 && (
         <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-12">
+            <AnimatedSection className="flex items-center justify-between mb-12">
               <div>
                 <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
                   New Arrivals
@@ -252,7 +259,7 @@ export default async function Home() {
               >
                 View All <FiArrowRight />
               </Link>
-            </div>
+            </AnimatedSection>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               {newArrivals.slice(0, 4).map((product) => (
@@ -266,12 +273,12 @@ export default async function Home() {
       {/* Testimonials */}
       <section className="py-16 bg-accent-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
+          <AnimatedSection className="text-center mb-12">
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
               What Our Customers Say
             </h2>
             <p className="text-gray-600">Real reviews from real customers</p>
-          </div>
+          </AnimatedSection>
 
           <div className="grid md:grid-cols-3 gap-6">
             {[

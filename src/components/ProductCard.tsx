@@ -7,6 +7,7 @@ import { Product } from '@/lib/products';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 
 interface ProductCardProps {
   product: Product;
@@ -37,10 +38,13 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={`/products/${product.slug || product.id}`}>
-      <div
-        className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+      <motion.div
+        className="group bg-white rounded-2xl overflow-hidden shadow-sm"
+        whileHover={{ y: -6, boxShadow: '0 20px 40px -12px rgba(0,0,0,0.15)' }}
+        whileTap={{ scale: 0.98 }}
+        transition={{ duration: 0.2 }}
+        onHoverStart={() => setIsHovered(true)}
+        onHoverEnd={() => setIsHovered(false)}
       >
         {/* Image Container */}
         <div className="relative aspect-[3/4] overflow-hidden bg-accent-100">
@@ -132,7 +136,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
     </Link>
   );
 }

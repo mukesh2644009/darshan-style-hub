@@ -14,6 +14,7 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { openCart, getTotalItems } = useCartStore();
   const { user, isAuthenticated, isAdmin, logout, checkAuth } = useAuthStore();
   const { getTotalItems: getWishlistItems } = useWishlistStore();
@@ -22,6 +23,7 @@ export default function Navbar() {
 
   // Check auth on mount and on route change
   useEffect(() => {
+    setMounted(true);
     checkAuth();
   }, [checkAuth, pathname]);
 
@@ -96,7 +98,7 @@ export default function Navbar() {
             </button>
             <Link href="/wishlist" className="p-2 hover:bg-accent-100 rounded-full transition-colors hidden sm:block relative">
               <FiHeart size={20} />
-              {wishlistItems > 0 && (
+              {mounted && wishlistItems > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
                   {wishlistItems}
                 </span>
@@ -110,7 +112,7 @@ export default function Navbar() {
                 className="p-2 hover:bg-accent-100 rounded-full transition-colors hidden sm:flex items-center gap-2"
               >
                 <FiUser size={20} />
-                {isAuthenticated && (
+                {mounted && isAuthenticated && (
                   <span className="text-sm font-medium text-gray-700 max-w-[100px] truncate">
                     {user?.name?.split(' ')[0]}
                   </span>
@@ -179,7 +181,7 @@ export default function Navbar() {
               className="p-2 hover:bg-accent-100 rounded-full transition-colors relative"
             >
               <FiShoppingBag size={20} />
-              {totalItems > 0 && (
+              {mounted && totalItems > 0 && (
                 <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
                   {totalItems}
                 </span>

@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-const PIXEL_ID = '3141261462728297';
+const PIXEL_ID = '1889616751721212';
 const ACCESS_TOKEN = process.env.FACEBOOK_CAPI_ACCESS_TOKEN || '';
 const API_VERSION = 'v21.0';
 

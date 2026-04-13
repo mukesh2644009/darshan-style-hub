@@ -92,6 +92,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (typeof window !== 'undefined') {
         // Clear session storage
         sessionStorage.clear();
+        // Clear cart from localStorage
+        localStorage.removeItem('darshan-style-hub-cart');
+        // Clear wishlist from localStorage
+        localStorage.removeItem('darshan-style-hub-wishlist');
         // Force clear the state
         set({
           user: null,

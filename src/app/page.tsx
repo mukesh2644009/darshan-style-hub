@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiArrowRight, FiTruck, FiRefreshCw, FiShield, FiHeadphones } from 'react-icons/fi';
+import { FiArrowRight, FiTruck, FiRefreshCw, FiShield, FiHeadphones, FiDollarSign } from 'react-icons/fi';
+import { FaMoneyBillWave } from 'react-icons/fa';
 import ProductCard from '@/components/ProductCard';
 import HeroCarousel from '@/components/HeroCarousel';
 import AnimatedSection from '@/components/AnimatedSection';
@@ -81,9 +82,13 @@ export default async function Home() {
       <section className="py-4 bg-white border-y border-accent-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap justify-center gap-4 md:gap-8">
+            <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-full border border-green-200">
+              <FaMoneyBillWave className="text-green-600" size={18} />
+              <span className="text-sm font-medium text-green-700">Cash on Delivery</span>
+            </div>
             <div className="flex items-center gap-2">
               <FiTruck className="text-primary-600" size={18} />
-              <span className="text-sm text-gray-700">Free Shipping</span>
+              <span className="text-sm text-gray-700">Free Shipping ₹999+</span>
             </div>
             <div className="flex items-center gap-2">
               <FiRefreshCw className="text-primary-600" size={18} />

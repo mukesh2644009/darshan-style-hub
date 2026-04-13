@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, TouchEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { FiHeart, FiShare2, FiMinus, FiPlus, FiStar, FiTruck, FiRefreshCw, FiShield, FiChevronRight, FiChevronLeft, FiCheck, FiX } from 'react-icons/fi';
-import { FaWhatsapp } from 'react-icons/fa';
+import { FaWhatsapp, FaMoneyBillWave } from 'react-icons/fa';
 import { Product } from '@/lib/products';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
@@ -497,6 +497,17 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                   <FiShare2 size={16} />
                   Copy
                 </button>
+              </div>
+            </div>
+
+            {/* COD Badge - Prominent */}
+            <div className="flex items-center gap-3 p-3 sm:p-4 bg-green-50 border-2 border-green-200 rounded-xl">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <FaMoneyBillWave className="text-green-600" size={20} />
+              </div>
+              <div>
+                <p className="font-bold text-green-700 text-sm sm:text-base">Cash on Delivery Available</p>
+                <p className="text-xs sm:text-sm text-green-600">Pay when you receive your order</p>
               </div>
             </div>
 

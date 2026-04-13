@@ -270,18 +270,19 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 priority
                 draggable={false}
               />
+              {/* Discount badge - bottom on mobile to avoid covering face */}
               {discount > 0 && (
-                <span className="absolute top-4 left-4 bg-primary-600 text-white text-sm font-semibold px-3 py-1 rounded-full">
+                <span className="absolute bottom-14 sm:bottom-auto sm:top-4 left-3 sm:left-4 bg-primary-600 text-white text-xs sm:text-sm font-semibold px-2.5 sm:px-3 py-1 rounded-full">
                   {discount}% OFF
                 </span>
               )}
               <button
                 onClick={() => toggleItem(product)}
-                className={`absolute top-4 right-4 p-3 rounded-full transition-all ${
+                className={`absolute top-3 sm:top-4 right-3 sm:right-4 p-2 sm:p-3 rounded-full transition-all ${
                   isWishlisted ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 hover:bg-accent-100'
                 }`}
               >
-                <FiHeart size={20} fill={isWishlisted ? 'currentColor' : 'none'} />
+                <FiHeart size={18} fill={isWishlisted ? 'currentColor' : 'none'} />
               </button>
 
               {/* Navigation Arrows (visible when multiple images) */}

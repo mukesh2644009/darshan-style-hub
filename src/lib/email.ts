@@ -256,16 +256,23 @@ export async function sendNewSignupNotification({ customerName, customerEmail, c
                   <td style="padding: 12px 16px; color: #1f2937; font-weight: 600; font-size: 14px;">${customerPhone || 'Not provided'}</td>
                 </tr>
               </table>
-              <table role="presentation" style="width: 100%; border-collapse: collapse; margin-top: 24px;">
+              ${customerPhone ? `
+              <p style="color: #059669; font-weight: 600; margin: 20px 0 10px; font-size: 14px; text-align: center;">👇 Send Welcome Message on WhatsApp</p>
+              <table role="presentation" style="width: 100%; border-collapse: collapse;">
                 <tr>
                   <td align="center">
-                    ${customerPhone ? `
-                    <a href="https://wa.me/91${customerPhone.replace(/[^0-9]/g, '')}" style="display: inline-block; background-color: #25D366; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px; margin-right: 10px;">
-                      💬 WhatsApp
+                    <a href="https://wa.me/91${customerPhone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi ${customerName}! 👋\n\nWelcome to Darshan Style Hub! 🎉\n\nThank you for signing up. We're excited to have you!\n\n✨ Explore our latest collection of designer suits and co-ord sets at www.darshanstylehub.com\n\nFeel free to message us anytime for:\n• Product recommendations\n• Size guidance\n• Custom orders\n• Any questions\n\nHappy Shopping! 🛍️`)}" style="display: inline-block; background-color: #25D366; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px;">
+                      💬 Send Welcome on WhatsApp
                     </a>
-                    ` : ''}
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+              <table role="presentation" style="width: 100%; border-collapse: collapse; margin-top: 16px;">
+                <tr>
+                  <td align="center">
                     <a href="mailto:${customerEmail}" style="display: inline-block; background-color: #9f1239; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px;">
-                      ✉️ Email
+                      ✉️ Email Customer
                     </a>
                   </td>
                 </tr>

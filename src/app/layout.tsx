@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import CartSidebar from '@/components/CartSidebar';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import GoogleAnalytics from '@/components/GoogleAnalytics';
 
 const outfit = Outfit({ 
   subsets: ['latin'],
@@ -85,6 +86,7 @@ export default function RootLayout({
         </noscript>
       </head>
       <body className="font-body bg-accent-50 text-gray-900 antialiased overflow-x-hidden w-full">
+        <GoogleAnalytics />
         <div className="w-full max-w-[100vw] overflow-x-hidden">
           <Navbar />
           <CartSidebar />

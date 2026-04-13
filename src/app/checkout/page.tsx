@@ -457,30 +457,30 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-accent-50">
+    <div className="min-h-screen bg-accent-50 overflow-x-hidden">
       {/* Header */}
       <div className="bg-white border-b border-accent-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/products" className="inline-flex items-center gap-2 text-gray-600 hover:text-primary-600">
-            <FiChevronLeft />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <Link href="/products" className="inline-flex items-center gap-2 text-gray-600 hover:text-primary-600 text-sm sm:text-base">
+            <FiChevronLeft size={18} />
             Continue Shopping
           </Link>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="font-display text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <h1 className="font-display text-2xl sm:text-3xl font-bold text-gray-900 mb-6 sm:mb-8">Checkout</h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Checkout Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Shipping Info */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="font-display text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <span className="w-8 h-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-sm font-bold">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
+              <h2 className="font-display text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+                <span className="w-7 h-7 sm:w-8 sm:h-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold">
                   1
                 </span>
-                Shipping Information
+                Shipping Info
               </h2>
 
               {Object.keys(errors).length > 0 && (
@@ -591,17 +591,17 @@ export default function CheckoutPage() {
             </div>
 
             {/* Payment Method */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h2 className="font-display text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <span className="w-8 h-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-sm font-bold">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
+              <h2 className="font-display text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+                <span className="w-7 h-7 sm:w-8 sm:h-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold">
                   2
                 </span>
-                Payment Method
+                Payment
               </h2>
 
               <div className="space-y-3">
                 <label
-                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     paymentMethod === 'upi'
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-accent-200 hover:border-blue-300'
@@ -613,17 +613,17 @@ export default function CheckoutPage() {
                     value="upi"
                     checked={paymentMethod === 'upi'}
                     onChange={(e) => setPaymentMethod(e.target.value as 'upi' | 'whatsapp' | 'cod')}
-                    className="accent-blue-600"
+                    className="accent-blue-600 flex-shrink-0"
                   />
-                  <FiLock size={24} className="text-blue-600" />
-                  <div>
-                    <p className="font-medium text-gray-900">Pay Online (UPI / Card / Net Banking)</p>
-                    <p className="text-sm text-gray-500">Secure payment via Razorpay</p>
+                  <FiLock size={20} className="text-blue-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 text-sm sm:text-base">Pay Online (UPI / Card)</p>
+                    <p className="text-xs sm:text-sm text-gray-500">Secure via Razorpay</p>
                   </div>
                 </label>
 
                 <label
-                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     paymentMethod === 'whatsapp'
                       ? 'border-green-500 bg-green-50'
                       : 'border-accent-200 hover:border-green-300'
@@ -635,17 +635,17 @@ export default function CheckoutPage() {
                     value="whatsapp"
                     checked={paymentMethod === 'whatsapp'}
                     onChange={(e) => setPaymentMethod(e.target.value as 'upi' | 'whatsapp' | 'cod')}
-                    className="accent-green-600"
+                    className="accent-green-600 flex-shrink-0"
                   />
-                  <FaWhatsapp size={24} className="text-green-600" />
-                  <div>
-                    <p className="font-medium text-gray-900">Pay via WhatsApp</p>
-                    <p className="text-sm text-gray-500">We&apos;ll send you payment QR/link on WhatsApp</p>
+                  <FaWhatsapp size={20} className="text-green-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 text-sm sm:text-base">Pay via WhatsApp</p>
+                    <p className="text-xs sm:text-sm text-gray-500">Get payment QR on WhatsApp</p>
                   </div>
                 </label>
 
                 <label
-                  className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     paymentMethod === 'cod'
                       ? 'border-primary-600 bg-primary-50'
                       : 'border-accent-200 hover:border-primary-300'
@@ -657,12 +657,12 @@ export default function CheckoutPage() {
                     value="cod"
                     checked={paymentMethod === 'cod'}
                     onChange={(e) => setPaymentMethod(e.target.value as 'upi' | 'whatsapp' | 'cod')}
-                    className="accent-primary-600"
+                    className="accent-primary-600 flex-shrink-0"
                   />
-                  <FiTruck size={24} className="text-primary-600" />
-                  <div>
-                    <p className="font-medium text-gray-900">Cash on Delivery (COD)</p>
-                    <p className="text-sm text-gray-500">Pay when you receive</p>
+                  <FiTruck size={20} className="text-primary-600 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 text-sm sm:text-base">Cash on Delivery</p>
+                    <p className="text-xs sm:text-sm text-gray-500">Pay when you receive</p>
                   </div>
                 </label>
 
@@ -680,8 +680,8 @@ export default function CheckoutPage() {
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-6 shadow-sm sticky top-32">
-              <h2 className="font-display text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm sticky top-32">
+              <h2 className="font-display text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Order Summary</h2>
 
               {/* Items */}
               <div className="space-y-4 mb-6">

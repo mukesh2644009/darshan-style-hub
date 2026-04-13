@@ -460,27 +460,27 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-accent-50 overflow-x-hidden">
       {/* Header */}
       <div className="bg-white border-b border-accent-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
-          <Link href="/products" className="inline-flex items-center gap-2 text-gray-600 hover:text-primary-600 text-sm sm:text-base">
-            <FiChevronLeft size={18} />
-            Continue Shopping
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <Link href="/products" className="inline-flex items-center gap-1 text-gray-600 hover:text-primary-600 text-sm">
+            <FiChevronLeft size={16} />
+            <span>Continue Shopping</span>
           </Link>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        <h1 className="font-display text-2xl sm:text-3xl font-bold text-gray-900 mb-6 sm:mb-8">Checkout</h1>
+      <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-5 sm:py-8">
+        <h1 className="font-display text-xl sm:text-3xl font-bold text-gray-900 mb-5 sm:mb-8">Checkout</h1>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Checkout Form */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-5 sm:space-y-6">
             {/* Shipping Info */}
             <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
-              <h2 className="font-display text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
-                <span className="w-7 h-7 sm:w-8 sm:h-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold">
+              <h2 className="font-display text-base sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2">
+                <span className="w-6 h-6 sm:w-8 sm:h-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0">
                   1
                 </span>
-                Shipping Info
+                <span>Shipping Info</span>
               </h2>
 
               {Object.keys(errors).length > 0 && (
@@ -592,11 +592,11 @@ export default function CheckoutPage() {
 
             {/* Payment Method */}
             <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
-              <h2 className="font-display text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
-                <span className="w-7 h-7 sm:w-8 sm:h-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold">
+              <h2 className="font-display text-base sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2">
+                <span className="w-6 h-6 sm:w-8 sm:h-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold flex-shrink-0">
                   2
                 </span>
-                Payment
+                <span>Payment</span>
               </h2>
 
               <div className="space-y-3">

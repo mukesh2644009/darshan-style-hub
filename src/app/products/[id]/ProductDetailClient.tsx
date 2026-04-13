@@ -8,7 +8,9 @@ import { FaWhatsapp } from 'react-icons/fa';
 import { Product } from '@/lib/products';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
+import { useAuthStore } from '@/store/authStore';
 import ProductCard from '@/components/ProductCard';
+import QuickSignupModal from '@/components/QuickSignupModal';
 import { createWhatsAppOrderLink, createWhatsAppShareLink } from '@/components/WhatsAppButton';
 
 function stripEmojis(text: string): string {
@@ -126,17 +128,26 @@ interface ProductDetailClientProps {
 export default function ProductDetailClient({ product, relatedProducts }: ProductDetailClientProps) {
   const { addItem, openCart } = useCartStore();
   const { toggleItem, isInWishlist } = useWishlistStore();
+  const { isAuthenticated } = useAuthStore();
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
+  const [showSignupModal, setShowSignupModal] = useState(false);
   const isWishlisted = isInWishlist(product.id);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
+
+  const doAddToCart = () => {
+    for (let i = 0; i < quantity; i++) {
+      addItem(product, selectedSize, selectedColor);
+    }
+    openCart();
+  };
 
   const handleAddToCart = () => {
     if (!selectedSize) {
@@ -148,10 +159,12 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       return;
     }
 
-    for (let i = 0; i < quantity; i++) {
-      addItem(product, selectedSize, selectedColor);
+    if (!isAuthenticated) {
+      setShowSignupModal(true);
+      return;
     }
-    openCart();
+
+    doAddToCart();
   };
 
   const handleOrderOnWhatsApp = () => {
@@ -536,6 +549,15 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
           </div>
         </div>
       )}
+
+      <QuickSignupModal
+        isOpen={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
+        onSuccess={() => {
+          setShowSignupModal(false);
+          doAddToCart();
+        }}
+      />
     </div>
   );
 }

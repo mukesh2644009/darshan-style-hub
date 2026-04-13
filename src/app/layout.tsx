@@ -20,8 +20,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: 'Darshan Style Hub | Designer Suits & Co Ord Sets in Jaipur',
-  description: 'Darshan Style Hub - Your trusted destination in Jaipur for premium designer suits and co ord sets. Shop Anarkali suits, salwar suits, printed co ord sets, embroidered co ord sets and more.',
+  title: 'Darshan Style Hub™ | Designer Suits & Co Ord Sets in Jaipur',
+  description: 'Darshan Style Hub™ - Your trusted destination in Jaipur for premium designer suits and co ord sets. Shop Anarkali suits, salwar suits, printed co ord sets, embroidered co ord sets and more.',
   keywords: ['suits', 'co ord sets', 'women ethnic wear', 'Anarkali suits', 'salwar kameez', 'co ord sets for women', 'designer co ord sets', 'Jaipur fashion', 'Darshan Style Hub'],
   icons: {
     icon: '/products/logo.jpeg',
@@ -29,10 +29,10 @@ export const metadata: Metadata = {
     apple: '/products/logo.jpeg',
   },
   openGraph: {
-    title: 'Darshan Style Hub | Designer Suits & Co Ord Sets in Jaipur',
+    title: 'Darshan Style Hub™ | Designer Suits & Co Ord Sets in Jaipur',
     description: 'Your trusted destination in Jaipur for premium designer suits and co ord sets. Shop Anarkali suits, salwar suits, printed co ord sets, embroidered co ord sets and more.',
     url: 'https://www.darshanstylehub.com',
-    siteName: 'Darshan Style Hub',
+    siteName: 'Darshan Style Hub™',
     images: [
       {
         url: 'https://www.darshanstylehub.com/products/logo.jpeg',

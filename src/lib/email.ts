@@ -4,8 +4,9 @@
 import nodemailer from 'nodemailer';
 
 // Shop details
-const SHOP_NAME = 'Darshan Style Hub';
+const SHOP_NAME = 'Darshan Style Hub™';
 const SHOP_WEBSITE = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+const ADMIN_EMAIL = 'darshanstylehub.business@gmail.com';
 
 // Check which email service is available
 // Resend is prioritized for custom domain emails (info@darshanstylehub.com)
@@ -119,7 +120,7 @@ function getWelcomeEmailTemplate(customerName: string): string {
                 ${SHOP_NAME}
               </h1>
               <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">
-                Johari Bazaar, Jaipur
+                Sitapura, Jaipur
               </p>
             </td>
           </tr>
@@ -185,10 +186,10 @@ function getWelcomeEmailTemplate(customerName: string): string {
                 📞 +91 90190 76335
               </p>
               <p style="color: #9ca3af; margin: 0; font-size: 12px;">
-                ${SHOP_NAME} | Johari Bazaar, Jaipur, Rajasthan 302001
+                ${SHOP_NAME} | Sitapura, Jaipur, Rajasthan 302022
               </p>
               <p style="color: #9ca3af; margin: 10px 0 0; font-size: 12px;">
-                © 2026 ${SHOP_NAME}. All rights reserved.
+                © 2025 ${SHOP_NAME}. All rights reserved.
               </p>
             </td>
           </tr>
@@ -200,6 +201,124 @@ function getWelcomeEmailTemplate(customerName: string): string {
 </body>
 </html>
   `;
+}
+
+// New signup notification to owner
+interface SignupNotificationProps {
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string | null;
+}
+
+export async function sendNewSignupNotification({ customerName, customerEmail, customerPhone }: SignupNotificationProps) {
+  const service = getEmailService();
+  
+  if (!service) {
+    console.log('No email service configured, skipping signup notification');
+    return { success: false, error: 'Email not configured' };
+  }
+
+  const ownerEmail = ADMIN_EMAIL;
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Customer Signup</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0fdf4;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 500px; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          <tr>
+            <td style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 30px; text-align: center;">
+              <p style="font-size: 40px; margin: 0 0 8px;">🎉</p>
+              <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: bold;">New Customer Signup!</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 30px;">
+              <p style="color: #4b5563; margin: 0 0 20px; font-size: 15px;">A new customer just signed up on your store:</p>
+              <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f9fafb; border-radius: 8px; overflow: hidden;">
+                <tr>
+                  <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Name</td>
+                  <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #1f2937; font-weight: 600; font-size: 14px;">${customerName}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 14px;">Email</td>
+                  <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb; color: #1f2937; font-weight: 600; font-size: 14px;">${customerEmail}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 12px 16px; color: #6b7280; font-size: 14px;">Phone</td>
+                  <td style="padding: 12px 16px; color: #1f2937; font-weight: 600; font-size: 14px;">${customerPhone || 'Not provided'}</td>
+                </tr>
+              </table>
+              <table role="presentation" style="width: 100%; border-collapse: collapse; margin-top: 24px;">
+                <tr>
+                  <td align="center">
+                    <a href="https://wa.me/${customerPhone ? customerPhone.replace(/[^0-9]/g, '') : ''}" style="display: inline-block; background-color: #25D366; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+                      💬 Chat on WhatsApp
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #9ca3af; margin: 0; font-size: 12px;">${SHOP_NAME} | Signup Notification</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+
+  if (service === 'resend') {
+    try {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      const { data, error } = await resend.emails.send({
+        from: `${SHOP_NAME} <info@darshanstylehub.com>`,
+        to: [ownerEmail],
+        subject: `🎉 New Signup: ${customerName} just joined!`,
+        html: htmlContent,
+      });
+
+      if (error) {
+        console.error('Resend signup notification error:', error);
+        return { success: false, error };
+      }
+      return { success: true, data, via: 'resend' };
+    } catch (resendError) {
+      console.error('Resend failed for signup notification:', resendError);
+    }
+  }
+
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    try {
+      const transporter = createGmailTransporter();
+      const info = await transporter.sendMail({
+        from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`,
+        to: ownerEmail,
+        subject: `🎉 New Signup: ${customerName} just joined!`,
+        html: htmlContent,
+      });
+      return { success: true, messageId: info.messageId, via: 'gmail' };
+    } catch (gmailError) {
+      console.error('Gmail failed for signup notification:', gmailError);
+      return { success: false, error: gmailError };
+    }
+  }
+
+  return { success: false, error: 'All email services failed' };
 }
 
 // Order confirmation email
@@ -401,7 +520,7 @@ function getOrderConfirmationTemplate(
                 : `<p style="color: #9f1239; margin: 0 0 20px; font-size: 16px; font-weight: 600;">📞 +91 90190 76335</p>`
               }
               <p style="color: #9ca3af; margin: 15px 0 0; font-size: 12px;">
-                ${SHOP_NAME} | Johari Bazaar, Jaipur
+                ${SHOP_NAME} | Sitapura, Jaipur
               </p>
             </td>
           </tr>

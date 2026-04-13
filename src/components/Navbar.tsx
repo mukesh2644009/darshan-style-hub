@@ -62,7 +62,7 @@ export default function Navbar() {
               priority
             />
             <span className="font-display text-xl sm:text-2xl font-bold text-red-700 hidden sm:block">
-              Darshan Style Hub
+              Darshan Style Hub™
             </span>
           </Link>
 

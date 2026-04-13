@@ -45,11 +45,11 @@ export function generateReceipt(data: ReceiptData) {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
-  doc.text('Darshan Style Hub', 15, y);
+  doc.text('Darshan Style Hub™', 15, y);
   y += 8;
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('Johari Bazaar, Jaipur, Rajasthan 302001 | +91 90190 76335', 15, y);
+  doc.text('Sitapura Industrial Area, Jaipur, Rajasthan 302022 | +91 90190 76335', 15, y);
   y += 5;
   doc.text('www.darshanstylehub.com | darshanstylehub@gmail.com', 15, y);
 
@@ -187,7 +187,7 @@ export function generateReceipt(data: ReceiptData) {
   doc.setTextColor(...grayColor);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text('Thank you for shopping with Darshan Style Hub!', pageWidth / 2, y, { align: 'center' });
+  doc.text('Thank you for shopping with Darshan Style Hub™!', pageWidth / 2, y, { align: 'center' });
   y += 5;
   doc.text('For any queries, contact us at darshanstylehub@gmail.com or +91 90190 76335', pageWidth / 2, y, { align: 'center' });
   y += 5;

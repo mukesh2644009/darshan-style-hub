@@ -23,7 +23,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                defaultValue="Darshan Style Hub"
+                defaultValue="Darshan Style Hub™"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
@@ -85,7 +85,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                defaultValue="Johari Bazaar"
+                defaultValue="B-312, Near (IIGJ), R.K. Derewala Building, Sitapura"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>

@@ -32,7 +32,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* About */}
           <div>
-            <h4 className="font-display text-2xl font-bold text-white mb-4">Darshan Style Hub</h4>
+            <h4 className="font-display text-2xl font-bold text-white mb-4">Darshan Style Hub™</h4>
             <p className="text-accent-300 mb-4 leading-relaxed">
               Your trusted destination for premium suits and co ord sets in Jaipur. 
               Quality fabrics, timeless designs, and exceptional service since 2010.
@@ -134,8 +134,9 @@ export default function Footer() {
               <li className="flex items-start gap-3">
                 <FiMapPin className="mt-1 flex-shrink-0 text-primary-400" />
                 <span className="text-accent-300">
-                  Johari Bazaar,<br />
-                  Jaipur, Rajasthan 302001
+                  B-312, Near (IIGJ), R.K. Derewala Building,<br />
+                  Sitapura Industrial Area, Sitapura,<br />
+                  Jaipur, Rajasthan 302022
                 </span>
               </li>
               <li className="flex items-center gap-3">
@@ -171,7 +172,7 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-accent-400 text-sm">
-              © 2024 Darshan Style Hub, Jaipur. All rights reserved.
+              © 2025 Darshan Style Hub™, Jaipur. All rights reserved.
             </p>
             <div className="flex items-center gap-6 text-sm">
               <Link href="/privacy" className="text-accent-400 hover:text-white transition-colors">

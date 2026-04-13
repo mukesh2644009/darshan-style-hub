@@ -44,7 +44,7 @@ export default function WhatsAppButton() {
                     <FaWhatsapp size={24} />
                   </div>
                   <div>
-                    <p className="font-semibold">Darshan Style Hub</p>
+                    <p className="font-semibold">Darshan Style Hub™</p>
                     <p className="text-xs text-green-100">Typically replies within 5 mins</p>
                   </div>
                 </div>

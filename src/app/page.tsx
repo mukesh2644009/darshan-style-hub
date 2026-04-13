@@ -4,15 +4,15 @@ import { FiArrowRight, FiTruck, FiRefreshCw, FiShield, FiHeadphones } from 'reac
 import ProductCard from '@/components/ProductCard';
 import HeroCarousel from '@/components/HeroCarousel';
 import AnimatedSection from '@/components/AnimatedSection';
-import { getFeaturedProducts, getNewArrivals, getCategories } from '@/lib/products';
+import { getFeaturedProducts, getCategories, getProducts } from '@/lib/products';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  const [featuredProducts, newArrivals, categories] = await Promise.all([
+  const [featuredProducts, categories, allProducts] = await Promise.all([
     getFeaturedProducts(),
-    getNewArrivals(),
     getCategories(),
+    getProducts({}),
   ]);
 
   return (
@@ -186,89 +186,30 @@ export default async function Home() {
           </AnimatedSection>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.slice(0, 4).map((product) => (
+            {featuredProducts.slice(0, 8).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
-
-          <div className="mt-8 text-center sm:hidden">
-            <Link href="/products" className="btn-primary inline-flex items-center gap-2">
-              View All Products <FiArrowRight />
-            </Link>
-          </div>
         </div>
       </section>
 
-      {/* Banner */}
-      <section className="py-16">
+      {/* Browse All Products */}
+      <section className="py-16 bg-gradient-to-b from-white to-accent-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedSection>
-          <div className="relative rounded-3xl overflow-hidden bg-gradient-to-r from-primary-700 to-primary-500">
-            <div className="absolute inset-0 opacity-10">
-              <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <pattern id="banner-pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <circle cx="2" cy="2" r="2" fill="white" />
-                </pattern>
-                <rect x="0" y="0" width="100" height="100" fill="url(#banner-pattern)" />
-              </svg>
-            </div>
-            <div className="relative grid lg:grid-cols-2 gap-8 items-center p-8 lg:p-12">
-              <div className="text-white">
-                <span className="inline-block bg-white/20 px-4 py-1 rounded-full text-sm font-medium mb-4">
-                  Limited Time Offer
-                </span>
-                <h2 className="font-display text-3xl sm:text-4xl font-bold mb-4">
-                  Wedding Season Sale
-                </h2>
-                <p className="text-white/80 mb-6 text-lg">
-                  Get up to 40% off on party wear suits and co ord sets. Explore our exclusive wedding collection.
-                </p>
-                <Link
-                  href="/products"
-                  className="inline-flex items-center gap-2 bg-white text-primary-700 px-6 py-3 rounded-full font-medium hover:bg-accent-100 transition-colors"
-                >
-                  Shop Sale <FiArrowRight />
-                </Link>
-              </div>
-              <div className="hidden lg:flex justify-center">
-                <div className="text-center text-white">
-                  <span className="text-7xl font-display font-bold">40%</span>
-                  <span className="block text-2xl font-medium">OFF</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <AnimatedSection className="text-center mb-12">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+              Browse All Products
+            </h2>
+            <p className="text-gray-600">Explore our complete collection of suits & co-ord sets</p>
           </AnimatedSection>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {allProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
         </div>
       </section>
-
-      {/* New Arrivals */}
-      {newArrivals.length > 0 && (
-        <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <AnimatedSection className="flex items-center justify-between mb-12">
-              <div>
-                <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
-                  New Arrivals
-                </h2>
-                <p className="text-gray-600">Fresh styles just dropped</p>
-              </div>
-              <Link
-                href="/products?newArrival=true"
-                className="hidden sm:inline-flex items-center gap-2 text-primary-600 font-medium hover:gap-3 transition-all"
-              >
-                View All <FiArrowRight />
-              </Link>
-            </AnimatedSection>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-              {newArrivals.slice(0, 4).map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
 
       {/* Testimonials */}
       <section className="py-16 bg-accent-100">

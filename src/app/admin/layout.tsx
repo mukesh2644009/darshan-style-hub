@@ -99,7 +99,7 @@ export default function AdminLayout({
             <span>Back to Store</span>
           </Link>
           <span className="text-gray-600">|</span>
-          <h1 className="text-xl font-bold">Darshan Style Hub - Admin</h1>
+          <h1 className="text-xl font-bold">Darshan Style Hub™ - Admin</h1>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-400">Welcome, {user.name || user.email}</span>

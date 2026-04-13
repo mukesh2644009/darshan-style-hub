@@ -92,17 +92,25 @@ export async function POST(request: Request) {
       path: '/',
     });
 
-    // Send welcome email (non-blocking)
+    // Send welcome email + owner notification (non-blocking)
     try {
-      const { sendWelcomeEmail } = await import('@/lib/email');
+      const { sendWelcomeEmail, sendNewSignupNotification } = await import('@/lib/email');
       sendWelcomeEmail({
         to: user.email,
         customerName: user.name || 'Valued Customer',
       }).catch((err) => {
         console.error('Failed to send welcome email:', err);
       });
+
+      sendNewSignupNotification({
+        customerName: user.name || 'Unknown',
+        customerEmail: user.email,
+        customerPhone: user.phone,
+      }).catch((err) => {
+        console.error('Failed to send signup notification:', err);
+      });
     } catch (emailError) {
-      console.log('Email service not available, skipping welcome email');
+      console.log('Email service not available, skipping emails');
     }
 
     return NextResponse.json({

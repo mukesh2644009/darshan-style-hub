@@ -117,10 +117,12 @@ export default function ContactPage() {
                     <FiMapPin className="text-primary-600" size={20} />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Address</p>
+                    <p className="text-sm text-gray-500">Ship From / Return Address</p>
                     <p className="font-medium text-gray-900">
-                      Johari Bazaar,<br />
-                      Jaipur, Rajasthan 302001
+                      PARVATI DEVI<br />
+                      B-312, Near (IIGJ), R.K. Derewala Building,<br />
+                      Sitapura Industrial Area, Sitapura,<br />
+                      Jaipur, Rajasthan 302022
                     </p>
                   </div>
                 </div>

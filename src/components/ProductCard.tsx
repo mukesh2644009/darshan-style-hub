@@ -6,8 +6,10 @@ import { FiHeart, FiShoppingBag, FiStar } from 'react-icons/fi';
 import { Product } from '@/lib/products';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
+import { useAuthStore } from '@/store/authStore';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import QuickSignupModal from './QuickSignupModal';
 
 interface ProductCardProps {
   product: Product;
@@ -16,18 +18,28 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const { addItem, openCart } = useCartStore();
   const { toggleItem, isInWishlist } = useWishlistStore();
+  const { isAuthenticated } = useAuthStore();
   const [isHovered, setIsHovered] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
   const isWishlisted = isInWishlist(product.id);
 
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
+  const doAddToCart = () => {
+    addItem(product, product.sizes[0], product.colors[0].name);
+    openCart();
+  };
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addItem(product, product.sizes[0], product.colors[0].name);
-    openCart();
+    if (!isAuthenticated) {
+      setShowSignupModal(true);
+      return;
+    }
+    doAddToCart();
   };
 
   const handleWishlist = (e: React.MouseEvent) => {
@@ -37,6 +49,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
+    <>
     <Link href={`/products/${product.slug || product.id}`}>
       <motion.div
         className="group bg-white rounded-2xl overflow-hidden shadow-sm"
@@ -138,6 +151,16 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
       </motion.div>
     </Link>
+
+    <QuickSignupModal
+      isOpen={showSignupModal}
+      onClose={() => setShowSignupModal(false)}
+      onSuccess={() => {
+        setShowSignupModal(false);
+        doAddToCart();
+      }}
+    />
+    </>
   );
 }
 

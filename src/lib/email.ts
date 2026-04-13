@@ -350,11 +350,12 @@ interface OrderEmailProps {
   shippingPhone?: string;
   shippingEmail?: string;
   paymentMethod?: string;
+  paymentStatus?: 'PENDING' | 'PAID' | 'FAILED';
   isAdminCopy?: boolean;
 }
 
 export async function sendOrderConfirmationEmail(props: OrderEmailProps) {
-  const { to, customerName, orderId, total, items, shippingAddress, shippingPhone, shippingEmail, paymentMethod, isAdminCopy } = props;
+  const { to, customerName, orderId, total, items, shippingAddress, shippingPhone, shippingEmail, paymentMethod, paymentStatus = 'PENDING', isAdminCopy } = props;
   const service = getEmailService();
   
   if (!service) {
@@ -362,7 +363,7 @@ export async function sendOrderConfirmationEmail(props: OrderEmailProps) {
     return { success: false, error: 'Email not configured' };
   }
 
-  const htmlContent = getOrderConfirmationTemplate(customerName, orderId, total, items, shippingAddress, shippingPhone, shippingEmail, paymentMethod, isAdminCopy);
+  const htmlContent = getOrderConfirmationTemplate(customerName, orderId, total, items, shippingAddress, shippingPhone, shippingEmail, paymentMethod, paymentStatus, isAdminCopy);
   const subjectPrefix = isAdminCopy ? '[NEW ORDER] ' : 'Order Confirmed! ';
 
   // Try Resend first (for custom domain: info@darshanstylehub.com)
@@ -421,6 +422,7 @@ function getOrderConfirmationTemplate(
   shippingPhone?: string,
   shippingEmail?: string,
   paymentMethod?: string,
+  paymentStatus?: 'PENDING' | 'PAID' | 'FAILED',
   isAdminCopy?: boolean,
 ): string {
   const itemsHtml = items.map(item => {
@@ -442,18 +444,37 @@ function getOrderConfirmationTemplate(
     </tr>`;
   }).join('');
 
+  // Payment status - must be declared before use
+  const isOnlinePayment = paymentMethod && (paymentMethod.includes('UPI') || paymentMethod.includes('Razorpay'));
+  const isPending = paymentStatus === 'PENDING' && isOnlinePayment;
+
   const headerBg = isAdminCopy 
     ? 'background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);'
-    : 'background: linear-gradient(135deg, #059669 0%, #10b981 100%);';
+    : isPending
+      ? 'background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);'
+      : 'background: linear-gradient(135deg, #059669 0%, #10b981 100%);';
   
-  const headerTitle = isAdminCopy ? 'New Order Received!' : 'Order Confirmed!';
-  const headerIcon = isAdminCopy ? '🔔' : '✅';
+  const headerTitle = isAdminCopy 
+    ? (isPending ? 'New Order - Payment Pending!' : 'New Order Received!')
+    : (isPending ? 'Order Received!' : 'Order Confirmed!');
+  const headerIcon = isAdminCopy ? '🔔' : (isPending ? '📦' : '✅');
   const greeting = isAdminCopy 
     ? `New order from <strong>${customerName}</strong>`
     : `Hi ${customerName},`;
   const subtext = isAdminCopy
-    ? 'A new order has been placed on your store. Details below:'
-    : 'Thank you for your order! We\'re preparing your items with care.';
+    ? (isPending ? 'A new order has been placed but payment is pending. Details below:' : 'A new order has been placed on your store. Details below:')
+    : (isPending ? 'Thank you for your order! Please complete the payment to confirm.' : 'Thank you for your order! We\'re preparing your items with care.');
+  const paymentStatusBadge = isPending 
+    ? `<span style="background-color: #fef3c7; color: #92400e; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-left: 8px;">⏳ PAYMENT PENDING</span>`
+    : paymentStatus === 'PAID' 
+      ? `<span style="background-color: #d1fae5; color: #065f46; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-left: 8px;">✅ PAID</span>`
+      : '';
+
+  const pendingPaymentNote = isPending ? `
+              <div style="background-color: #fef3c7; border: 1px solid #fcd34d; padding: 16px 20px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #92400e; font-size: 14px; font-weight: 600;">⏳ Payment Pending</p>
+                <p style="margin: 8px 0 0; color: #a16207; font-size: 13px;">Your order has been received but payment is not yet completed. Please complete the payment to confirm your order.</p>
+              </div>` : '';
 
   const shippingSection = (shippingAddress || shippingPhone || shippingEmail || paymentMethod) ? `
               <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
@@ -461,7 +482,7 @@ function getOrderConfirmationTemplate(
                 ${shippingAddress ? `<p style="margin: 0 0 6px; color: #4b5563; font-size: 14px;">📍 ${shippingAddress}</p>` : ''}
                 ${shippingPhone ? `<p style="margin: 0 0 6px; color: #4b5563; font-size: 14px;">📞 ${shippingPhone}</p>` : ''}
                 ${shippingEmail ? `<p style="margin: 0 0 6px; color: #4b5563; font-size: 14px;">✉️ ${shippingEmail}</p>` : ''}
-                ${paymentMethod ? `<p style="margin: 0; color: #4b5563; font-size: 14px;">💳 Payment: <strong>${paymentMethod}</strong></p>` : ''}
+                ${paymentMethod ? `<p style="margin: 0; color: #4b5563; font-size: 14px;">💳 Payment: <strong>${paymentMethod}</strong>${paymentStatusBadge}</p>` : ''}
               </div>` : '';
 
   return `
@@ -501,6 +522,7 @@ function getOrderConfirmationTemplate(
                 <p style="margin: 5px 0 0; color: #1f2937; font-size: 20px; font-weight: bold;">#${orderId.slice(0, 8).toUpperCase()}</p>
               </div>
 
+              ${pendingPaymentNote}
               ${shippingSection}
               
               <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
@@ -526,6 +548,171 @@ function getOrderConfirmationTemplate(
             <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="color: #6b7280; margin: 0 0 10px; font-size: 14px;">
                 ${isAdminCopy ? 'Manage orders in your admin panel' : 'Questions about your order?'}
+              </p>
+              ${isAdminCopy 
+                ? `<a href="https://www.darshanstylehub.com/admin/orders" style="color: #9f1239; font-weight: 600; font-size: 16px; text-decoration: none;">View All Orders →</a>`
+                : `<p style="color: #9f1239; margin: 0 0 20px; font-size: 16px; font-weight: 600;">📞 +91 90190 76335</p>`
+              }
+              <p style="color: #9ca3af; margin: 15px 0 0; font-size: 12px;">
+                ${SHOP_NAME} | Sitapura, Jaipur
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
+// Payment confirmation email - sent after successful online payment
+interface PaymentConfirmationProps {
+  to: string;
+  customerName: string;
+  orderId: string;
+  total: number;
+  paymentId?: string;
+  isAdminCopy?: boolean;
+}
+
+export async function sendPaymentConfirmationEmail(props: PaymentConfirmationProps) {
+  const { to, customerName, orderId, total, paymentId, isAdminCopy } = props;
+  const service = getEmailService();
+  
+  if (!service) {
+    console.log('No email service configured, skipping payment confirmation email');
+    return { success: false, error: 'Email not configured' };
+  }
+
+  const htmlContent = getPaymentConfirmationTemplate(customerName, orderId, total, paymentId, isAdminCopy);
+  const subjectPrefix = isAdminCopy ? '[PAYMENT RECEIVED] ' : 'Payment Confirmed! ';
+
+  if (service === 'resend') {
+    try {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      const { data, error } = await resend.emails.send({
+        from: `${SHOP_NAME} <info@darshanstylehub.com>`,
+        to: [to],
+        subject: `${subjectPrefix}#${orderId.slice(0, 8).toUpperCase()}`,
+        html: htmlContent,
+      });
+
+      if (error) {
+        console.error('Resend error:', error);
+        return { success: false, error };
+      }
+
+      console.log('Payment confirmation email sent via Resend:', data);
+      return { success: true, data, via: 'resend' };
+    } catch (resendError) {
+      console.error('Resend failed, trying Gmail...', resendError);
+    }
+  }
+
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    try {
+      const transporter = createGmailTransporter();
+      const info = await transporter.sendMail({
+        from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`,
+        to: to,
+        subject: `${subjectPrefix}#${orderId.slice(0, 8).toUpperCase()}`,
+        html: htmlContent,
+      });
+      console.log('Payment confirmation email sent via Gmail:', info.messageId);
+      return { success: true, messageId: info.messageId, via: 'gmail' };
+    } catch (gmailError) {
+      console.error('Gmail failed:', gmailError);
+      return { success: false, error: gmailError };
+    }
+  }
+
+  return { success: false, error: 'All email services failed' };
+}
+
+function getPaymentConfirmationTemplate(
+  customerName: string,
+  orderId: string,
+  total: number,
+  paymentId?: string,
+  isAdminCopy?: boolean,
+): string {
+  const headerBg = isAdminCopy 
+    ? 'background: linear-gradient(135deg, #059669 0%, #10b981 100%);'
+    : 'background: linear-gradient(135deg, #059669 0%, #10b981 100%);';
+  
+  const headerTitle = isAdminCopy ? 'Payment Received!' : 'Payment Successful!';
+  const headerIcon = '💰';
+  const greeting = isAdminCopy 
+    ? `Payment received from <strong>${customerName}</strong>`
+    : `Hi ${customerName},`;
+  const subtext = isAdminCopy
+    ? 'Payment has been successfully received for this order.'
+    : 'Great news! Your payment has been confirmed. We\'re now preparing your order for shipping.';
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${headerTitle}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0fdf4;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          
+          <tr>
+            <td style="${headerBg} padding: 40px 30px; text-align: center;">
+              <p style="font-size: 48px; margin: 0 0 10px;">${headerIcon}</p>
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
+                ${headerTitle}
+              </h1>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="padding: 40px 30px;">
+              <p style="color: #4b5563; line-height: 1.6; margin: 0 0 20px; font-size: 16px;">
+                ${greeting}
+              </p>
+              <p style="color: #4b5563; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">
+                ${subtext}
+              </p>
+              
+              <div style="background-color: #d1fae5; border: 2px solid #10b981; padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;">
+                <p style="margin: 0 0 5px; color: #065f46; font-size: 14px;">Payment Status</p>
+                <p style="margin: 0; color: #047857; font-size: 24px; font-weight: bold;">✅ PAID</p>
+              </div>
+              
+              <div style="background-color: #f3f4f6; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #6b7280; font-size: 14px;">Order ID</p>
+                <p style="margin: 5px 0 0; color: #1f2937; font-size: 20px; font-weight: bold;">#${orderId.slice(0, 8).toUpperCase()}</p>
+              </div>
+              
+              ${paymentId ? `
+              <div style="background-color: #f3f4f6; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #6b7280; font-size: 14px;">Payment ID</p>
+                <p style="margin: 5px 0 0; color: #1f2937; font-size: 16px; font-weight: 600;">${paymentId}</p>
+              </div>` : ''}
+              
+              <div style="background-color: #fef3c7; padding: 15px 20px; border-radius: 8px; text-align: center;">
+                <p style="margin: 0; color: #92400e; font-size: 14px;">Amount Paid</p>
+                <p style="margin: 5px 0 0; color: #78350f; font-size: 24px; font-weight: bold;">₹${total.toLocaleString('en-IN')}</p>
+              </div>
+            </td>
+          </tr>
+          
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; margin: 0 0 10px; font-size: 14px;">
+                ${isAdminCopy ? 'Manage orders in your admin panel' : 'Your order will be shipped soon!'}
               </p>
               ${isAdminCopy 
                 ? `<a href="https://www.darshanstylehub.com/admin/orders" style="color: #9f1239; font-weight: 600; font-size: 16px; text-decoration: none;">View All Orders →</a>`

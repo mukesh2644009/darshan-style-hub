@@ -28,13 +28,55 @@ export async function POST(request: Request) {
     }
 
     if (orderId) {
-      await prisma.order.update({
+      // Update order payment status
+      const updatedOrder = await prisma.order.update({
         where: { id: orderId },
         data: {
           paymentStatus: 'PAID',
           paymentMethod: 'UPI (Razorpay)',
         },
+        include: {
+          user: {
+            select: {
+              email: true,
+            },
+          },
+        },
       });
+
+      // Send payment confirmation emails
+      try {
+        const { sendPaymentConfirmationEmail } = await import('@/lib/email');
+        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub@gmail.com';
+
+        // Send to customer
+        const customerEmail = user.email || updatedOrder.user?.email;
+        if (customerEmail) {
+          sendPaymentConfirmationEmail({
+            to: customerEmail,
+            customerName: updatedOrder.shippingName,
+            orderId: orderId,
+            total: updatedOrder.total,
+            paymentId: razorpay_payment_id,
+          }).catch((err) => {
+            console.error('Failed to send customer payment confirmation:', err);
+          });
+        }
+
+        // Send to admin
+        sendPaymentConfirmationEmail({
+          to: adminEmail,
+          customerName: updatedOrder.shippingName,
+          orderId: orderId,
+          total: updatedOrder.total,
+          paymentId: razorpay_payment_id,
+          isAdminCopy: true,
+        }).catch((err) => {
+          console.error('Failed to send admin payment confirmation:', err);
+        });
+      } catch (emailError) {
+        console.error('Email service not available:', emailError);
+      }
     }
 
     return NextResponse.json({

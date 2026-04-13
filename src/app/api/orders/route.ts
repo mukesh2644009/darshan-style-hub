@@ -206,6 +206,12 @@ export async function POST(request: Request) {
       const { sendOrderConfirmationEmail } = await import('@/lib/email');
       const { sendOrderWhatsAppNotification } = await import('@/lib/whatsapp');
 
+      // Determine payment status for email
+      // For UPI/Razorpay: payment is pending until verified
+      // For COD/WhatsApp: payment is pending but order is confirmed
+      const isOnlinePayment = paymentMethod.includes('UPI') || paymentMethod.includes('Razorpay');
+      const emailPaymentStatus = isOnlinePayment ? 'PENDING' : 'PENDING';
+
       // Send email to customer
       if (customerEmail) {
         sendOrderConfirmationEmail({
@@ -217,6 +223,7 @@ export async function POST(request: Request) {
           shippingAddress: fullAddress,
           shippingPhone: shippingPhone,
           paymentMethod,
+          paymentStatus: emailPaymentStatus,
         }).catch((err) => {
           console.error('Failed to send customer order email:', err);
         });
@@ -233,6 +240,7 @@ export async function POST(request: Request) {
         shippingPhone: shippingPhone,
         shippingEmail: customerEmail || undefined,
         paymentMethod,
+        paymentStatus: emailPaymentStatus,
         isAdminCopy: true,
       }).catch((err) => {
         console.error('Failed to send admin order email:', err);

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { FiUsers, FiMail, FiPhone, FiShoppingBag } from 'react-icons/fi';
+import DeleteCustomerButton from './DeleteCustomerButton';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -75,6 +76,9 @@ export default async function CustomersPage() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Joined
                   </th>
+                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -137,6 +141,15 @@ export default async function CustomersPage() {
                           month: 'short',
                           year: 'numeric',
                         })}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        {customer.role !== 'ADMIN' && (
+                          <DeleteCustomerButton
+                            customerId={customer.id}
+                            customerName={customer.name || 'Unnamed'}
+                            orderCount={customer.orders.length}
+                          />
+                        )}
                       </td>
                     </tr>
                   );

@@ -19,23 +19,23 @@ export default function WhatsAppButton() {
   const whatsappLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${defaultMessage}`;
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2 sm:gap-3">
       {/* Instagram Button */}
       <a
         href={INSTAGRAM_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="w-14 h-14 rounded-full shadow-lg flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 hover:scale-110 transition-all duration-300"
+        className="w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg flex items-center justify-center bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 hover:scale-110 transition-all duration-300"
         title="Follow us on Instagram"
       >
-        <FaInstagram size={28} className="text-white" />
+        <FaInstagram className="text-white w-6 h-6 sm:w-7 sm:h-7" />
       </a>
 
       {/* WhatsApp Section */}
       <div className="relative">
         {/* Chat Popup */}
         {isOpen && (
-          <div className="absolute bottom-16 right-0 w-72 bg-white rounded-2xl shadow-2xl overflow-hidden animate-scaleIn mb-4">
+          <div className="absolute bottom-14 sm:bottom-16 right-0 w-64 sm:w-72 bg-white rounded-2xl shadow-2xl overflow-hidden animate-scaleIn mb-4">
             {/* Header */}
             <div className="bg-green-500 p-4 text-white">
               <div className="flex items-center justify-between">
@@ -114,16 +114,16 @@ export default function WhatsAppButton() {
         {/* Main Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ${
+          className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 ${
             isOpen
               ? 'bg-gray-600 hover:bg-gray-700 rotate-90'
               : 'bg-green-500 hover:bg-green-600 hover:scale-110'
           }`}
         >
           {isOpen ? (
-            <FiX size={24} className="text-white" />
+            <FiX className="text-white w-5 h-5 sm:w-6 sm:h-6" />
           ) : (
-            <FaWhatsapp size={28} className="text-white" />
+            <FaWhatsapp className="text-white w-6 h-6 sm:w-7 sm:h-7" />
           )}
         </button>
 

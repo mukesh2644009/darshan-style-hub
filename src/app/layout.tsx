@@ -84,7 +84,7 @@ export default function RootLayout({
           />
         </noscript>
       </head>
-      <body className="font-body bg-accent-50 text-gray-900 antialiased">
+      <body className="font-body bg-accent-50 text-gray-900 antialiased overflow-x-hidden">
         <Navbar />
         <CartSidebar />
         <main className="min-h-screen pt-[104px]">

@@ -37,7 +37,7 @@ export default function HeroCarousel() {
             src={heroImages[currentIndex]}
             alt={`Fashion collection ${currentIndex + 1}`}
             fill
-            className="object-cover object-top"
+            className="object-cover object-[center_20%]"
             priority={currentIndex === 0}
           />
         </motion.div>

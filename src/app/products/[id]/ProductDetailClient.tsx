@@ -201,11 +201,11 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   };
 
   return (
-    <div className="min-h-screen bg-accent-50">
+    <div className="min-h-screen bg-accent-50 overflow-x-hidden">
       {/* Breadcrumb */}
-      <div className="bg-white border-b border-accent-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <nav className="flex items-center gap-2 text-sm text-gray-500">
+      <div className="bg-white border-b border-accent-200 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-4">
+          <nav className="flex items-center gap-2 text-sm text-gray-500 overflow-x-auto">
             <Link href="/" className="hover:text-primary-600">Home</Link>
             <FiChevronRight size={14} />
             <Link href="/products" className="hover:text-primary-600">Products</Link>
@@ -219,7 +219,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-6">
         <div className="grid lg:grid-cols-2 gap-6 lg:gap-10">
           {/* Images */}
           <div className="space-y-4">
@@ -266,7 +266,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
           </div>
 
           {/* Product Info */}
-          <div className="lg:py-4">
+          <div className="lg:py-4 overflow-hidden">
             {/* Category & Rating */}
             <div className="flex items-center gap-4 mb-4">
               <span className="text-sm text-primary-600 font-medium">{product.subcategory}</span>
@@ -409,31 +409,31 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
             </div>
 
             {/* Features */}
-            <div className="grid grid-cols-3 gap-4 p-4 bg-accent-100 rounded-2xl">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 p-3 sm:p-4 bg-accent-100 rounded-2xl">
               <div className="text-center">
-                <FiTruck className="mx-auto mb-2 text-primary-600" size={24} />
-                <p className="text-sm font-medium text-gray-900">Free Shipping</p>
-                <p className="text-xs text-gray-500">Above ₹999</p>
+                <FiTruck className="mx-auto mb-1 sm:mb-2 text-primary-600" size={20} />
+                <p className="text-xs sm:text-sm font-medium text-gray-900">Free Shipping</p>
+                <p className="text-[10px] sm:text-xs text-gray-500">Above ₹999</p>
               </div>
               <div className="text-center">
-                <FiRefreshCw className="mx-auto mb-2 text-primary-600" size={24} />
-                <p className="text-sm font-medium text-gray-900">Easy Returns</p>
-                <p className="text-xs text-gray-500">7 Days</p>
+                <FiRefreshCw className="mx-auto mb-1 sm:mb-2 text-primary-600" size={20} />
+                <p className="text-xs sm:text-sm font-medium text-gray-900">Easy Returns</p>
+                <p className="text-[10px] sm:text-xs text-gray-500">7 Days</p>
               </div>
               <div className="text-center">
-                <FiShield className="mx-auto mb-2 text-primary-600" size={24} />
-                <p className="text-sm font-medium text-gray-900">100% Genuine</p>
-                <p className="text-xs text-gray-500">Authentic</p>
+                <FiShield className="mx-auto mb-1 sm:mb-2 text-primary-600" size={20} />
+                <p className="text-xs sm:text-sm font-medium text-gray-900">100% Genuine</p>
+                <p className="text-[10px] sm:text-xs text-gray-500">Authentic</p>
               </div>
             </div>
 
             {/* WhatsApp Help */}
-            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-xl">
-              <div className="flex items-start gap-3">
-                <FaWhatsapp className="text-green-500 flex-shrink-0 mt-1" size={24} />
+            <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-xl">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <FaWhatsapp className="text-green-500 flex-shrink-0 mt-0.5" size={20} />
                 <div>
-                  <p className="font-medium text-gray-900">Need Help?</p>
-                  <p className="text-sm text-gray-600">
+                  <p className="font-medium text-gray-900 text-sm sm:text-base">Need Help?</p>
+                  <p className="text-xs sm:text-sm text-gray-600">
                     Chat with us on WhatsApp for size recommendations, custom orders, or any queries.
                   </p>
                 </div>

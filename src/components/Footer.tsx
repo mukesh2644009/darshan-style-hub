@@ -35,7 +35,7 @@ export default function Footer() {
             <h4 className="font-display text-2xl font-bold text-white mb-4">Darshan Style Hub™</h4>
             <p className="text-accent-300 mb-4 leading-relaxed">
               Your trusted destination for premium suits and co ord sets in Jaipur. 
-              Quality fabrics, timeless designs, and exceptional service since 2010.
+              Quality fabrics, timeless designs, and exceptional service since 2025.
             </p>
             <div className="flex gap-3">
               <a 

@@ -189,6 +189,9 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
                         onChange={(e) => setName(e.target.value)}
                         required
                         placeholder="Enter your name"
+                        autoComplete="name"
+                        name="name"
+                        id="signup-name"
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
                         autoFocus
                       />
@@ -207,6 +210,9 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         placeholder="you@example.com"
+                        autoComplete="email"
+                        name="email"
+                        id="signup-email"
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
                       />
                     </div>
@@ -223,6 +229,9 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         placeholder="+91 98765 43210"
+                        autoComplete="tel"
+                        name="phone"
+                        id="signup-phone"
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
                       />
                     </div>
@@ -240,6 +249,9 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         placeholder="Min 6 characters"
+                        autoComplete="new-password"
+                        name="password"
+                        id="signup-password"
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
                       />
                     </div>
@@ -291,6 +303,9 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         placeholder="you@example.com"
+                        autoComplete="email"
+                        name="login-email"
+                        id="login-email"
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
                         autoFocus
                       />
@@ -309,6 +324,9 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         placeholder="Enter your password"
+                        autoComplete="current-password"
+                        name="login-password"
+                        id="login-password"
                         className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
                       />
                     </div>

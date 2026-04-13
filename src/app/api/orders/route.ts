@@ -212,29 +212,36 @@ export async function POST(request: Request) {
       const isOnlinePayment = paymentMethod.includes('UPI') || paymentMethod.includes('Razorpay');
       const emailPaymentStatus = isOnlinePayment ? 'PENDING' : 'PENDING';
 
-      // Send email to customer
+      // Send email to customer with PDF invoice
       if (customerEmail) {
         sendOrderConfirmationEmail({
           to: customerEmail,
           customerName: shippingName,
           orderId: order.id,
           total: order.total,
+          subtotal: order.subtotal,
+          shipping: order.shipping,
+          discount: order.discount,
           items: emailItems,
           shippingAddress: fullAddress,
           shippingPhone: shippingPhone,
           paymentMethod,
           paymentStatus: emailPaymentStatus,
+          orderDate: order.createdAt,
         }).catch((err) => {
           console.error('Failed to send customer order email:', err);
         });
       }
 
-      // Send email to admin (owner)
+      // Send email to admin (owner) with PDF invoice
       sendOrderConfirmationEmail({
         to: adminEmail,
         customerName: shippingName,
         orderId: order.id,
         total: order.total,
+        subtotal: order.subtotal,
+        shipping: order.shipping,
+        discount: order.discount,
         items: emailItems,
         shippingAddress: fullAddress,
         shippingPhone: shippingPhone,
@@ -242,6 +249,7 @@ export async function POST(request: Request) {
         paymentMethod,
         paymentStatus: emailPaymentStatus,
         isAdminCopy: true,
+        orderDate: order.createdAt,
       }).catch((err) => {
         console.error('Failed to send admin order email:', err);
       });

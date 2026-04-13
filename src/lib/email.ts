@@ -339,6 +339,9 @@ interface OrderEmailProps {
   customerName: string;
   orderId: string;
   total: number;
+  subtotal?: number;
+  shipping?: number;
+  discount?: number;
   items: Array<{
     name: string;
     quantity: number;
@@ -352,10 +355,15 @@ interface OrderEmailProps {
   paymentMethod?: string;
   paymentStatus?: 'PENDING' | 'PAID' | 'FAILED';
   isAdminCopy?: boolean;
+  orderDate?: Date;
 }
 
 export async function sendOrderConfirmationEmail(props: OrderEmailProps) {
-  const { to, customerName, orderId, total, items, shippingAddress, shippingPhone, shippingEmail, paymentMethod, paymentStatus = 'PENDING', isAdminCopy } = props;
+  const { 
+    to, customerName, orderId, total, subtotal, shipping, discount,
+    items, shippingAddress, shippingPhone, shippingEmail, paymentMethod, 
+    paymentStatus = 'PENDING', isAdminCopy, orderDate 
+  } = props;
   const service = getEmailService();
   
   if (!service) {
@@ -366,25 +374,66 @@ export async function sendOrderConfirmationEmail(props: OrderEmailProps) {
   const htmlContent = getOrderConfirmationTemplate(customerName, orderId, total, items, shippingAddress, shippingPhone, shippingEmail, paymentMethod, paymentStatus, isAdminCopy);
   const subjectPrefix = isAdminCopy ? '[NEW ORDER] ' : 'Order Confirmed! ';
 
+  // Generate PDF invoice
+  let pdfBuffer: Buffer | null = null;
+  try {
+    const { generateOrderInvoicePDF } = await import('./invoice-pdf');
+    pdfBuffer = await generateOrderInvoicePDF({
+      orderId,
+      orderDate: orderDate || new Date(),
+      customerName,
+      customerEmail: shippingEmail,
+      customerPhone: shippingPhone || '',
+      shippingAddress: shippingAddress || '',
+      items,
+      subtotal: subtotal || items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+      shipping: shipping || 0,
+      discount: discount || 0,
+      total,
+      paymentMethod: paymentMethod || 'COD',
+      paymentStatus: paymentStatus || 'PENDING',
+    });
+  } catch (pdfError) {
+    console.error('Failed to generate PDF invoice:', pdfError);
+  }
+
+  // Prepare attachments
+  const attachments = pdfBuffer ? [{
+    filename: `Invoice-${orderId.slice(0, 8).toUpperCase()}.pdf`,
+    content: pdfBuffer,
+  }] : [];
+
   // Try Resend first (for custom domain: info@darshanstylehub.com)
   if (service === 'resend') {
     try {
       const { Resend } = await import('resend');
       const resend = new Resend(process.env.RESEND_API_KEY);
       
-      const { data, error } = await resend.emails.send({
+      const emailOptions: {
+        from: string;
+        to: string[];
+        subject: string;
+        html: string;
+        attachments?: Array<{ filename: string; content: Buffer }>;
+      } = {
         from: `${SHOP_NAME} <info@darshanstylehub.com>`,
         to: [to],
         subject: `${subjectPrefix}#${orderId.slice(0, 8).toUpperCase()}`,
         html: htmlContent,
-      });
+      };
+
+      if (attachments.length > 0) {
+        emailOptions.attachments = attachments;
+      }
+
+      const { data, error } = await resend.emails.send(emailOptions);
 
       if (error) {
         console.error('Resend error:', error);
         return { success: false, error };
       }
 
-      console.log('Order email sent via Resend:', data);
+      console.log('Order email sent via Resend with PDF:', data);
       return { success: true, data, via: 'resend' };
     } catch (resendError) {
       console.error('Resend failed, trying Gmail...', resendError);
@@ -396,11 +445,18 @@ export async function sendOrderConfirmationEmail(props: OrderEmailProps) {
   if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
     try {
       const transporter = createGmailTransporter();
+      const gmailAttachments = pdfBuffer ? [{
+        filename: `Invoice-${orderId.slice(0, 8).toUpperCase()}.pdf`,
+        content: pdfBuffer,
+        contentType: 'application/pdf',
+      }] : [];
+
       const info = await transporter.sendMail({
         from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`,
         to: to,
         subject: `${subjectPrefix}#${orderId.slice(0, 8).toUpperCase()}`,
         html: htmlContent,
+        attachments: gmailAttachments,
       });
       console.log('Order email sent via Gmail:', info.messageId);
       return { success: true, messageId: info.messageId, via: 'gmail' };

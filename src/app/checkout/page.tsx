@@ -12,6 +12,7 @@ import { validateEmail } from '@/lib/validation';
 import { fbInitiateCheckout, fbPurchase } from '@/lib/facebook-pixel';
 import { downloadReceipt } from '@/lib/generate-receipt';
 import { FiDownload } from 'react-icons/fi';
+import { gaBeginCheckout, gaPurchase } from '@/lib/google-analytics';
 
 export default function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCartStore();
@@ -56,10 +57,23 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (items.length > 0) {
+      // Facebook Pixel - begin checkout
       fbInitiateCheckout(
         items.map(item => item.product.id),
         getTotalPrice(),
         items.reduce((sum, item) => sum + item.quantity, 0)
+      );
+      
+      // Google Analytics - begin checkout
+      gaBeginCheckout(
+        items.map(item => ({
+          id: item.product.id,
+          name: item.product.name,
+          category: item.product.category,
+          price: item.product.price,
+          quantity: item.quantity,
+        })),
+        getTotalPrice()
       );
     }
   }, []);
@@ -168,6 +182,7 @@ export default function CheckoutPage() {
           setOrderPaymentMethod(paymentMethod === 'cod' ? 'COD' : 'WHATSAPP');
           setOrderPlaced(true);
 
+          // Facebook Pixel - purchase
           fbPurchase(
             data.id || '',
             items.map(item => item.product.id),
@@ -175,6 +190,21 @@ export default function CheckoutPage() {
             items.reduce((sum, item) => sum + item.quantity, 0),
             formData.email,
             formData.phone
+          );
+
+          // Google Analytics - purchase
+          gaPurchase(
+            data.id || '',
+            items.map(item => ({
+              id: item.product.id,
+              name: item.product.name,
+              category: item.product.category,
+              price: item.product.price,
+              quantity: item.quantity,
+            })),
+            data.total || total,
+            shipping,
+            paymentMethod === 'cod' ? 'COD' : 'WhatsApp'
           );
 
           clearCart();
@@ -233,6 +263,7 @@ export default function CheckoutPage() {
             setOrderPaymentMethod('UPI');
             setOrderPlaced(true);
 
+            // Facebook Pixel - purchase
             fbPurchase(
               orderDbId,
               items.map(item => item.product.id),
@@ -240,6 +271,21 @@ export default function CheckoutPage() {
               items.reduce((sum, item) => sum + item.quantity, 0),
               formData.email,
               formData.phone
+            );
+
+            // Google Analytics - purchase
+            gaPurchase(
+              orderDbId,
+              items.map(item => ({
+                id: item.product.id,
+                name: item.product.name,
+                category: item.product.category,
+                price: item.product.price,
+                quantity: item.quantity,
+              })),
+              amount,
+              0,
+              'UPI'
             );
 
             clearCart();

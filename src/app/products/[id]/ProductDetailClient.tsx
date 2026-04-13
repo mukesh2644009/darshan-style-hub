@@ -12,6 +12,7 @@ import { useAuthStore } from '@/store/authStore';
 import ProductCard from '@/components/ProductCard';
 import QuickSignupModal from '@/components/QuickSignupModal';
 import { createWhatsAppOrderLink, createWhatsAppShareLink } from '@/components/WhatsAppButton';
+import { gaViewItem, gaAddToCart, gaWhatsAppClick } from '@/lib/google-analytics';
 
 function stripEmojis(text: string): string {
   // eslint-disable-next-line no-control-regex
@@ -182,7 +183,26 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
+  // Track product view in Google Analytics
+  useEffect(() => {
+    gaViewItem({
+      id: product.id,
+      name: product.name,
+      category: product.category,
+      price: product.price,
+    });
+  }, [product.id, product.name, product.category, product.price]);
+
   const doAddToCart = () => {
+    // Track add to cart in Google Analytics
+    gaAddToCart({
+      id: product.id,
+      name: product.name,
+      category: product.category,
+      price: product.price,
+      quantity: quantity,
+    });
+    
     for (let i = 0; i < quantity; i++) {
       addItem(product, selectedSize, selectedColor);
     }

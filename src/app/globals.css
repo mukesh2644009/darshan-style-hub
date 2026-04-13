@@ -12,6 +12,7 @@
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
     overflow-x: hidden;
+    width: 100%;
   }
 
   body {
@@ -19,6 +20,13 @@
     overflow-x: hidden;
     width: 100%;
     max-width: 100vw;
+    position: relative;
+  }
+
+  /* Force all direct children to respect viewport */
+  body > * {
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {

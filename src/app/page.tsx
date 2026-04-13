@@ -64,8 +64,8 @@ export default async function Home() {
             </div>
 
             {/* Hero Image Carousel - Visible on all screens */}
-            <div className="relative w-full max-w-md mx-auto lg:max-w-none">
-              <div className="relative w-full aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border border-gray-100">
+            <div className="relative w-full max-w-sm sm:max-w-md mx-auto lg:max-w-none">
+              <div className="relative w-full aspect-[2/3] sm:aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border border-gray-100">
                 <HeroCarousel />
               </div>
               {/* Premium badge - hidden on mobile */}

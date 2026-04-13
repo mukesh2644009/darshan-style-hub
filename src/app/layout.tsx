@@ -84,14 +84,16 @@ export default function RootLayout({
           />
         </noscript>
       </head>
-      <body className="font-body bg-accent-50 text-gray-900 antialiased overflow-x-hidden">
-        <Navbar />
-        <CartSidebar />
-        <main className="min-h-screen pt-[104px]">
-          {children}
-        </main>
-        <Footer />
-        <WhatsAppButton />
+      <body className="font-body bg-accent-50 text-gray-900 antialiased overflow-x-hidden w-full">
+        <div className="w-full max-w-[100vw] overflow-x-hidden">
+          <Navbar />
+          <CartSidebar />
+          <main className="min-h-screen pt-[104px] w-full">
+            {children}
+          </main>
+          <Footer />
+          <WhatsAppButton />
+        </div>
       </body>
     </html>
   );

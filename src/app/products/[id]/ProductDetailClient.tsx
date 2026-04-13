@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, TouchEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiHeart, FiShare2, FiMinus, FiPlus, FiStar, FiTruck, FiRefreshCw, FiShield, FiChevronRight, FiCheck, FiX } from 'react-icons/fi';
+import { FiHeart, FiShare2, FiMinus, FiPlus, FiStar, FiTruck, FiRefreshCw, FiShield, FiChevronRight, FiChevronLeft, FiCheck, FiX } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { Product } from '@/lib/products';
 import { useCartStore } from '@/store/cartStore';
@@ -137,6 +137,45 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const [showSignupModal, setShowSignupModal] = useState(false);
   const isWishlisted = isInWishlist(product.id);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  
+  // Swipe handling for mobile
+  const touchStartX = useRef<number>(0);
+  const touchEndX = useRef<number>(0);
+
+  const handleTouchStart = (e: TouchEvent<HTMLDivElement>) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: TouchEvent<HTMLDivElement>) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(diff) > minSwipeDistance) {
+      if (diff > 0 && selectedImage < product.images.length - 1) {
+        // Swipe left - next image
+        setSelectedImage(selectedImage + 1);
+      } else if (diff < 0 && selectedImage > 0) {
+        // Swipe right - previous image
+        setSelectedImage(selectedImage - 1);
+      }
+    }
+  };
+
+  const goToNextImage = () => {
+    if (selectedImage < product.images.length - 1) {
+      setSelectedImage(selectedImage + 1);
+    }
+  };
+
+  const goToPrevImage = () => {
+    if (selectedImage > 0) {
+      setSelectedImage(selectedImage - 1);
+    }
+  };
 
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -223,14 +262,20 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
         <div className="grid lg:grid-cols-2 gap-6 lg:gap-10">
           {/* Images */}
           <div className="space-y-4">
-            {/* Main Image */}
-            <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-white">
+            {/* Main Image with Swipe */}
+            <div 
+              className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-white touch-pan-y"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               <Image
                 src={product.images[selectedImage]}
                 alt={product.name}
                 fill
                 className="object-cover object-top"
                 priority
+                draggable={false}
               />
               {discount > 0 && (
                 <span className="absolute top-4 left-4 bg-primary-600 text-white text-sm font-semibold px-3 py-1 rounded-full">
@@ -245,11 +290,50 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
               >
                 <FiHeart size={20} fill={isWishlisted ? 'currentColor' : 'none'} />
               </button>
+
+              {/* Navigation Arrows (visible when multiple images) */}
+              {product.images.length > 1 && (
+                <>
+                  {selectedImage > 0 && (
+                    <button
+                      onClick={goToPrevImage}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all"
+                    >
+                      <FiChevronLeft size={24} />
+                    </button>
+                  )}
+                  {selectedImage < product.images.length - 1 && (
+                    <button
+                      onClick={goToNextImage}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/80 hover:bg-white rounded-full shadow-lg transition-all"
+                    >
+                      <FiChevronRight size={24} />
+                    </button>
+                  )}
+                </>
+              )}
+
+              {/* Dots Indicator */}
+              {product.images.length > 1 && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                  {product.images.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedImage(index)}
+                      className={`h-2 rounded-full transition-all ${
+                        index === selectedImage
+                          ? 'bg-primary-600 w-5'
+                          : 'bg-white/70 w-2 hover:bg-white'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Thumbnail Images */}
+            {/* Thumbnail Images - hidden on mobile, visible on larger screens */}
             {product.images.length > 1 && (
-              <div className="flex gap-3">
+              <div className="hidden sm:flex gap-3">
                 {product.images.map((image, index) => (
                   <button
                     key={index}
@@ -369,12 +453,12 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
             </div>
 
             {/* Actions */}
-            <div className="space-y-3 mb-8">
+            <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8 -mx-1 px-1">
               {/* Add to Cart */}
               <button
                 onClick={handleAddToCart}
                 disabled={!product.inStock}
-                className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full btn-primary text-sm sm:text-base py-2.5 sm:py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Add to Cart
               </button>
@@ -383,27 +467,27 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
               <button
                 onClick={handleOrderOnWhatsApp}
                 disabled={!product.inStock}
-                className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3 rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full flex items-center justify-center gap-1.5 sm:gap-2 bg-green-500 hover:bg-green-600 text-white py-2.5 sm:py-3 rounded-full font-medium text-sm sm:text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <FaWhatsapp size={20} />
+                <FaWhatsapp size={18} />
                 Order on WhatsApp
               </button>
 
               {/* Share Options */}
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3">
                 <button
                   onClick={handleShareWhatsApp}
-                  className="flex-1 flex items-center justify-center gap-2 border-2 border-green-500 text-green-600 py-2.5 rounded-full font-medium hover:bg-green-50 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 border-2 border-green-500 text-green-600 py-2 sm:py-2.5 rounded-full font-medium text-sm sm:text-base hover:bg-green-50 transition-colors"
                 >
-                  <FaWhatsapp size={18} />
+                  <FaWhatsapp size={16} />
                   Share
                 </button>
                 <button
                   onClick={handleCopyLink}
-                  className="flex-1 flex items-center justify-center gap-2 border-2 border-gray-300 text-gray-600 py-2.5 rounded-full font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 sm:gap-2 border-2 border-gray-300 text-gray-600 py-2 sm:py-2.5 rounded-full font-medium text-sm sm:text-base hover:bg-gray-50 transition-colors"
                 >
-                  <FiShare2 size={18} />
-                  Copy Link
+                  <FiShare2 size={16} />
+                  Copy
                 </button>
               </div>
             </div>

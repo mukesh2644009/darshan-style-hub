@@ -6,7 +6,7 @@ import nodemailer from 'nodemailer';
 // Shop details
 const SHOP_NAME = 'Darshan Style Hub™';
 const SHOP_WEBSITE = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-const ADMIN_EMAIL = 'darshanstylehub.business@gmail.com';
+const ADMIN_EMAILS = ['darshanstylehub.business@gmail.com', 'darshanstylehub@gmail.com'];
 
 // Check which email service is available
 // Resend is prioritized for custom domain emails (info@darshanstylehub.com)
@@ -218,7 +218,7 @@ export async function sendNewSignupNotification({ customerName, customerEmail, c
     return { success: false, error: 'Email not configured' };
   }
 
-  const ownerEmail = ADMIN_EMAIL;
+  const ownerEmails = ADMIN_EMAILS;
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -292,7 +292,7 @@ export async function sendNewSignupNotification({ customerName, customerEmail, c
       
       const { data, error } = await resend.emails.send({
         from: `${SHOP_NAME} <info@darshanstylehub.com>`,
-        to: [ownerEmail],
+        to: ownerEmails,
         subject: `🎉 New Signup: ${customerName} just joined!`,
         html: htmlContent,
       });
@@ -312,7 +312,7 @@ export async function sendNewSignupNotification({ customerName, customerEmail, c
       const transporter = createGmailTransporter();
       const info = await transporter.sendMail({
         from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`,
-        to: ownerEmail,
+        to: ownerEmails.join(', '),
         subject: `🎉 New Signup: ${customerName} just joined!`,
         html: htmlContent,
       });

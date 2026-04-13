@@ -137,6 +137,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const [showSignupModal, setShowSignupModal] = useState(false);
   const isWishlisted = isInWishlist(product.id);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
+  const [showFullName, setShowFullName] = useState(false);
   
   // Swipe handling for mobile
   const touchStartX = useRef<number>(0);
@@ -233,21 +234,19 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
   return (
     <div className="min-h-screen bg-accent-50 overflow-x-hidden">
-      {/* Breadcrumb */}
-      <div className="bg-white border-b border-accent-200 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-3 sm:py-4">
-          <nav className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-500">
-            <Link href="/" className="hover:text-primary-600 whitespace-nowrap">Home</Link>
-            <FiChevronRight size={12} className="flex-shrink-0" />
-            <Link href="/products" className="hover:text-primary-600 whitespace-nowrap">Products</Link>
-            <FiChevronRight size={12} className="flex-shrink-0" />
-            <Link href={`/products?category=${product.category}`} className="hover:text-primary-600 whitespace-nowrap">
+      {/* Breadcrumb - Hidden on mobile, visible on desktop */}
+      <div className="hidden sm:block bg-white border-b border-accent-200">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-4">
+          <nav className="flex items-center gap-2 text-sm text-gray-500">
+            <Link href="/" className="hover:text-primary-600">Home</Link>
+            <FiChevronRight size={14} />
+            <Link href="/products" className="hover:text-primary-600">Products</Link>
+            <FiChevronRight size={14} />
+            <Link href={`/products?category=${product.category}`} className="hover:text-primary-600">
               {product.category}
             </Link>
-            <FiChevronRight size={12} className="flex-shrink-0" />
-            <span className="text-gray-900 truncate max-w-[120px] sm:max-w-none" title={product.name}>
-              {product.name}
-            </span>
+            <FiChevronRight size={14} />
+            <span className="text-gray-900">{product.name}</span>
           </nav>
         </div>
       </div>
@@ -356,12 +355,25 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
             </div>
 
             {/* Name & Price */}
-            <h1 
-              className="font-display text-xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-none"
-              title={product.name}
-            >
-              {product.name}
-            </h1>
+            <div className="relative mb-3 sm:mb-4">
+              <h1 
+                className="font-display text-xl sm:text-3xl lg:text-4xl font-bold text-gray-900 line-clamp-1 sm:line-clamp-none cursor-pointer sm:cursor-default"
+                onClick={() => setShowFullName(!showFullName)}
+              >
+                {product.name}
+                <span className="sm:hidden text-primary-600 text-sm font-normal ml-1">ⓘ</span>
+              </h1>
+              
+              {/* Full name popup on mobile */}
+              {showFullName && (
+                <div 
+                  className="sm:hidden absolute left-0 right-0 top-full mt-1 bg-gray-900 text-white text-sm p-3 rounded-lg shadow-lg z-20"
+                  onClick={() => setShowFullName(false)}
+                >
+                  {product.name}
+                </div>
+              )}
+            </div>
 
             <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 mb-4 sm:mb-6">
               <span className="text-2xl sm:text-3xl font-bold text-gray-900">

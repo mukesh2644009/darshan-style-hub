@@ -542,9 +542,9 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               )}
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+              <div className="grid sm:grid-cols-2 gap-3 sm:gap-4 overflow-hidden">
+                <div className="min-w-0">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">First Name *</label>
                   <input
                     type="text"
                     value={formData.firstName}
@@ -554,8 +554,8 @@ export default function CheckoutPage() {
                   />
                   {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                <div className="min-w-0">
+                  <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Last Name</label>
                   <input
                     type="text"
                     value={formData.lastName}

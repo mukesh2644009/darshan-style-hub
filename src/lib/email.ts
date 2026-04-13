@@ -98,6 +98,156 @@ export async function sendWelcomeEmail({ to, customerName }: WelcomeEmailProps) 
   return { success: false, error: 'All email services failed' };
 }
 
+// Password reset email
+interface PasswordResetEmailProps {
+  to: string;
+  customerName: string;
+  resetUrl: string;
+}
+
+export async function sendPasswordResetEmail({ to, customerName, resetUrl }: PasswordResetEmailProps) {
+  const service = getEmailService();
+  
+  if (!service) {
+    console.log('No email service configured, skipping password reset email');
+    return { success: false, error: 'Email not configured' };
+  }
+
+  const htmlContent = getPasswordResetEmailTemplate(customerName, resetUrl);
+
+  if (service === 'resend') {
+    try {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      
+      const { data, error } = await resend.emails.send({
+        from: `${SHOP_NAME} <info@darshanstylehub.com>`,
+        to: [to],
+        subject: `Reset Your Password - ${SHOP_NAME}`,
+        html: htmlContent,
+      });
+
+      if (error) {
+        console.error('Resend error:', error);
+        return { success: false, error };
+      }
+
+      console.log('Password reset email sent via Resend:', data);
+      return { success: true, data, via: 'resend' };
+    } catch (resendError) {
+      console.error('Resend failed, trying Gmail...', resendError);
+    }
+  }
+
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    try {
+      const transporter = createGmailTransporter();
+      const info = await transporter.sendMail({
+        from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`,
+        to: to,
+        subject: `Reset Your Password - ${SHOP_NAME}`,
+        html: htmlContent,
+      });
+      console.log('Password reset email sent via Gmail:', info.messageId);
+      return { success: true, messageId: info.messageId, via: 'gmail' };
+    } catch (gmailError) {
+      console.error('Gmail failed:', gmailError);
+      return { success: false, error: gmailError };
+    }
+  }
+
+  return { success: false, error: 'All email services failed' };
+}
+
+function getPasswordResetEmailTemplate(customerName: string, resetUrl: string): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Your Password</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f4f0;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #9f1239 0%, #be185d 100%); padding: 40px 30px; text-align: center;">
+              <p style="font-size: 48px; margin: 0 0 10px;">🔐</p>
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold;">
+                Reset Your Password
+              </h1>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <p style="color: #4b5563; line-height: 1.6; margin: 0 0 20px; font-size: 16px;">
+                Hi ${customerName},
+              </p>
+              <p style="color: #4b5563; line-height: 1.6; margin: 0 0 30px; font-size: 16px;">
+                We received a request to reset your password for your ${SHOP_NAME} account. Click the button below to create a new password:
+              </p>
+              
+              <!-- Reset Button -->
+              <table role="presentation" style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                <tr>
+                  <td align="center">
+                    <a href="${resetUrl}" style="display: inline-block; background: linear-gradient(135deg, #9f1239 0%, #be185d 100%); color: #ffffff; text-decoration: none; padding: 16px 40px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+                      Reset Password
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #6b7280; line-height: 1.6; margin: 0 0 20px; font-size: 14px;">
+                This link will expire in <strong>1 hour</strong> for security reasons.
+              </p>
+              
+              <p style="color: #6b7280; line-height: 1.6; margin: 0 0 20px; font-size: 14px;">
+                If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.
+              </p>
+              
+              <div style="background-color: #f3f4f6; padding: 15px 20px; border-radius: 8px; margin-top: 20px;">
+                <p style="margin: 0; color: #6b7280; font-size: 12px;">
+                  If the button doesn't work, copy and paste this link into your browser:
+                </p>
+                <p style="margin: 10px 0 0; color: #9f1239; font-size: 12px; word-break: break-all;">
+                  ${resetUrl}
+                </p>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; margin: 0 0 10px; font-size: 14px;">
+                Need help? Contact us anytime!
+              </p>
+              <p style="color: #9f1239; margin: 0 0 20px; font-size: 16px; font-weight: 600;">
+                📞 +91 90190 76335
+              </p>
+              <p style="color: #9ca3af; margin: 0; font-size: 12px;">
+                ${SHOP_NAME} | Sitapura, Jaipur, Rajasthan 302022
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+}
+
 function getWelcomeEmailTemplate(customerName: string): string {
   return `
 <!DOCTYPE html>

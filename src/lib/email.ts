@@ -259,8 +259,13 @@ export async function sendNewSignupNotification({ customerName, customerEmail, c
               <table role="presentation" style="width: 100%; border-collapse: collapse; margin-top: 24px;">
                 <tr>
                   <td align="center">
-                    <a href="https://wa.me/${customerPhone ? customerPhone.replace(/[^0-9]/g, '') : ''}" style="display: inline-block; background-color: #25D366; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px;">
-                      💬 Chat on WhatsApp
+                    ${customerPhone ? `
+                    <a href="https://wa.me/91${customerPhone.replace(/[^0-9]/g, '')}" style="display: inline-block; background-color: #25D366; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px; margin-right: 10px;">
+                      💬 WhatsApp
+                    </a>
+                    ` : ''}
+                    <a href="mailto:${customerEmail}" style="display: inline-block; background-color: #9f1239; color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+                      ✉️ Email
                     </a>
                   </td>
                 </tr>

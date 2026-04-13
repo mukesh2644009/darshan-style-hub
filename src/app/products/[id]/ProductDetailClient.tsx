@@ -132,7 +132,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
-  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedColor] = useState(product.colors?.[0]?.name || 'Default');
   const [quantity, setQuantity] = useState(1);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const isWishlisted = isInWishlist(product.id);
@@ -193,10 +193,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       alert('Please select a size');
       return;
     }
-    if (!selectedColor) {
-      alert('Please select a color');
-      return;
-    }
 
     if (!isAuthenticated) {
       setShowSignupModal(true);
@@ -209,10 +205,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const handleOrderOnWhatsApp = () => {
     if (!selectedSize) {
       alert('Please select a size');
-      return;
-    }
-    if (!selectedColor) {
-      alert('Please select a color');
       return;
     }
 
@@ -243,17 +235,19 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     <div className="min-h-screen bg-accent-50 overflow-x-hidden">
       {/* Breadcrumb */}
       <div className="bg-white border-b border-accent-200 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-4">
-          <nav className="flex items-center gap-2 text-sm text-gray-500 overflow-x-auto">
-            <Link href="/" className="hover:text-primary-600">Home</Link>
-            <FiChevronRight size={14} />
-            <Link href="/products" className="hover:text-primary-600">Products</Link>
-            <FiChevronRight size={14} />
-            <Link href={`/products?category=${product.category}`} className="hover:text-primary-600">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <nav className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-500">
+            <Link href="/" className="hover:text-primary-600 whitespace-nowrap">Home</Link>
+            <FiChevronRight size={12} className="flex-shrink-0" />
+            <Link href="/products" className="hover:text-primary-600 whitespace-nowrap">Products</Link>
+            <FiChevronRight size={12} className="flex-shrink-0" />
+            <Link href={`/products?category=${product.category}`} className="hover:text-primary-600 whitespace-nowrap">
               {product.category}
             </Link>
-            <FiChevronRight size={14} />
-            <span className="text-gray-900">{product.name}</span>
+            <FiChevronRight size={12} className="flex-shrink-0" />
+            <span className="text-gray-900 truncate max-w-[120px] sm:max-w-none" title={product.name}>
+              {product.name}
+            </span>
           </nav>
         </div>
       </div>
@@ -352,30 +346,33 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
           {/* Product Info */}
           <div className="lg:py-4 overflow-hidden">
             {/* Category & Rating */}
-            <div className="flex items-center gap-4 mb-4">
-              <span className="text-sm text-primary-600 font-medium">{product.subcategory}</span>
+            <div className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-4">
+              <span className="text-xs sm:text-sm text-primary-600 font-medium">{product.subcategory}</span>
               <div className="flex items-center gap-1">
-                <FiStar className="text-yellow-400 fill-yellow-400" size={16} />
-                <span className="font-medium">{product.rating}</span>
-                <span className="text-gray-500">({product.reviews} reviews)</span>
+                <FiStar className="text-yellow-400 fill-yellow-400" size={14} />
+                <span className="font-medium text-sm">{product.rating}</span>
+                <span className="text-gray-500 text-xs sm:text-sm">({product.reviews})</span>
               </div>
             </div>
 
             {/* Name & Price */}
-            <h1 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+            <h1 
+              className="font-display text-xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-none"
+              title={product.name}
+            >
               {product.name}
             </h1>
 
-            <div className="flex items-baseline gap-3 mb-6">
-              <span className="text-3xl font-bold text-gray-900">
+            <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <span className="text-2xl sm:text-3xl font-bold text-gray-900">
                 ₹{product.price.toLocaleString()}
               </span>
               {product.originalPrice && (
                 <>
-                  <span className="text-xl text-gray-400 line-through">
+                  <span className="text-lg sm:text-xl text-gray-400 line-through">
                     ₹{product.originalPrice.toLocaleString()}
                   </span>
-                  <span className="text-primary-600 font-medium">
+                  <span className="text-sm sm:text-base text-primary-600 font-medium">
                     Save ₹{(product.originalPrice - product.price).toLocaleString()}
                   </span>
                 </>
@@ -401,28 +398,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                   >
                     {size}
                   </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Color Selection */}
-            <div className="mb-6">
-              <h3 className="font-medium text-gray-900 mb-3">
-                Select Color: <span className="text-gray-500 font-normal">{selectedColor || 'Choose'}</span>
-              </h3>
-              <div className="flex flex-wrap gap-3">
-                {product.colors.map((color) => (
-                  <button
-                    key={color.name}
-                    onClick={() => setSelectedColor(color.name)}
-                    className={`w-10 h-10 rounded-full border-2 transition-all ${
-                      selectedColor === color.name
-                        ? 'border-primary-600 ring-2 ring-primary-200'
-                        : 'border-accent-300 hover:border-primary-400'
-                    }`}
-                    style={{ backgroundColor: color.hex }}
-                    title={color.name}
-                  />
                 ))}
               </div>
             </div>

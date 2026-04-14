@@ -27,6 +27,7 @@ model User {
   cartItems     CartItem[]
   wishlist      WishlistItem[]
   sessions      Session[]
+  returnRequests ReturnRequest[]
 
   @@index([email])
 }
@@ -151,6 +152,8 @@ model Order {
   status          String      @default("PENDING")
   paymentMethod   String      @default("COD")
   paymentStatus   String      @default("PENDING")
+  razorpayPaymentId String?   // Razorpay payment_id after successful UPI/card pay
+  razorpayRefundId  String?   // Last Razorpay refund id (audit)
   subtotal        Float
   shipping        Float       @default(0)
   discount        Float       @default(0)
@@ -168,6 +171,7 @@ model Order {
   updatedAt       DateTime    @updatedAt
   
   items           OrderItem[]
+  returnRequest   ReturnRequest?
 
   @@index([userId])
   @@index([status])
@@ -234,6 +238,25 @@ model PasswordReset {
 
   @@index([token])
   @@index([email])
+}
+
+// Customer return / exchange requests (one per order)
+model ReturnRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  reason    String
+  details   String?
+  adminNotes String? // Internal notes (e.g. reject reason)
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED, COMPLETED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 // Contact messages from customers

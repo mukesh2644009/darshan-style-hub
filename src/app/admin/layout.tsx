@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiHome, FiShoppingBag, FiPackage, FiUsers, FiSettings, FiArrowLeft, FiMessageSquare, FiLoader, FiLogOut } from 'react-icons/fi';
+import { FiHome, FiShoppingBag, FiPackage, FiUsers, FiSettings, FiArrowLeft, FiMessageSquare, FiLoader, FiLogOut, FiRotateCcw } from 'react-icons/fi';
 
 const adminNavItems = [
   { name: 'Dashboard', href: '/admin', icon: FiHome },
   { name: 'Orders', href: '/admin/orders', icon: FiShoppingBag },
+  { name: 'Returns', href: '/admin/returns', icon: FiRotateCcw },
   { name: 'Products', href: '/admin/products', icon: FiPackage },
   { name: 'Customers', href: '/admin/customers', icon: FiUsers },
   { name: 'Messages', href: '/admin/messages', icon: FiMessageSquare },

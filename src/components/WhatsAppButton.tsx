@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { FaWhatsapp, FaInstagram } from 'react-icons/fa';
-import { FiX, FiMessageCircle } from 'react-icons/fi';
+import { FiX } from 'react-icons/fi';
+import { buildReturnSupportWhatsAppUrl } from '@/lib/whatsapp-customer';
 
 // Your WhatsApp number (with country code, no + or spaces)
 const WHATSAPP_NUMBER = '919019076335'; // Your number: 91 (India) + 9019076335
@@ -92,6 +93,14 @@ export default function WhatsAppButton() {
                   className="block text-sm text-green-600 hover:text-green-700 hover:underline"
                 >
                   📦 Bulk order inquiry
+                </a>
+                <a
+                  href={buildReturnSupportWhatsAppUrl()}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block text-sm text-green-600 hover:text-green-700 hover:underline"
+                >
+                  ↩️ Returns & order support
                 </a>
               </div>
             </div>

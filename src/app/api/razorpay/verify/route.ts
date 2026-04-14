@@ -34,6 +34,7 @@ export async function POST(request: Request) {
         data: {
           paymentStatus: 'PAID',
           paymentMethod: 'UPI (Razorpay)',
+          razorpayPaymentId: razorpay_payment_id,
         },
         include: {
           user: {

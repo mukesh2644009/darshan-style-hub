@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FiPackage, FiShoppingBag, FiLoader, FiArrowLeft, FiTrash2, FiDownload } from 'react-icons/fi';
+import { FiPackage, FiShoppingBag, FiLoader, FiArrowLeft, FiTrash2, FiDownload, FiRotateCcw } from 'react-icons/fi';
 import { useAuthStore } from '@/store/authStore';
 import { downloadReceipt } from '@/lib/generate-receipt';
+import ReturnRequestModal from '@/components/ReturnRequestModal';
+import { RETURN_REASONS } from '@/lib/return-reasons';
 
 interface OrderItem {
   id: string;
@@ -33,6 +35,12 @@ interface Order {
   shippingState: string;
   shippingPincode: string;
   items: OrderItem[];
+  returnRequest?: {
+    id: string;
+    status: string;
+    reason: string;
+    createdAt: string;
+  } | null;
 }
 
 export default function MyOrdersPage() {
@@ -41,6 +49,7 @@ export default function MyOrdersPage() {
   
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [returnModalOrder, setReturnModalOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -131,6 +140,24 @@ export default function MyOrdersPage() {
     }
   };
 
+  const getReturnStatusStyle = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return 'bg-amber-100 text-amber-900';
+      case 'APPROVED':
+        return 'bg-blue-100 text-blue-800';
+      case 'REJECTED':
+        return 'bg-red-100 text-red-800';
+      case 'COMPLETED':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const returnReasonLabel = (code: string) =>
+    RETURN_REASONS.find((r) => r.value === code)?.label ?? code;
+
   if (isLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -148,7 +175,13 @@ export default function MyOrdersPage() {
             Back to Shop
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">My Orders</h1>
-          <p className="text-gray-600 mt-1">Welcome, {user?.name}</p>
+          <p className="text-gray-600 mt-1">
+            Welcome, {user?.name}
+            <span className="text-gray-400"> · </span>
+            <Link href="/returns" className="text-primary-600 hover:text-primary-700 underline-offset-2 hover:underline">
+              Returns & exchange policy
+            </Link>
+          </p>
         </div>
 
         {orders.length === 0 ? (
@@ -213,34 +246,67 @@ export default function MyOrdersPage() {
                         })}
                       </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <p className="text-lg font-bold text-gray-900">
+                    <div className="flex flex-col items-end gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
+                      <p className="text-lg font-bold text-gray-900 w-full sm:w-auto text-right sm:text-left">
                         Total: ₹{order.total.toLocaleString('en-IN')}
                       </p>
-                      <button
-                        onClick={() => handleDownloadReceipt(order)}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors text-sm"
-                      >
-                        <FiDownload className="w-4 h-4" />
-                        Receipt
-                      </button>
-                      {order.status === 'PENDING' && (
+                      <div className="flex flex-wrap items-center justify-end gap-2">
                         <button
-                          onClick={() => cancelOrder(order.id)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm"
+                          onClick={() => handleDownloadReceipt(order)}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-600 rounded-lg hover:bg-primary-100 transition-colors text-sm"
                         >
-                          <FiTrash2 className="w-4 h-4" />
-                          Cancel
+                          <FiDownload className="w-4 h-4" />
+                          Receipt
                         </button>
-                      )}
+                        {order.status === 'PENDING' && (
+                          <button
+                            onClick={() => cancelOrder(order.id)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm"
+                          >
+                            <FiTrash2 className="w-4 h-4" />
+                            Cancel
+                          </button>
+                        )}
+                        {order.status === 'DELIVERED' && !order.returnRequest && (
+                          <button
+                            type="button"
+                            onClick={() => setReturnModalOrder(order)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-50 text-amber-900 rounded-lg hover:bg-amber-100 transition-colors text-sm font-medium"
+                          >
+                            <FiRotateCcw className="w-4 h-4" />
+                            Request return
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
+
+                  {order.returnRequest && (
+                    <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                      <p className="text-sm text-gray-600">
+                        Return: <span className="font-medium text-gray-900">{returnReasonLabel(order.returnRequest.reason)}</span>
+                      </p>
+                      <span
+                        className={`inline-flex w-fit px-3 py-1 rounded-full text-xs font-medium ${getReturnStatusStyle(order.returnRequest.status)}`}
+                      >
+                        Return · {order.returnRequest.status}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {returnModalOrder && (
+        <ReturnRequestModal
+          order={returnModalOrder}
+          onClose={() => setReturnModalOrder(null)}
+          onSuccess={fetchOrders}
+        />
+      )}
     </div>
   );
 }

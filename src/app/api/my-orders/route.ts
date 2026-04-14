@@ -34,6 +34,14 @@ export async function GET() {
             },
           },
         },
+        returnRequest: {
+          select: {
+            id: true,
+            status: true,
+            reason: true,
+            createdAt: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });

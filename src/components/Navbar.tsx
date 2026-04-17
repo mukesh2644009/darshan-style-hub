@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
-import { FiShoppingBag, FiSearch, FiMenu, FiX, FiUser, FiHeart, FiLogOut, FiSettings } from 'react-icons/fi';
+import { FiShoppingBag, FiSearch, FiMenu, FiX, FiUser, FiHeart, FiLogOut, FiSettings, FiChevronDown } from 'react-icons/fi';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
 import { useWishlistStore } from '@/store/wishlistStore';
@@ -14,6 +14,8 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isShopMenuOpen, setIsShopMenuOpen] = useState(false);
+  const shopMenuRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const { openCart, getTotalItems } = useCartStore();
   const { user, isAuthenticated, isAdmin, logout, checkAuth } = useAuthStore();
@@ -26,6 +28,21 @@ export default function Navbar() {
     setMounted(true);
     checkAuth();
   }, [checkAuth, pathname]);
+
+  useEffect(() => {
+    setIsShopMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isShopMenuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (shopMenuRef.current && !shopMenuRef.current.contains(e.target as Node)) {
+        setIsShopMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [isShopMenuOpen]);
 
   const handleLogout = async () => {
     await logout();
@@ -61,35 +78,86 @@ export default function Navbar() {
               className="h-12 sm:h-14 w-auto object-contain mix-blend-multiply"
               priority
             />
-            <span className="font-display text-xl sm:text-2xl font-bold text-red-700 hidden sm:block">
+            <span className="font-display text-xl sm:text-2xl font-bold text-red-700 hidden sm:block truncate max-w-[9rem] sm:max-w-[11rem] md:max-w-[13rem] xl:max-w-none">
               Darshan Style Hub™
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-8">
-            <Link href="/" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
+          {/* Desktop Navigation — Shop dropdown keeps the bar on one row */}
+          <div className="hidden lg:flex items-center gap-x-3 xl:gap-x-5 2xl:gap-x-6 flex-nowrap min-w-0">
+            <Link
+              href="/"
+              className="text-gray-700 hover:text-primary-600 transition-colors font-medium text-sm xl:text-base whitespace-nowrap shrink-0"
+            >
               Home
             </Link>
-            <Link href="/products" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
-              All Products
-            </Link>
-            <Link href="/products?category=Suits" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
-              Suits
-            </Link>
-            <Link href="/products?category=Co Ord Sets" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
-              Co Ord Sets
-            </Link>
-            <Link href="/products?newArrival=true" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
-              New Arrivals
-            </Link>
-            <Link href="/blog" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
+            <div className="relative shrink-0" ref={shopMenuRef}>
+              <button
+                type="button"
+                aria-expanded={isShopMenuOpen}
+                aria-haspopup="true"
+                onClick={() => setIsShopMenuOpen((o) => !o)}
+                className="inline-flex items-center gap-1 text-gray-700 hover:text-primary-600 transition-colors font-medium text-sm xl:text-base whitespace-nowrap"
+              >
+                Shop
+                <FiChevronDown className={`shrink-0 transition-transform ${isShopMenuOpen ? 'rotate-180' : ''}`} size={16} aria-hidden />
+              </button>
+              {isShopMenuOpen && (
+                <div
+                  className="absolute left-0 top-full z-50 mt-1 min-w-[12rem] rounded-lg border border-accent-200 bg-white py-1 shadow-lg animate-fadeIn"
+                  role="menu"
+                >
+                  <Link
+                    href="/products"
+                    role="menuitem"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent-50 hover:text-primary-600 whitespace-nowrap"
+                    onClick={() => setIsShopMenuOpen(false)}
+                  >
+                    All Products
+                  </Link>
+                  <Link
+                    href="/products?category=Suits"
+                    role="menuitem"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent-50 hover:text-primary-600 whitespace-nowrap"
+                    onClick={() => setIsShopMenuOpen(false)}
+                  >
+                    Suits
+                  </Link>
+                  <Link
+                    href="/products?category=Co Ord Sets"
+                    role="menuitem"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent-50 hover:text-primary-600 whitespace-nowrap"
+                    onClick={() => setIsShopMenuOpen(false)}
+                  >
+                    Co Ord Sets
+                  </Link>
+                  <Link
+                    href="/products?newArrival=true"
+                    role="menuitem"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent-50 hover:text-primary-600 whitespace-nowrap"
+                    onClick={() => setIsShopMenuOpen(false)}
+                  >
+                    New Arrivals
+                  </Link>
+                </div>
+              )}
+            </div>
+            <Link
+              href="/blog"
+              className="text-gray-700 hover:text-primary-600 transition-colors font-medium text-sm xl:text-base whitespace-nowrap shrink-0"
+            >
               Blog
             </Link>
-            <Link href="/lookbook" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
+            <Link
+              href="/lookbook"
+              className="text-gray-700 hover:text-primary-600 transition-colors font-medium text-sm xl:text-base whitespace-nowrap shrink-0"
+            >
               Lookbook
             </Link>
-            <Link href="/contact" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
+            <Link
+              href="/contact"
+              className="text-gray-700 hover:text-primary-600 transition-colors font-medium text-sm xl:text-base whitespace-nowrap shrink-0"
+            >
               Contact
             </Link>
           </div>

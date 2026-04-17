@@ -339,7 +339,7 @@ function getWelcomeEmailTemplate(customerName: string): string {
                 ${SHOP_NAME} | Sitapura, Jaipur, Rajasthan 302022
               </p>
               <p style="color: #9ca3af; margin: 10px 0 0; font-size: 12px;">
-                © 2025 ${SHOP_NAME}. All rights reserved.
+                © ${new Date().getFullYear()} ${SHOP_NAME}. All rights reserved.
               </p>
             </td>
           </tr>

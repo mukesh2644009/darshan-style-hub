@@ -83,6 +83,12 @@ export default function Navbar() {
             <Link href="/products?newArrival=true" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
               New Arrivals
             </Link>
+            <Link href="/blog" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
+              Blog
+            </Link>
+            <Link href="/lookbook" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
+              Lookbook
+            </Link>
             <Link href="/contact" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
               Contact
             </Link>
@@ -223,6 +229,12 @@ export default function Navbar() {
             </Link>
             <Link href="/products?newArrival=true" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               New Arrivals
+            </Link>
+            <Link href="/blog" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+              Blog
+            </Link>
+            <Link href="/lookbook" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+              Lookbook
             </Link>
             <Link href="/contact" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               Contact

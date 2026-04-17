@@ -4,17 +4,17 @@ import { useState } from 'react';
 import { FaWhatsapp, FaInstagram } from 'react-icons/fa';
 import { FiX } from 'react-icons/fi';
 import { buildReturnSupportWhatsAppUrl } from '@/lib/whatsapp-customer';
+import { PUBLIC_SITE_URL } from '@/lib/site-url';
 
 // Your WhatsApp number (with country code, no + or spaces)
 const WHATSAPP_NUMBER = '919019076335'; // Your number: 91 (India) + 9019076335
-const SITE_URL = 'https://darshanstylehub.com';
 const INSTAGRAM_URL = 'https://www.instagram.com/stylehubjaipur/';
 
 export default function WhatsAppButton() {
   const [isOpen, setIsOpen] = useState(false);
 
   const defaultMessage = encodeURIComponent(
-    `Hi 👋\nI visited your website ${SITE_URL}\nI'm interested in your women's apparel.\nPlease share product details and pricing.`
+    `Hi 👋\nI visited your website ${PUBLIC_SITE_URL}\nI'm interested in your women's apparel.\nPlease share product details and pricing.`,
   );
 
   const whatsappLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${defaultMessage}`;
@@ -71,7 +71,7 @@ export default function WhatsAppButton() {
               <div className="space-y-2 mb-4">
                 <p className="text-xs text-gray-500 font-medium">Quick Messages:</p>
                 <a
-                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI'm interested in your suits collection.\nPlease share details.`)}`}
+                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${PUBLIC_SITE_URL}\nI'm interested in your suits collection.\nPlease share details.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-sm text-green-600 hover:text-green-700 hover:underline"
@@ -79,7 +79,7 @@ export default function WhatsAppButton() {
                   👗 Inquire about suits
                 </a>
                 <a
-                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI'm interested in your co ord sets collection.\nPlease share details.`)}`}
+                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${PUBLIC_SITE_URL}\nI'm interested in your co ord sets collection.\nPlease share details.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-sm text-green-600 hover:text-green-700 hover:underline"
@@ -87,7 +87,7 @@ export default function WhatsAppButton() {
                   👚 Inquire about co ord sets
                 </a>
                 <a
-                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${SITE_URL}\nI want to place a bulk order.\nPlease share details.`)}`}
+                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hi 👋\nI visited ${PUBLIC_SITE_URL}\nI want to place a bulk order.\nPlease share details.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-sm text-green-600 hover:text-green-700 hover:underline"

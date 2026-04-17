@@ -1,11 +1,16 @@
 import type { MetadataRoute } from 'next';
 import prisma from '@/lib/prisma';
+import { blogPosts } from '@/data/blogPosts';
 
 const BASE = 'https://www.darshanstylehub.com';
 
 const STATIC: MetadataRoute.Sitemap = [
   { url: BASE, lastModified: new Date(), changeFrequency: 'weekly', priority: 1 },
   { url: `${BASE}/products`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
+  { url: `${BASE}/about`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.75 },
+  { url: `${BASE}/blog`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.65 },
+  { url: `${BASE}/lookbook`, lastModified: new Date(), changeFrequency: 'weekly', priority: 0.65 },
+  { url: `${BASE}/delivery`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.55 },
   { url: `${BASE}/contact`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.8 },
   { url: `${BASE}/returns`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
   { url: `${BASE}/shipping`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
@@ -27,8 +32,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    return [...STATIC, ...productEntries];
+    const blogEntries: MetadataRoute.Sitemap = blogPosts.map((p) => ({
+      url: `${BASE}/blog/${p.slug}`,
+      lastModified: new Date(p.date),
+      changeFrequency: 'monthly' as const,
+      priority: 0.55,
+    }));
+
+    return [...STATIC, ...blogEntries, ...productEntries];
   } catch {
-    return STATIC;
+    const blogEntries: MetadataRoute.Sitemap = blogPosts.map((p) => ({
+      url: `${BASE}/blog/${p.slug}`,
+      lastModified: new Date(p.date),
+      changeFrequency: 'monthly' as const,
+      priority: 0.55,
+    }));
+    return [...STATIC, ...blogEntries];
   }
 }

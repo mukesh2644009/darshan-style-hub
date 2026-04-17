@@ -1,8 +1,13 @@
 import Link from 'next/link';
 import { FiInstagram, FiFacebook, FiTwitter, FiYoutube, FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
+import { PUBLIC_SITE_URL } from '@/lib/site-url';
 
 export default function Footer() {
+  const footerWhatsAppHref = `https://wa.me/919019076335?text=${encodeURIComponent(
+    `Hi 👋\nI visited your website ${PUBLIC_SITE_URL}\nI'm interested in your women's apparel.\nPlease share product details and pricing.`,
+  )}`;
+
   return (
     <footer className="bg-accent-900 text-white">
       {/* Newsletter */}
@@ -33,10 +38,16 @@ export default function Footer() {
           {/* About */}
           <div>
             <h4 className="font-display text-2xl font-bold text-white mb-4">Darshan Style Hub™</h4>
-            <p className="text-accent-300 mb-4 leading-relaxed">
+            <p className="text-accent-300 mb-3 leading-relaxed">
               Your trusted destination for premium suits and co ord sets in Jaipur. 
               Quality fabrics, timeless designs, and exceptional service since 2025.
             </p>
+            <Link
+              href="/about"
+              className="inline-block text-primary-300 hover:text-white text-sm font-semibold mb-4 transition-colors"
+            >
+              About us
+            </Link>
             <div className="flex gap-3">
               <a 
                 href="https://www.instagram.com/stylehubjaipur/" 
@@ -87,6 +98,16 @@ export default function Footer() {
                   Featured
                 </Link>
               </li>
+              <li>
+                <Link href="/blog" className="text-accent-300 hover:text-white transition-colors">
+                  Style Journal (Blog)
+                </Link>
+              </li>
+              <li>
+                <Link href="/lookbook" className="text-accent-300 hover:text-white transition-colors">
+                  Lookbook
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -94,6 +115,11 @@ export default function Footer() {
           <div>
             <h4 className="font-medium text-lg mb-4">Customer Service</h4>
             <ul className="space-y-2">
+              <li>
+                <Link href="/delivery" className="text-accent-300 hover:text-white transition-colors">
+                  Check delivery (pincode)
+                </Link>
+              </li>
               <li>
                 <Link href="/track-order" className="text-accent-300 hover:text-white transition-colors">
                   Track Your Order
@@ -147,8 +173,8 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <FaWhatsapp className="flex-shrink-0 text-green-400" />
-                <a 
-                  href="https://wa.me/919019076335?text=Hi%20%F0%9F%91%8B%0AI%20visited%20your%20website%20https%3A%2F%2Fdarshan-style-hub.vercel.app%0AI'm%20interested%20in%20your%20women's%20apparel.%0APlease%20share%20product%20details%20and%20pricing." 
+                <a
+                  href={footerWhatsAppHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-accent-300 hover:text-green-400 transition-colors"
@@ -172,7 +198,7 @@ export default function Footer() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-accent-400 text-sm">
-              © 2025 Darshan Style Hub™, Jaipur. All rights reserved.
+              © {new Date().getFullYear()} Darshan Style Hub™, Jaipur. All rights reserved.
             </p>
             <div className="flex items-center gap-6 text-sm">
               <Link href="/privacy" className="text-accent-400 hover:text-white transition-colors">

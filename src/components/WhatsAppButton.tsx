@@ -8,7 +8,7 @@ import {
   buildDefaultStoreWhatsAppUrl,
   STORE_WHATSAPP_E164,
 } from '@/lib/whatsapp-customer';
-import { CANONICAL_SITE_URL } from '@/lib/site-url';
+import { PRODUCTION_SITE_ORIGIN } from '@/lib/production-site-origin';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/stylehubjaipur/';
 
@@ -69,7 +69,7 @@ export default function WhatsAppButton() {
               <div className="space-y-2 mb-4">
                 <p className="text-xs text-gray-500 font-medium">Quick Messages:</p>
                 <a
-                  href={`https://wa.me/${STORE_WHATSAPP_E164}?text=${encodeURIComponent(`Hi 👋\nI visited ${CANONICAL_SITE_URL}\nI'm interested in your suits collection.\nPlease share details.`)}`}
+                  href={`https://wa.me/${STORE_WHATSAPP_E164}?text=${encodeURIComponent(`Hi 👋\nI visited ${PRODUCTION_SITE_ORIGIN}\nI'm interested in your suits collection.\nPlease share details.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-sm text-green-600 hover:text-green-700 hover:underline"
@@ -77,7 +77,7 @@ export default function WhatsAppButton() {
                   👗 Inquire about suits
                 </a>
                 <a
-                  href={`https://wa.me/${STORE_WHATSAPP_E164}?text=${encodeURIComponent(`Hi 👋\nI visited ${CANONICAL_SITE_URL}\nI'm interested in your co ord sets collection.\nPlease share details.`)}`}
+                  href={`https://wa.me/${STORE_WHATSAPP_E164}?text=${encodeURIComponent(`Hi 👋\nI visited ${PRODUCTION_SITE_ORIGIN}\nI'm interested in your co ord sets collection.\nPlease share details.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-sm text-green-600 hover:text-green-700 hover:underline"
@@ -85,7 +85,7 @@ export default function WhatsAppButton() {
                   👚 Inquire about co ord sets
                 </a>
                 <a
-                  href={`https://wa.me/${STORE_WHATSAPP_E164}?text=${encodeURIComponent(`Hi 👋\nI visited ${CANONICAL_SITE_URL}\nI want to place a bulk order.\nPlease share details.`)}`}
+                  href={`https://wa.me/${STORE_WHATSAPP_E164}?text=${encodeURIComponent(`Hi 👋\nI visited ${PRODUCTION_SITE_ORIGIN}\nI want to place a bulk order.\nPlease share details.`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block text-sm text-green-600 hover:text-green-700 hover:underline"

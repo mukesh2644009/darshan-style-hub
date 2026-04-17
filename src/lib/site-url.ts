@@ -1,5 +1,7 @@
-/** Production origin — use in WhatsApp/SMS/chat prefills so the real domain always appears (never *.vercel.app). */
-export const CANONICAL_SITE_URL = 'https://www.darshanstylehub.com';
+import { PRODUCTION_SITE_ORIGIN } from '@/lib/production-site-origin';
+
+/** Same as production domain; env-based URLs never replace this for canonical fallbacks. */
+export const CANONICAL_SITE_URL = PRODUCTION_SITE_ORIGIN;
 
 /**
  * Resolves the public site URL. Legacy / preview hosts (e.g. *.vercel.app) are not used in

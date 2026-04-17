@@ -21,6 +21,7 @@ export default function DeliveryPincodeChecker({
     available: boolean;
     message: string;
     estimatedDaysHint?: string;
+    locationHint?: string;
   } | null>(null);
 
   const submit = async (e: React.FormEvent) => {
@@ -40,6 +41,7 @@ export default function DeliveryPincodeChecker({
           available: data.available,
           message: data.message,
           estimatedDaysHint: data.estimatedDaysHint,
+          locationHint: data.locationHint,
         });
       } else {
         setResult({ available: false, message: 'Could not check. Try again.' });
@@ -69,7 +71,7 @@ export default function DeliveryPincodeChecker({
             </h3>
             {variant === 'full' && (
               <p className="text-gray-600 text-sm mt-1">
-                Enter your 6-digit pincode before you shop — we&apos;ll confirm if we ship to your area.
+                We validate your pincode against India Post data and our delivery rules.
               </p>
             )}
           </div>
@@ -112,6 +114,9 @@ export default function DeliveryPincodeChecker({
           )}
           <div>
             <p className="font-medium">{result.message}</p>
+            {result.available && result.locationHint && (
+              <p className="mt-1 text-green-800/90">Area: {result.locationHint}</p>
+            )}
             {result.estimatedDaysHint && (
               <p className="mt-1 text-green-800/90">{result.estimatedDaysHint}</p>
             )}

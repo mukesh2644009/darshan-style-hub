@@ -5,14 +5,41 @@ import { FaMoneyBillWave } from 'react-icons/fa';
 import ProductCard from '@/components/ProductCard';
 import HeroCarousel from '@/components/HeroCarousel';
 import AnimatedSection from '@/components/AnimatedSection';
-import { getFeaturedProducts, getCategories, getProducts } from '@/lib/products';
+import { getFeaturedProducts, getProducts } from '@/lib/products';
 
 export const dynamic = 'force-dynamic';
 
+/** Category tiles — full artwork fits in circle (object-contain); files in /public/products/categories/ */
+const shopCategoryCircles = [
+  {
+    label: 'Suits',
+    href: '/products?category=Suits',
+    image: '/products/categories/suits.png',
+    alt: 'Elegant suits',
+  },
+  {
+    label: 'Co Ord Sets',
+    href: '/products?category=Co Ord Sets',
+    image: '/products/categories/co-ord-sets.png',
+    alt: 'Chic co ord sets',
+  },
+  {
+    label: 'Kurti',
+    href: '/products?category=Kurti',
+    image: '/products/categories/kurti.png',
+    alt: 'Stylish kurtis',
+  },
+  {
+    label: 'Tops',
+    href: '/products?category=Tops',
+    image: '/products/categories/tops.png',
+    alt: 'Trendy tops',
+  },
+] as const;
+
 export default async function Home() {
-  const [featuredProducts, categories, allProducts] = await Promise.all([
+  const [featuredProducts, allProducts] = await Promise.all([
     getFeaturedProducts(),
-    getCategories(),
     getProducts({}),
   ]);
 
@@ -106,68 +133,44 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Categories - Suits & Co Ord Sets */}
-      <section className="py-16">
+      {/* Categories — rectangular cards */}
+      <section className="py-12 sm:py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedSection className="text-center mb-12">
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <AnimatedSection className="text-center mb-8 sm:mb-10">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
               Shop by Category
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Explore our beautiful collection of suits and co ord sets for every occasion
+            <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base">
+              Suits, co ord sets, kurtis & tops — pick a style and explore the collection
             </p>
           </AnimatedSection>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Suits Category */}
-            <AnimatedSection delay={0.1}>
-            <Link
-              href="/products?category=Suits"
-              className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-xl block"
-            >
-              <Image
-                src="/products/kurtis/kurti-2/1.jpeg"
-                alt="Designer Suits Collection"
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                <h3 className="font-display text-2xl sm:text-3xl font-bold mb-2">Suits</h3>
-                <p className="text-white/80 text-sm mb-4">
-                  Anarkali, Salwar & Party Wear
-                </p>
-                <span className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium group-hover:bg-white/30 transition-all">
-                  Explore Collection <FiArrowRight />
-                </span>
-              </div>
-            </Link>
-            </AnimatedSection>
-
-            {/* Co Ord Sets Category */}
-            <AnimatedSection delay={0.2}>
-            <Link
-              href="/products?category=Co Ord Sets"
-              className="group relative aspect-[3/4] rounded-3xl overflow-hidden shadow-xl block"
-            >
-              <Image
-                src="/products/kurtis/kurti-1/1.jpeg"
-                alt="Co Ord Sets Collection"
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                <h3 className="font-display text-2xl sm:text-3xl font-bold mb-2">Co Ord Sets</h3>
-                <p className="text-white/80 text-sm mb-4">
-                  Printed, Embroidered & Designer
-                </p>
-                <span className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-medium group-hover:bg-white/30 transition-all">
-                  Explore Collection <FiArrowRight />
-                </span>
-              </div>
-            </Link>
-            </AnimatedSection>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10 max-w-5xl mx-auto">
+            {shopCategoryCircles.map((item, index) => (
+              <AnimatedSection key={item.href} delay={0.05 * (index + 1)} className="w-full">
+                <Link
+                  href={item.href}
+                  className="group flex flex-col items-center gap-3 sm:gap-3.5 w-full"
+                >
+                  <div
+                    className="relative w-full aspect-[3/4] max-h-[300px] sm:max-h-[340px] lg:max-h-[380px] mx-auto rounded-2xl border-2 border-gray-600 shadow-md ring-1 ring-gray-400/70 group-hover:border-gray-700 group-hover:ring-gray-500/80 group-hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-amber-50/90 to-gray-100 p-2 sm:p-2.5"
+                  >
+                    <div className="relative h-full min-h-[180px] w-full overflow-hidden rounded-xl bg-white/90">
+                      <Image
+                        src={item.image}
+                        alt={item.alt}
+                        fill
+                        sizes="(max-width: 640px) 42vw, (max-width: 1024px) 22vw, 260px"
+                        className="object-contain object-center p-1 sm:p-2 transition-transform duration-300 group-hover:scale-[1.02]"
+                      />
+                    </div>
+                  </div>
+                  <span className="text-center text-sm sm:text-base font-semibold text-gray-800 group-hover:text-primary-600 transition-colors max-w-full px-1 leading-tight">
+                    {item.label}
+                  </span>
+                </Link>
+              </AnimatedSection>
+            ))}
           </div>
         </div>
       </section>

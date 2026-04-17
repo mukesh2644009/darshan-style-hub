@@ -106,13 +106,25 @@ export async function getProductById(id: string): Promise<Product | null> {
   return transformProduct(product);
 }
 
+function normalizeSlugOrId(raw: string): string {
+  const trimmed = raw.trim();
+  try {
+    return decodeURIComponent(trimmed);
+  } catch {
+    return trimmed;
+  }
+}
+
 // Get product by slug or ID (for SEO-friendly URLs)
 export async function getProductBySlugOrId(slugOrId: string): Promise<Product | null> {
+  const key = normalizeSlugOrId(slugOrId);
+  if (!key) return null;
+
   const product = await prisma.product.findFirst({
     where: {
       OR: [
-        { id: slugOrId },
-        { slug: slugOrId },
+        { id: key },
+        { slug: { equals: key, mode: 'insensitive' } },
       ],
     },
     include: {

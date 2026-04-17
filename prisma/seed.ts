@@ -68,6 +68,36 @@ async function main() {
     },
   });
 
+  await prisma.category.create({
+    data: {
+      name: 'Kurti',
+      subcategories: {
+        create: [
+          { name: 'Printed Kurti' },
+          { name: 'Cotton Kurti' },
+          { name: 'Party Wear Kurti' },
+          { name: 'Casual Kurti' },
+          { name: 'Embroidered Kurti' },
+        ],
+      },
+    },
+  });
+
+  await prisma.category.create({
+    data: {
+      name: 'Tops',
+      subcategories: {
+        create: [
+          { name: 'Crop Tops' },
+          { name: 'Long Tops' },
+          { name: 'Casual Tops' },
+          { name: 'Party Tops' },
+          { name: 'Printed Tops' },
+        ],
+      },
+    },
+  });
+
   console.log('✓ Created categories');
 
   // Products with working placeholder images

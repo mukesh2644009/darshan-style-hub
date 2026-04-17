@@ -130,17 +130,15 @@ export default async function ProductsPage() {
                         <div>
                           <p className="font-medium text-gray-900">{product.name}</p>
                           <p className="text-sm text-gray-500 truncate max-w-xs">{product.subcategory}</p>
-                          {product.slug && (
-                            <a
-                              href={`https://www.darshanstylehub.com/products/${product.slug}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1"
-                            >
-                              <FiExternalLink className="w-3 h-3" />
-                              /products/{product.slug}
-                            </a>
-                          )}
+                          <a
+                            href={`https://www.darshanstylehub.com/products/${product.slug || product.id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1"
+                          >
+                            <FiExternalLink className="w-3 h-3" />
+                            /products/{product.slug || product.id}
+                          </a>
                         </div>
                       </div>
                     </td>

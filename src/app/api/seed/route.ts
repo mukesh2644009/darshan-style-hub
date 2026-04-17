@@ -89,6 +89,36 @@ export async function GET(request: Request) {
       },
     });
 
+    await prisma.category.create({
+      data: {
+        name: 'Kurti',
+        subcategories: {
+          create: [
+            { name: 'Printed Kurti' },
+            { name: 'Cotton Kurti' },
+            { name: 'Party Wear Kurti' },
+            { name: 'Casual Kurti' },
+            { name: 'Embroidered Kurti' },
+          ],
+        },
+      },
+    });
+
+    await prisma.category.create({
+      data: {
+        name: 'Tops',
+        subcategories: {
+          create: [
+            { name: 'Crop Tops' },
+            { name: 'Long Tops' },
+            { name: 'Casual Tops' },
+            { name: 'Party Tops' },
+            { name: 'Printed Tops' },
+          ],
+        },
+      },
+    });
+
     // Create sample products - Using YOUR authentic images from /public/products/
     const products = [
       // SAREES

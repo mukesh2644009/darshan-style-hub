@@ -1,5 +1,5 @@
-/** Canonical site for WhatsApp prefill, emails, and sharing. */
-const CANONICAL_SITE_URL = 'https://www.darshanstylehub.com';
+/** Production origin — use in WhatsApp/SMS/chat prefills so the real domain always appears (never *.vercel.app). */
+export const CANONICAL_SITE_URL = 'https://www.darshanstylehub.com';
 
 /**
  * Resolves the public site URL. Legacy / preview hosts (e.g. *.vercel.app) are not used in

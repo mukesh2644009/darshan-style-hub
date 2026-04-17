@@ -1,12 +1,10 @@
 import Link from 'next/link';
 import { FiInstagram, FiFacebook, FiTwitter, FiYoutube, FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
-import { PUBLIC_SITE_URL } from '@/lib/site-url';
+import { buildDefaultStoreWhatsAppUrl } from '@/lib/whatsapp-customer';
 
 export default function Footer() {
-  const footerWhatsAppHref = `https://wa.me/919019076335?text=${encodeURIComponent(
-    `Hi 👋\nI visited your website ${PUBLIC_SITE_URL}\nI'm interested in your women's apparel.\nPlease share product details and pricing.`,
-  )}`;
+  const footerWhatsAppHref = buildDefaultStoreWhatsAppUrl();
 
   return (
     <footer className="bg-accent-900 text-white">
@@ -40,7 +38,7 @@ export default function Footer() {
             <h4 className="font-display text-2xl font-bold text-white mb-4">Darshan Style Hub™</h4>
             <p className="text-accent-300 mb-3 leading-relaxed">
               Your trusted destination for premium suits and co ord sets in Jaipur. 
-              Quality fabrics, timeless designs, and exceptional service since 2025.
+              Quality fabrics, timeless designs, and exceptional service — from Jaipur to all of India.
             </p>
             <Link
               href="/about"

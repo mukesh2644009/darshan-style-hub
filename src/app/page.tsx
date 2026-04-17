@@ -128,7 +128,7 @@ export default async function Home() {
             </div>
             <div className="flex items-center gap-2">
               <FiHeadphones className="text-primary-600" size={18} />
-              <span className="text-sm text-gray-700">24/7 Support</span>
+              <span className="text-sm text-gray-700">Same-day reply</span>
             </div>
           </div>
         </div>
@@ -247,7 +247,7 @@ export default async function Home() {
               {
                 name: 'Priya Sharma',
                 location: 'Mumbai',
-                review: 'Absolutely love the quality of sarees! The silk is genuine and the embroidery is exquisite. Will definitely order again.',
+                review: 'Absolutely love the quality of my co ord set — fabric feels premium and the embroidery is exquisite. Will definitely order again!',
                 rating: 5,
               },
               {

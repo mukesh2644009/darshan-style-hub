@@ -8,6 +8,16 @@ export function buildWhatsAppUrl(message: string): string {
   return `https://wa.me/${STORE_WHATSAPP_E164}?text=${encodeURIComponent(message)}`;
 }
 
+/** Default prefill for footer, floating button, and contact — always uses {@link PUBLIC_SITE_URL}. */
+export function buildDefaultStoreWhatsAppUrl(): string {
+  const message =
+    `Hi 👋\n` +
+    `I visited your website ${PUBLIC_SITE_URL}\n` +
+    `I'm interested in your women's apparel.\n` +
+    `Please share product details and pricing.`;
+  return buildWhatsAppUrl(message);
+}
+
 /** Pre-filled message for return / exchange help (optional order reference). */
 export function buildReturnSupportWhatsAppUrl(orderId?: string): string {
   const short = orderId ? orderId.slice(0, 8).toUpperCase() : '—';

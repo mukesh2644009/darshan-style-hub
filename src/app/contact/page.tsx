@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { FiMail, FiPhone, FiMapPin, FiSend, FiCheck } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { validateEmail } from '@/lib/validation';
+import { buildDefaultStoreWhatsAppUrl } from '@/lib/whatsapp-customer';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -86,8 +87,9 @@ export default function ContactPage() {
                 </a>
 
                 <a 
-                  href="https://wa.me/919019076335" 
+                  href={buildDefaultStoreWhatsAppUrl()} 
                   target="_blank"
+                  rel="noopener noreferrer"
                   className="flex items-center gap-4 p-3 rounded-lg hover:bg-green-50 transition-colors"
                 >
                   <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">

@@ -12,6 +12,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
+    "db:fix-typos": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} scripts/fix-product-typos.ts",
     "db:push": "npx prisma db push",
     "db:studio": "npx prisma studio",
     "setup:domain": "chmod +x scripts/setup-domain.sh && ./scripts/setup-domain.sh"

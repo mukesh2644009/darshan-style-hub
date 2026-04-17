@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { PUBLIC_SITE_URL } from '@/lib/site-url';
 import crypto from 'crypto';
 
 export async function POST(request: Request) {
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     });
 
     // Send reset email
-    const resetUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://www.darshanstylehub.com'}/reset-password?token=${token}`;
+    const resetUrl = `${PUBLIC_SITE_URL}/reset-password?token=${token}`;
 
     try {
       const { sendPasswordResetEmail } = await import('@/lib/email');

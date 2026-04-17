@@ -2,10 +2,12 @@
 // Priority: Resend (custom domain) > Gmail SMTP > Skip
 
 import nodemailer from 'nodemailer';
+import { PUBLIC_SITE_URL } from '@/lib/site-url';
 
 // Shop details
 const SHOP_NAME = 'Darshan Style Hub™';
-const SHOP_WEBSITE = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+/** Links in emails — same canonical rules as WhatsApp (no *.vercel.app). */
+const SHOP_WEBSITE = PUBLIC_SITE_URL;
 const ADMIN_EMAILS = ['darshanstylehub.business@gmail.com', 'darshanstylehub@gmail.com'];
 
 // Check which email service is available

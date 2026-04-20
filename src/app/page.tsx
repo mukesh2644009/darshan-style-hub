@@ -58,13 +58,13 @@ export default async function Home() {
       {/* Hero: desktop uses object-cover in carousel; below lg, carousel uses object-contain so wide banners are not side-cropped */}
       <section className="relative overflow-hidden bg-[#FFF8F0]" aria-label="Featured collections">
         <h1 className="sr-only">Darshan Style Hub — designer suits, co ord sets &amp; ethnic wear from Jaipur</h1>
-        {/* min-w-0: allows shrink in flex ancestors; height floor keeps mobile strip tall enough for letterboxed banners */}
-        <div className="relative mx-auto w-full min-w-0 min-h-[220px] h-[min(72vh,max(calc(100vw*65/192),min(42dvh,360px)))] max-w-[min(100vw,calc(72vh*192/65))] overflow-hidden rounded-none bg-neutral-900 shadow-sm">
+        {/* Below lg: aspect 192∶65 matches banners so object-contain has no thick letterboxing. lg+: cinematic height + object-cover. */}
+        <div className="relative mx-auto w-full min-w-0 max-w-[min(100vw,calc(72vh*192/65))] aspect-[192/65] overflow-hidden rounded-none bg-[#FFF8F0] shadow-sm lg:aspect-auto lg:min-h-[220px] lg:h-[min(72vh,max(calc(100vw*65/192),min(42dvh,360px)))]">
           <div className="absolute inset-0">
             <HeroCarousel fullBleed cinematic />
           </div>
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-[14] h-12 bg-gradient-to-t from-black/20 to-transparent sm:h-14"
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[14] h-5 bg-gradient-to-t from-primary-900/10 to-transparent lg:h-12 xl:h-14"
             aria-hidden
           />
         </div>

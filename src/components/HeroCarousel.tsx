@@ -68,7 +68,7 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
   const renderSlide = () => {
     if (split) {
       return (
-        <div className="absolute inset-0 overflow-hidden bg-neutral-900">
+        <div className="absolute inset-0 overflow-hidden bg-[#FFF8F0]">
           <Image
             src={heroImages[currentIndex]}
             alt={`Darshan Style Hub promotional banner ${currentIndex + 1} of ${heroImages.length}`}
@@ -84,15 +84,14 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
       );
     }
     if (cinematic && fullBleed) {
-      // Portrait / narrow viewports: object-cover scales to height and crops left-right (banner text cut off).
-      // Use object-contain until lg so full 1920×650 artwork fits width-wise (letterboxing top/bottom on dark bg).
+      // Portrait / narrow viewports: object-cover crops left-right; object-contain until lg on cream (#FFF8F0) letterboxing.
       const fitClass =
         currentIndex === 0
           ? 'object-contain object-center lg:object-cover lg:object-bottom'
           : 'object-contain object-center lg:object-cover lg:object-center';
 
       return (
-        <div className="absolute inset-0 overflow-hidden bg-neutral-900">
+        <div className="absolute inset-0 overflow-hidden bg-[#FFF8F0]">
           <Image
             src={heroImages[currentIndex]}
             alt={`Darshan Style Hub promotional banner ${currentIndex + 1} of ${heroImages.length}`}
@@ -171,10 +170,10 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
             className={`h-2.5 rounded-full transition-all duration-300 ${
               index === currentIndex
                 ? isPhotoHero
-                  ? 'w-7 bg-white shadow-md ring-1 ring-white/30'
+                  ? 'w-7 bg-primary-800 shadow-md ring-1 ring-primary-700/35'
                   : 'w-6 bg-white shadow-sm'
                 : isPhotoHero
-                  ? 'w-2.5 bg-white/35 hover:bg-white/60'
+                  ? 'w-2.5 bg-primary-600/30 hover:bg-primary-600/55'
                   : 'w-2.5 bg-white/50 hover:bg-white/80'
             }`}
           />

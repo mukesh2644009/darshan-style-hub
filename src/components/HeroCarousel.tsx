@@ -16,7 +16,7 @@ const heroImages = BANNER_FILES.map((name) => `/Banners/${encodeURIComponent(nam
 
 const slideDurationMs = 5200;
 const transition = {
-  duration: 0.55,
+  duration: 0.38,
   ease: [0.4, 0, 0.2, 1] as const,
 };
 
@@ -91,20 +91,20 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
           : 'object-contain object-center lg:object-cover lg:object-center';
 
       return (
-        <div className="absolute inset-0 bg-[#FFF8F0]">
-          {/* Slight inset on small screens avoids subpixel overflow-hidden clipping the edges of object-contain */}
-          <div className="absolute inset-0 overflow-hidden max-lg:inset-[3px] lg:inset-0">
+        <div className="absolute inset-0 bg-[#FFF8F0] isolate">
+          {/* Full-bleed inset: avoid extra inset on mobile — it scales the bitmap slightly and looks softer on retina */}
+          <div className="absolute inset-0 overflow-hidden">
             <Image
               src={heroImages[currentIndex]}
               alt={`Darshan Style Hub promotional banner ${currentIndex + 1} of ${heroImages.length}`}
               fill
-              sizes="(max-width: 1023px) 100vw, (max-width: 2560px) 100vw, 2560px"
+              sizes="(max-width: 1023px) 100vw, (max-width: 1920px) 100vw, min(100vw, 2560px)"
               quality={100}
               unoptimized
-              className={`${fitClass} max-lg:contrast-[1] max-lg:brightness-[1] lg:contrast-[1.04] lg:brightness-[1.02] lg:transform-gpu`}
-              priority
-              fetchPriority="high"
-              decoding="sync"
+              className={`${fitClass} [backface-visibility:hidden]`}
+              priority={currentIndex === 0}
+              fetchPriority={currentIndex === 0 ? 'high' : 'auto'}
+              decoding="async"
               draggable={false}
             />
           </div>

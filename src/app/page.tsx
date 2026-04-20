@@ -59,7 +59,7 @@ export default async function Home() {
       <section className="relative overflow-hidden bg-[#FFF8F0]" aria-label="Featured collections">
         <h1 className="sr-only">Darshan Style Hub — designer suits, co ord sets &amp; ethnic wear from Jaipur</h1>
         {/* Below lg: aspect 192∶65 matches banners so object-contain has no thick letterboxing. lg+: cinematic height + object-cover. */}
-        <div className="relative mx-auto w-full min-w-0 max-w-[min(100vw,calc(72vh*192/65))] aspect-[192/65] overflow-hidden rounded-none bg-[#FFF8F0] shadow-sm lg:aspect-auto lg:min-h-[220px] lg:h-[min(72vh,max(calc(100vw*65/192),min(42dvh,360px)))]">
+        <div className="relative mx-auto w-full min-w-0 max-w-[min(100vw,calc(72vh*192/65))] aspect-[192/65] overflow-hidden rounded-none bg-[#FFF8F0] lg:aspect-auto lg:min-h-[220px] lg:h-[min(72vh,max(calc(100vw*65/192),min(42dvh,360px)))]">
           <div className="absolute inset-0">
             <HeroCarousel fullBleed cinematic />
           </div>

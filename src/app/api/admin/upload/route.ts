@@ -4,6 +4,7 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
@@ -18,7 +19,14 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const files = formData.getAll('images') as File[];
     const category = (formData.get('category') as string) || 'co-ord-sets';
-    const productFolder = (formData.get('productFolder') as string) || '';
+    const rawFolder = (formData.get('productFolder') as string) || '';
+    // Safe folder name for all filesystems (avoid slashes, reserved names, path traversal)
+    const safeFolder = rawFolder
+      .replace(/[^a-zA-Z0-9-_]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 120);
+    const productFolder = safeFolder || `product-${Date.now()}`;
 
     if (!files || files.length === 0) {
       return NextResponse.json(
@@ -28,7 +36,7 @@ export async function POST(request: Request) {
     }
 
     const categoryFolder = category.toLowerCase().replace(/\s+/g, '-');
-    const folder = productFolder || `product-${Date.now()}`;
+    const folder = productFolder;
     const dirPath = path.join(process.cwd(), 'public', 'products', categoryFolder, folder);
 
     await mkdir(dirPath, { recursive: true });

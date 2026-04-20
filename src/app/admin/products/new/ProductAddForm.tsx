@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { uploadAdminProductImages } from '@/lib/adminUploadClient';
 import { FiSave, FiLoader, FiCheck, FiPlus, FiX, FiImage, FiUploadCloud, FiTrash2 } from 'react-icons/fi';
 
 const AVAILABLE_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'Free Size'];
@@ -122,30 +123,17 @@ export default function ProductAddForm() {
     if (imageFiles.length === 0) return [];
 
     setUploading(true);
-    const uploadFormData = new FormData();
-    imageFiles.forEach(file => uploadFormData.append('images', file));
-    uploadFormData.append('category', formData.category);
-
-    const slug = formData.name
-      ? formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-      : '';
-    uploadFormData.append('productFolder', slug || `product-${Date.now()}`);
-
     try {
-      const res = await fetch('/api/admin/upload', {
-        method: 'POST',
-        body: uploadFormData,
+      const slug = formData.name
+        ? formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+        : '';
+      const paths = await uploadAdminProductImages({
+        files: imageFiles,
+        category: formData.category,
+        productFolder: slug || `product-${Date.now()}`,
       });
-      const text = await res.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error('Upload failed — server returned an invalid response. If on Vercel, file uploads to filesystem are not supported. Upload images locally and push via git.');
-      }
-      if (!res.ok) throw new Error(data.error || 'Upload failed');
       setUploading(false);
-      return data.images;
+      return paths;
     } catch (err) {
       setUploading(false);
       throw err;
@@ -192,6 +180,7 @@ export default function ProductAddForm() {
 
       const response = await fetch('/api/admin/products', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,

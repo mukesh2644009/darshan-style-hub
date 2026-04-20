@@ -13,6 +13,7 @@ import ProductCard from '@/components/ProductCard';
 import QuickSignupModal from '@/components/QuickSignupModal';
 import { createWhatsAppOrderLink, createWhatsAppShareLink } from '@/components/WhatsAppButton';
 import { gaViewItem, gaAddToCart, gaWhatsAppClick } from '@/lib/google-analytics';
+import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 
 function stripEmojis(text: string): string {
   // eslint-disable-next-line no-control-regex
@@ -283,11 +284,12 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
               onTouchEnd={handleTouchEnd}
             >
               <Image
-                src={product.images[selectedImage]}
+                src={normalizeProductImageUrl(product.images[selectedImage]) || '/products/logo.jpeg'}
                 alt={product.name}
                 fill
                 className="object-cover object-top"
                 priority
+                unoptimized
                 draggable={false}
               />
               {/* Discount badge - bottom on mobile to avoid covering face */}
@@ -356,7 +358,13 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                       selectedImage === index ? 'border-primary-600' : 'border-transparent'
                     }`}
                   >
-                    <Image src={image} alt={`${product.name} ${index + 1}`} fill className="object-cover object-top" />
+                    <Image
+                      src={normalizeProductImageUrl(image) || '/products/logo.jpeg'}
+                      alt={`${product.name} ${index + 1}`}
+                      fill
+                      unoptimized
+                      className="object-cover object-top"
+                    />
                   </button>
                 ))}
               </div>

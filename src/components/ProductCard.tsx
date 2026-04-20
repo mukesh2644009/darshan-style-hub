@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FiHeart, FiShoppingBag, FiStar } from 'react-icons/fi';
 import { Product } from '@/lib/products';
+import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { useAuthStore } from '@/store/authStore';
@@ -22,6 +23,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const isWishlisted = isInWishlist(product.id);
+  const primaryImage =
+    normalizeProductImageUrl(product.images?.[0]) || '/products/logo.jpeg';
 
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -62,9 +65,11 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Image Container */}
         <div className="relative aspect-[3/4] overflow-hidden bg-accent-100">
           <Image
-            src={product.images[0]}
+            src={primaryImage}
             alt={product.name}
             fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 280px"
+            unoptimized={primaryImage.startsWith('/products/')}
             className="object-cover object-top transition-transform duration-500 group-hover:scale-110"
           />
 

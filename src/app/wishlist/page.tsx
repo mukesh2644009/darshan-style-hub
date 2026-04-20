@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { FiHeart, FiTrash2, FiShoppingBag } from 'react-icons/fi';
 import { useWishlistStore } from '@/store/wishlistStore';
+import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 import { useCartStore } from '@/store/cartStore';
 
 export default function WishlistPage() {
@@ -75,9 +76,10 @@ export default function WishlistPage() {
                   {/* Image */}
                   <Link href={`/products/${product.slug || product.id}`} className="block relative aspect-[3/4]">
                     <Image
-                      src={product.images[0]}
+                      src={normalizeProductImageUrl(product.images?.[0]) || '/products/logo.jpeg'}
                       alt={product.name}
                       fill
+                      unoptimized
                       className="object-cover"
                     />
                     {discount > 0 && (

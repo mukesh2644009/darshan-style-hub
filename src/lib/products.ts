@@ -1,4 +1,5 @@
 import prisma from './prisma';
+import { normalizeProductImageUrl } from './productImageUrl';
 
 export interface Product {
   id: string;
@@ -33,7 +34,7 @@ function transformProduct(dbProduct: any): Product {
     description: dbProduct.description,
     price: dbProduct.price,
     originalPrice: dbProduct.originalPrice,
-    images: dbProduct.images.map((img: any) => img.url),
+    images: dbProduct.images.map((img: any) => normalizeProductImageUrl(img.url)).filter(Boolean),
     category: dbProduct.category,
     subcategory: dbProduct.subcategory,
     sizes: dbProduct.sizes.map((s: any) => s.size),

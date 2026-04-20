@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FiX, FiMinus, FiPlus, FiTrash2, FiShoppingBag } from 'react-icons/fi';
 import { useCartStore } from '@/store/cartStore';
+import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 import { AnimatePresence, motion } from 'framer-motion';
 
 export default function CartSidebar() {
@@ -78,9 +79,10 @@ export default function CartSidebar() {
                       {/* Product Image */}
                       <div className="relative w-24 h-28 rounded-lg overflow-hidden flex-shrink-0">
                         <Image
-                          src={item.product.images[0]}
+                          src={normalizeProductImageUrl(item.product.images?.[0]) || '/products/logo.jpeg'}
                           alt={item.product.name}
                           fill
+                          unoptimized
                           className="object-cover"
                         />
                       </div>

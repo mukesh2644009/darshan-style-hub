@@ -13,6 +13,7 @@ import { fbInitiateCheckout, fbPurchase } from '@/lib/facebook-pixel';
 import { downloadReceipt } from '@/lib/generate-receipt';
 import { FiDownload } from 'react-icons/fi';
 import { gaBeginCheckout, gaPurchase } from '@/lib/google-analytics';
+import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 
 export default function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCartStore();
@@ -738,9 +739,10 @@ export default function CheckoutPage() {
                   >
                     <div className="relative w-16 h-20 rounded-lg overflow-hidden flex-shrink-0">
                       <Image
-                        src={item.product.images[0]}
+                        src={normalizeProductImageUrl(item.product.images?.[0]) || '/products/logo.jpeg'}
                         alt={item.product.name}
                         fill
+                        unoptimized
                         className="object-cover"
                       />
                     </div>

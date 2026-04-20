@@ -55,64 +55,23 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative min-h-[90vh] lg:min-h-[80vh] overflow-hidden">
-        {/* Light cream background */}
-        <div className="absolute inset-0 bg-[#FFF8F0]">
-          {/* Subtle decorative border at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 via-rose-400 to-amber-400"></div>
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center py-8">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center w-full">
-            {/* Text Content */}
-            <div className="text-center lg:text-left animate-fadeIn">
-              {/* Logo Display */}
-              <div className="mb-4 flex justify-center lg:justify-start">
-                <Image
-                  src="/products/logo.jpeg"
-                  alt="Darshan Style Hub"
-                  width={400}
-                  height={180}
-                  className="h-24 sm:h-32 lg:h-44 w-auto object-contain mix-blend-multiply"
-                  priority
-                />
-              </div>
-              
-              <span className="inline-block bg-amber-50 text-amber-800 px-4 py-1.5 rounded-full text-sm font-medium mb-6 border border-amber-200">
-                ✨ New Collection 2026
-              </span>
-              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
-                Designer Suits &
-                <span className="bg-gradient-to-r from-amber-600 via-rose-600 to-amber-600 bg-clip-text text-transparent block">Co Ord Sets</span>
-              </h1>
-              <p className="text-lg text-gray-600 mb-8 max-w-lg mx-auto lg:mx-0">
-                Discover our stunning collection of designer suits and co ord sets. 
-                From traditional designs to modern styles, find your perfect ethnic wear.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link href="/products?category=Suits" className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-amber-600 to-amber-700 text-white font-medium rounded-full hover:from-amber-700 hover:to-amber-800 transition-all shadow-lg shadow-amber-200">
-                  Shop Suits
-                  <FiArrowRight />
-                </Link>
-                <Link href="/products?category=Co Ord Sets" className="inline-flex items-center justify-center gap-2 px-8 py-3 border-2 border-gray-800 text-gray-800 font-medium rounded-full hover:bg-gray-800 hover:text-white transition-all">
-                  Shop Co Ord Sets
-                </Link>
-              </div>
-            </div>
-
-            {/* Hero Image Carousel - Visible on all screens */}
-            <div className="relative w-full max-w-sm sm:max-w-md mx-auto lg:max-w-none">
-              <div className="relative w-full aspect-[2/3] sm:aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl border border-gray-100">
-                <HeroCarousel />
-              </div>
-              {/* Premium badge - hidden on mobile */}
-              <div className="hidden sm:block absolute top-4 right-4 bg-gray-900 text-white px-3 py-1.5 rounded-full shadow-lg text-xs font-medium z-10">
-                Premium Quality
-              </div>
-            </div>
+      {/* Hero height matches 1920×650 (192∶65) so 1920×650 banners fit edge-to-edge with object-cover */}
+      <section className="relative overflow-hidden bg-[#FFF8F0]" aria-label="Featured collections">
+        <h1 className="sr-only">Darshan Style Hub — designer suits, co ord sets &amp; ethnic wear from Jaipur</h1>
+        <div className="relative mx-auto w-full min-h-[200px] h-[min(72vh,calc(100vw*65/192))] max-w-[min(100vw,calc(72vh*192/65))] overflow-hidden rounded-none bg-neutral-900 shadow-sm">
+          <div className="absolute inset-0">
+            <HeroCarousel fullBleed cinematic />
           </div>
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-[14] h-12 bg-gradient-to-t from-black/20 to-transparent sm:h-14"
+            aria-hidden
+          />
         </div>
+
+        <div
+          className="relative z-[21] h-1 w-full bg-gradient-to-r from-amber-500 via-rose-400 to-amber-500"
+          aria-hidden
+        />
       </section>
 
       {/* Features - Compact */}

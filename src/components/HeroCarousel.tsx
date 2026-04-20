@@ -84,8 +84,9 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
       );
     }
     if (cinematic && fullBleed) {
-      // Slide 0 (hero-untitled-design): anchor lower so copy + product row aren’t cropped at bottom
-      const coverClass = currentIndex === 0 ? 'object-cover object-bottom' : 'object-cover object-center';
+      // Slide 0: desktop anchors low for artwork; narrow viewports use center so faces/copy aren’t clipped at top
+      const coverClass =
+        currentIndex === 0 ? 'object-cover object-center sm:object-bottom' : 'object-cover object-center';
 
       return (
         <div className="absolute inset-0 overflow-hidden bg-neutral-900">

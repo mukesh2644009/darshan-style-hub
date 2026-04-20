@@ -6,7 +6,7 @@ import ProductCard from '@/components/ProductCard';
 import HeroCarousel from '@/components/HeroCarousel';
 import AnimatedSection from '@/components/AnimatedSection';
 import DeliveryPincodeChecker from '@/components/DeliveryPincodeChecker';
-import { getFeaturedProducts, getProducts } from '@/lib/products';
+import { getFeaturedProducts, getProducts, type Product } from '@/lib/products';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,10 +39,19 @@ const shopCategoryCircles = [
 ] as const;
 
 export default async function Home() {
-  const [featuredProducts, allProducts] = await Promise.all([
-    getFeaturedProducts(),
-    getProducts({}),
-  ]);
+  let featuredProducts: Product[] = [];
+  let allProducts: Product[] = [];
+  try {
+    [featuredProducts, allProducts] = await Promise.all([
+      getFeaturedProducts(),
+      getProducts({}),
+    ]);
+  } catch (err) {
+    console.error(
+      '[home] Could not load products — check DATABASE_URL and that the database is running (e.g. `npx prisma db push` + seed).',
+      err,
+    );
+  }
 
   return (
     <div className="min-h-screen">

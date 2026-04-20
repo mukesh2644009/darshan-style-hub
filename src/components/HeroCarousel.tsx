@@ -84,9 +84,12 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
       );
     }
     if (cinematic && fullBleed) {
-      // Slide 0: desktop anchors low for artwork; narrow viewports use center so faces/copy aren’t clipped at top
-      const coverClass =
-        currentIndex === 0 ? 'object-cover object-center sm:object-bottom' : 'object-cover object-center';
+      // Portrait / narrow viewports: object-cover scales to height and crops left-right (banner text cut off).
+      // Use object-contain until lg so full 1920×650 artwork fits width-wise (letterboxing top/bottom on dark bg).
+      const fitClass =
+        currentIndex === 0
+          ? 'object-contain object-center lg:object-cover lg:object-bottom'
+          : 'object-contain object-center lg:object-cover lg:object-center';
 
       return (
         <div className="absolute inset-0 overflow-hidden bg-neutral-900">
@@ -94,10 +97,10 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
             src={heroImages[currentIndex]}
             alt={`Darshan Style Hub promotional banner ${currentIndex + 1} of ${heroImages.length}`}
             fill
-            sizes="(max-width: 2560px) 100vw, 2560px"
+            sizes="(max-width: 639px) 100vw, (max-width: 2560px) 100vw, 2560px"
             quality={100}
             unoptimized
-            className={`${coverClass} transform-gpu contrast-[1.04] brightness-[1.02]`}
+            className={`${fitClass} contrast-[1.04] brightness-[1.02] lg:transform-gpu`}
             priority
             fetchPriority="high"
             decoding="sync"

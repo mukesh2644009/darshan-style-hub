@@ -55,11 +55,11 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero height matches 1920×650 (192∶65) so 1920×650 banners fit edge-to-edge with object-cover */}
+      {/* Hero: desktop uses object-cover in carousel; below lg, carousel uses object-contain so wide banners are not side-cropped */}
       <section className="relative overflow-hidden bg-[#FFF8F0]" aria-label="Featured collections">
         <h1 className="sr-only">Darshan Style Hub — designer suits, co ord sets &amp; ethnic wear from Jaipur</h1>
-        {/* Height: on narrow phones 100vw*65/192 is ~130px and object-cover crops badly; floor with max(..., min(42dvh, 360px)) */}
-        <div className="relative mx-auto w-full min-h-[220px] h-[min(72vh,max(calc(100vw*65/192),min(42dvh,360px)))] max-w-[min(100vw,calc(72vh*192/65))] overflow-hidden rounded-none bg-neutral-900 shadow-sm">
+        {/* min-w-0: allows shrink in flex ancestors; height floor keeps mobile strip tall enough for letterboxed banners */}
+        <div className="relative mx-auto w-full min-w-0 min-h-[220px] h-[min(72vh,max(calc(100vw*65/192),min(42dvh,360px)))] max-w-[min(100vw,calc(72vh*192/65))] overflow-hidden rounded-none bg-neutral-900 shadow-sm">
           <div className="absolute inset-0">
             <HeroCarousel fullBleed cinematic />
           </div>

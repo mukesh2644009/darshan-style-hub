@@ -30,11 +30,11 @@ This document outlines the security measures implemented and steps for productio
 - Email format validation
 - Phone number format validation (Indian: 10 digits starting with 6-9)
 - Pincode validation (6 digits)
-- File type and size validation (images only, max 5MB)
+- File type and size validation (images only, max 12MB)
 
 ### 6. File Upload Security
 - Allowed types: JPEG, PNG, WebP, GIF only
-- Max file size: 5MB
+- Max file size: 12MB
 - Secure random filenames (prevents path traversal)
 - Admin authentication required
 

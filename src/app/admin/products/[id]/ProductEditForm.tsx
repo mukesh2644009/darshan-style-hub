@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { uploadAdminProductImages } from '@/lib/adminUploadClient';
+import { MAX_ADMIN_IMAGE_MB } from '@/lib/uploadLimits';
 import { FiSave, FiLoader, FiCheck, FiPlus, FiUploadCloud, FiTrash2, FiImage } from 'react-icons/fi';
 
 interface ProductSize {
@@ -346,7 +347,7 @@ export default function ProductEditForm({ product }: Props) {
               className="hidden"
             />
           </label>
-          <p className="text-xs text-gray-400 mt-2">JPG, PNG, WebP — Max 5MB per image</p>
+          <p className="text-xs text-gray-400 mt-2">JPG, PNG, WebP — Max {MAX_ADMIN_IMAGE_MB}MB per image</p>
         </div>
 
         {/* New Image Previews */}

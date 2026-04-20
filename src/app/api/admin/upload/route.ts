@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
+import { MAX_ADMIN_IMAGE_BYTES, MAX_ADMIN_IMAGE_MB } from '@/lib/uploadLimits';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
@@ -50,9 +51,9 @@ export async function POST(request: Request) {
         continue;
       }
 
-      if (file.size > 5 * 1024 * 1024) {
+      if (file.size > MAX_ADMIN_IMAGE_BYTES) {
         return NextResponse.json(
-          { error: `File ${file.name} is too large. Max 5MB per image.` },
+          { error: `File ${file.name} is too large. Max ${MAX_ADMIN_IMAGE_MB}MB per image.` },
           { status: 400 }
         );
       }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { uploadAdminProductImages } from '@/lib/adminUploadClient';
+import { MAX_ADMIN_IMAGE_MB } from '@/lib/uploadLimits';
 import { FiSave, FiLoader, FiCheck, FiPlus, FiX, FiImage, FiUploadCloud, FiTrash2 } from 'react-icons/fi';
 
 const AVAILABLE_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'Free Size'];
@@ -343,7 +344,7 @@ export default function ProductAddForm() {
               className="hidden"
             />
           </label>
-          <p className="text-xs text-gray-400 mt-3">JPG, PNG, WebP — Max 5MB per image</p>
+          <p className="text-xs text-gray-400 mt-3">JPG, PNG, WebP — Max {MAX_ADMIN_IMAGE_MB}MB per image</p>
         </div>
 
         {/* Image Previews */}

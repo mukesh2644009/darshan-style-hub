@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { prisma } from './prisma';
 import bcrypt from 'bcryptjs';
+import { MAX_ADMIN_IMAGE_BYTES, MAX_ADMIN_IMAGE_MB } from './uploadLimits';
 
 // Password hashing
 const SALT_ROUNDS = 12;
@@ -125,7 +126,6 @@ export function resetRateLimit(identifier: string): void {
 
 // Validate file upload
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export function validateImageUpload(file: File): { valid: boolean; error?: string } {
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
@@ -135,10 +135,10 @@ export function validateImageUpload(file: File): { valid: boolean; error?: strin
     };
   }
 
-  if (file.size > MAX_FILE_SIZE) {
+  if (file.size > MAX_ADMIN_IMAGE_BYTES) {
     return { 
       valid: false, 
-      error: `File too large. Maximum size: ${MAX_FILE_SIZE / 1024 / 1024}MB` 
+      error: `File too large. Maximum size: ${MAX_ADMIN_IMAGE_MB}MB` 
     };
   }
 

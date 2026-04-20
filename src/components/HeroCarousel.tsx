@@ -91,20 +91,23 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
           : 'object-contain object-center lg:object-cover lg:object-center';
 
       return (
-        <div className="absolute inset-0 overflow-hidden bg-[#FFF8F0]">
-          <Image
-            src={heroImages[currentIndex]}
-            alt={`Darshan Style Hub promotional banner ${currentIndex + 1} of ${heroImages.length}`}
-            fill
-            sizes="(max-width: 639px) 100vw, (max-width: 2560px) 100vw, 2560px"
-            quality={100}
-            unoptimized
-            className={`${fitClass} contrast-[1.04] brightness-[1.02] lg:transform-gpu`}
-            priority
-            fetchPriority="high"
-            decoding="sync"
-            draggable={false}
-          />
+        <div className="absolute inset-0 bg-[#FFF8F0]">
+          {/* Slight inset on small screens avoids subpixel overflow-hidden clipping the edges of object-contain */}
+          <div className="absolute inset-0 overflow-hidden max-lg:inset-[3px] lg:inset-0">
+            <Image
+              src={heroImages[currentIndex]}
+              alt={`Darshan Style Hub promotional banner ${currentIndex + 1} of ${heroImages.length}`}
+              fill
+              sizes="(max-width: 1023px) 100vw, (max-width: 2560px) 100vw, 2560px"
+              quality={100}
+              unoptimized
+              className={`${fitClass} max-lg:contrast-[1] max-lg:brightness-[1] lg:contrast-[1.04] lg:brightness-[1.02] lg:transform-gpu`}
+              priority
+              fetchPriority="high"
+              decoding="sync"
+              draggable={false}
+            />
+          </div>
         </div>
       );
     }

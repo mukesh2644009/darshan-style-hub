@@ -4,10 +4,10 @@
   "description": "E-commerce app for Darshan Style Hub - Sarees & Suits in Jaipur",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3333",
     "dev:5001": "next dev -p 5001",
-    "dev:clean": "rm -rf .next && next dev",
-    "dev:domain": "next dev -H darshanclothsjaipur.com",
+    "dev:clean": "rm -rf .next && next dev -p 3333",
+    "dev:domain": "next dev -H darshanclothsjaipur.com -p 3333",
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",

@@ -74,8 +74,8 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
             alt={`Darshan Style Hub promotional banner ${currentIndex + 1} of ${heroImages.length}`}
             fill
             sizes={imageSizes}
-            quality={100}
-            unoptimized
+            quality={90}
+            placeholder="empty"
             className="object-cover [object-position:center_18%]"
             priority={currentIndex === 0}
             draggable={false}
@@ -98,9 +98,9 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
               src={heroImages[currentIndex]}
               alt={`Darshan Style Hub promotional banner ${currentIndex + 1} of ${heroImages.length}`}
               fill
-              sizes="(max-width: 1023px) 100vw, (max-width: 1920px) 100vw, min(100vw, 2560px)"
-              quality={100}
-              unoptimized
+              sizes="100vw"
+              quality={90}
+              placeholder="empty"
               className={`${fitClass} [backface-visibility:hidden]`}
               priority={currentIndex === 0}
               fetchPriority={currentIndex === 0 ? 'high' : 'auto'}
@@ -119,8 +119,8 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
         alt={`Darshan Style Hub promotional banner ${currentIndex + 1} of ${heroImages.length}`}
         fill
         sizes={imageSizes}
-        quality={100}
-        unoptimized={fullBleed}
+        quality={90}
+        placeholder="empty"
         className={fitClass}
         priority={currentIndex === 0}
         draggable={false}

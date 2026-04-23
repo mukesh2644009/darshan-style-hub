@@ -34,6 +34,8 @@ const securityHeaders = [
 
 const nextConfig = {
   images: {
+    // Wider defaults help full-bleed hero banners stay sharp on large / high-DPR screens
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 2560, 3840],
     remotePatterns: [
       {
         protocol: 'https',

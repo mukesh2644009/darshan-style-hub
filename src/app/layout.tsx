@@ -90,7 +90,7 @@ export default function RootLayout({
         <div className="w-full max-w-[100vw] overflow-x-hidden">
           <Navbar />
           <CartSidebar />
-          <main className="min-h-screen pt-[104px] w-full">
+          <main className="min-h-screen w-full pt-[84px] sm:pt-[104px]">
             {children}
           </main>
           <Footer />

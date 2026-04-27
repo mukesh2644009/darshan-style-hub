@@ -53,13 +53,18 @@ export default function Navbar() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-accent-200">
-      {/* Top Bar */}
-      <div className="bg-primary-700 text-white text-center py-2 text-sm">
-        <p>✨ Free Shipping on orders above ₹999 | Shop Designer Suits & Co Ord Sets</p>
+      {/* Top Bar — compact on small screens so hero isn’t pushed down by wrapped text */}
+      <div className="bg-primary-700 text-white text-center px-2 py-1 sm:px-3 sm:py-2">
+        <p className="text-[11px] leading-snug sm:hidden">
+          Free shipping ₹999+ · Designer suits &amp; co-ord sets
+        </p>
+        <p className="hidden text-sm sm:block">
+          ✨ Free Shipping on orders above ₹999 | Shop Designer Suits &amp; Co Ord Sets
+        </p>
       </div>
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Mobile Menu Button */}
           <button
             className="lg:hidden p-2"
@@ -75,7 +80,7 @@ export default function Navbar() {
               alt="Darshan Style Hub"
               width={60}
               height={60}
-              className="h-12 sm:h-14 w-auto object-contain mix-blend-multiply"
+              className="h-10 w-auto object-contain mix-blend-multiply sm:h-12 md:h-14"
               priority
             />
             <span className="font-display text-xl sm:text-2xl font-bold text-red-700 hidden sm:block truncate max-w-[9rem] sm:max-w-[11rem] md:max-w-[13rem] xl:max-w-none">

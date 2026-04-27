@@ -5,11 +5,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
-/** Resized hero slides in `/public/Banners/` (~1920×650). */
+/** Hero slides in `/public/Banners/` (wide landscape assets). */
 const BANNER_FILES = [
-  'hero-untitled-design.png',
-  'hero-beige-brown-clothing-ad-1920x650.png',
-  'hero-beige-brown-collection-1920x650.png',
+  'DARSHAN STYLE HUB.png',
+  'Wear the Vibe, Own the Spotlight.png',
+  'new arrival linkedln banner.png',
 ] as const;
 
 const heroImages = BANNER_FILES.map((name) => `/Banners/${encodeURIComponent(name)}`);

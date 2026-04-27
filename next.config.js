@@ -33,6 +33,23 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  // Keep serverless traces small: `join(process.cwd(), 'public', …)` in API routes otherwise
+  // pulls the entire `public/` tree (~hundreds of MB) into the function zip (Vercel 250 MB cap).
+  // Static assets under `public/` are still deployed and served by the CDN; they are not removed from the site.
+  experimental: {
+    outputFileTracingExcludes: {
+      '*': ['./public/**/*'],
+    },
+    serverComponentsExternalPackages: [
+      '@prisma/client',
+      'prisma',
+      'pdfkit',
+      'sharp',
+      'jspdf',
+      'nodemailer',
+    ],
+  },
+
   images: {
     // Wider defaults help full-bleed hero banners stay sharp on large / high-DPR screens
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 2560, 3840],

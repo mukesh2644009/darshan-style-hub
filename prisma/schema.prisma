@@ -2,7 +2,9 @@
 // To use: Replace schema.prisma with this file and run migrations
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // `native` = local dev; `rhel-openssl-3.0.x` = Vercel Node 18+ Linux — avoids shipping every OS engine.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {

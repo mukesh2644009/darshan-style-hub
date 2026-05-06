@@ -57,7 +57,7 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
 
   const navBtnClass = isPhotoHero
     ? 'absolute top-1/2 z-[32] flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/50 bg-black/40 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/55 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/90 sm:h-11 sm:w-11'
-    : 'absolute top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-black/35 text-white shadow-md backdrop-blur-[2px] transition hover:bg-black/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80';
+    : 'absolute top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-amber-50/80 bg-black/35 text-white shadow-md backdrop-blur-[2px] transition hover:bg-black/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-100 sm:h-11 sm:w-11';
 
   const imageSizes = split
     ? '(max-width: 1023px) 100vw, 58vw'
@@ -129,7 +129,7 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
   };
 
   return (
-    <div className="relative h-full w-full min-h-0">
+    <div className="relative h-full w-full min-h-0 bg-[#FFF8E6]">
       <AnimatePresence initial={false} mode="sync">
         <motion.div
           key={currentIndex}
@@ -177,7 +177,7 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
                   : 'w-6 bg-white shadow-sm'
                 : isPhotoHero
                   ? 'w-2.5 bg-primary-600/30 hover:bg-primary-600/55'
-                  : 'w-2.5 bg-white/50 hover:bg-white/80'
+                  : 'w-2.5 bg-amber-100/70 hover:bg-amber-100'
             }`}
           />
         ))}

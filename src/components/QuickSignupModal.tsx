@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { FiX, FiUser, FiMail, FiPhone, FiLock, FiLoader, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
-import { motion, AnimatePresence } from 'framer-motion';
+import { FiAlertCircle, FiCheckCircle, FiLoader, FiMapPin, FiPhone, FiUser, FiX } from 'react-icons/fi';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
-import { validateEmail } from '@/lib/validation';
 
 interface QuickSignupModalProps {
   isOpen: boolean;
@@ -12,27 +11,79 @@ interface QuickSignupModalProps {
   onSuccess: () => void;
 }
 
-export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSignupModalProps) {
-  const { register, login } = useAuthStore();
+type Step = 'details' | 'otp';
+type ExistingProfile = {
+  name: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  pincode: string;
+};
 
-  const [mode, setMode] = useState<'signup' | 'login'>('signup');
+export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSignupModalProps) {
+  const { checkAuth } = useAuthStore();
+
+  const [step, setStep] = useState<Step>('details');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
+  const [addressLine1, setAddressLine1] = useState('');
+  const [addressLine2, setAddressLine2] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [pincode, setPincode] = useState('');
+  const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showExistingAccount, setShowExistingAccount] = useState(false);
+  const [infoMessage, setInfoMessage] = useState('');
+  const [devOtp, setDevOtp] = useState('');
+  const [profileLookupLoading, setProfileLookupLoading] = useState(false);
+  const [existingProfile, setExistingProfile] = useState<ExistingProfile | null>(null);
 
   const resetForm = () => {
+    setStep('details');
     setName('');
-    setEmail('');
     setPhone('');
-    setPassword('');
+    setAddressLine1('');
+    setAddressLine2('');
+    setCity('');
+    setState('');
+    setPincode('');
+    setOtp('');
     setError('');
+    setInfoMessage('');
+    setDevOtp('');
+    setProfileLookupLoading(false);
+    setExistingProfile(null);
     setLoading(false);
-    setShowExistingAccount(false);
-    setMode('signup');
+  };
+
+  const handlePhoneBlur = async () => {
+    setExistingProfile(null);
+    if (!phone.trim()) return;
+
+    setProfileLookupLoading(true);
+    try {
+      const res = await fetch(`/api/auth/otp/profile?phone=${encodeURIComponent(phone.trim())}`, {
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (data.success && data.exists && data.profile) {
+        const profile = data.profile as ExistingProfile;
+        setExistingProfile(profile);
+        setName(profile.name || name);
+        setAddressLine1(profile.addressLine1 || '');
+        setAddressLine2(profile.addressLine2 || '');
+        setCity(profile.city || '');
+        setState(profile.state || '');
+        setPincode(profile.pincode || '');
+      }
+    } catch {
+      // no-op: allow manual entry
+    } finally {
+      setProfileLookupLoading(false);
+    }
   };
 
   const handleClose = () => {
@@ -40,64 +91,90 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
     onClose();
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleRequestOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setInfoMessage('');
 
-    if (!name.trim()) {
-      setError('Please enter your name');
+    if (!name.trim() || !phone.trim()) {
+      setError('Please fill name and mobile number.');
       return;
     }
 
-    const emailError = validateEmail(email);
-    if (emailError) {
-      setError(emailError);
+    if (!existingProfile && (!addressLine1.trim() || !city.trim() || !state.trim() || !pincode.trim())) {
+      setError('Please fill all required details.');
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (!existingProfile && !/^\d{6}$/.test(pincode.trim())) {
+      setError('Enter a valid 6-digit pincode.');
       return;
     }
 
     setLoading(true);
-
-    const result = await register(name.trim(), email.trim(), phone.trim(), password);
-
-    if (result.success) {
-      resetForm();
-      onSuccess();
-    } else if (result.error?.toLowerCase().includes('already')) {
-      setShowExistingAccount(true);
-      setError('');
-    } else {
-      setError(result.error || 'Registration failed. Please try again.');
+    try {
+      const res = await fetch('/api/auth/otp/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim(),
+          addressLine1: addressLine1.trim(),
+          addressLine2: addressLine2.trim(),
+          city: city.trim(),
+          state: state.trim(),
+          pincode: pincode.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || 'Failed to send OTP.');
+      } else {
+        setStep('otp');
+        setInfoMessage('Verification code sent to your mobile number.');
+        if (data.devOtp) setDevOtp(data.devOtp);
+      }
+    } catch {
+      setError('Failed to send OTP.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (!email.trim() || !password) {
-      setError('Please enter email and password');
+    setInfoMessage('');
+    if (!otp.trim()) {
+      setError('Enter OTP code.');
       return;
     }
 
     setLoading(true);
-
-    const result = await login(email.trim(), password);
-
-    if (result.success) {
-      resetForm();
-      onSuccess();
-    } else {
-      setError(result.error || 'Login failed. Please try again.');
+    try {
+      const res = await fetch('/api/auth/otp/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          phone: phone.trim(),
+          otp: otp.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || 'OTP verification failed.');
+      } else {
+        await checkAuth();
+        resetForm();
+        onSuccess();
+      }
+    } catch {
+      setError('OTP verification failed.');
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -107,259 +184,180 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           onClick={handleClose}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: 'spring', damping: 24, stiffness: 280 }}
+            className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-5 text-white relative">
+            <div className="relative bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-5 text-white">
               <button
                 onClick={handleClose}
-                className="absolute top-4 right-4 p-1 rounded-full hover:bg-white/20 transition-colors"
+                className="absolute right-4 top-4 rounded-full p-1 transition-colors hover:bg-white/20"
               >
                 <FiX size={20} />
               </button>
-              <h2 className="text-xl font-bold">
-                {showExistingAccount
-                  ? 'Welcome Back!'
-                  : mode === 'signup'
-                  ? 'Quick Signup to Continue'
-                  : 'Login to Continue'}
-              </h2>
-              <p className="text-primary-100 text-sm mt-1">
-                {showExistingAccount
-                  ? 'You already have an account. Please login.'
-                  : mode === 'signup'
-                  ? 'Create your account to add items to cart'
-                  : 'Enter your credentials to continue shopping'}
+              <h2 className="text-xl font-bold">Quick Verify to Continue</h2>
+              <p className="mt-1 text-sm text-primary-100">
+                Add your details, verify by SMS OTP, and continue shopping.
               </p>
             </div>
 
             <div className="p-6">
-              {/* Existing Account Message */}
-              {showExistingAccount && (
-                <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-                  <FiAlertCircle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
-                  <div>
-                    <p className="text-amber-800 font-medium text-sm">Account already exists!</p>
-                    <p className="text-amber-700 text-sm mt-1">
-                      An account with <strong>{email}</strong> is already registered. Please login with your password.
-                    </p>
-                    <button
-                      onClick={() => {
-                        setShowExistingAccount(false);
-                        setMode('login');
-                        setPassword('');
-                      }}
-                      className="mt-2 text-primary-600 font-medium text-sm hover:underline"
-                    >
-                      Login to your account →
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Error Message */}
               {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+                <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
                   <FiAlertCircle className="flex-shrink-0" />
                   <span>{error}</span>
                 </div>
               )}
 
-              {/* Signup Form */}
-              {mode === 'signup' && !showExistingAccount && (
-                <form onSubmit={handleSignup} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Full Name *
-                    </label>
-                    <div className="relative">
-                      <FiUser className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                      <input
-                        type="text"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        required
-                        placeholder="Enter your name"
-                        autoComplete="name"
-                        name="name"
-                        id="signup-name"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
-                        autoFocus
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Email Address *
-                    </label>
-                    <div className="relative">
-                      <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        placeholder="you@example.com"
-                        autoComplete="email"
-                        name="email"
-                        id="signup-email"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Phone Number
-                    </label>
-                    <div className="relative">
-                      <FiPhone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+91 98765 43210"
-                        autoComplete="tel"
-                        name="phone"
-                        id="signup-phone"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Create Password *
-                    </label>
-                    <div className="relative">
-                      <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        placeholder="Min 6 characters"
-                        autoComplete="new-password"
-                        name="password"
-                        id="signup-password"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-all bg-primary-600 text-white hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <>
-                        <FiLoader className="animate-spin" size={16} />
-                        Creating Account...
-                      </>
-                    ) : (
-                      <>
-                        <FiCheckCircle size={16} />
-                        Sign Up & Add to Cart
-                      </>
-                    )}
-                  </button>
-
-                  <p className="text-center text-sm text-gray-500">
-                    Already have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => { setMode('login'); setError(''); }}
-                      className="text-primary-600 font-medium hover:underline"
-                    >
-                      Login
-                    </button>
-                  </p>
-                </form>
+              {infoMessage && (
+                <div className="mb-4 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+                  <FiCheckCircle className="flex-shrink-0" />
+                  <span>{infoMessage}</span>
+                </div>
               )}
 
-              {/* Login Form */}
-              {mode === 'login' && !showExistingAccount && (
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Email Address *
-                    </label>
-                    <div className="relative">
-                      <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        placeholder="you@example.com"
-                        autoComplete="email"
-                        name="login-email"
-                        id="login-email"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
-                        autoFocus
-                      />
-                    </div>
+              {step === 'details' ? (
+                <form onSubmit={handleRequestOtp} className="space-y-3">
+                  <div className="relative">
+                    <FiUser className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Full Name *"
+                      className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
+                      autoFocus
+                    />
                   </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                      Password *
-                    </label>
-                    <div className="relative">
-                      <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        placeholder="Enter your password"
-                        autoComplete="current-password"
-                        name="login-password"
-                        id="login-password"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-sm"
-                      />
-                    </div>
+                  <div className="relative">
+                    <FiPhone className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      onBlur={handlePhoneBlur}
+                      placeholder="Mobile Number (10 digits) *"
+                      className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
+                    />
                   </div>
+                  {profileLookupLoading && (
+                    <p className="text-xs text-gray-500">Checking your saved details...</p>
+                  )}
+                  {existingProfile && (
+                    <p className="rounded-lg border border-green-200 bg-green-50 p-2 text-xs text-green-700">
+                      We found your saved details. You can continue with OTP directly.
+                    </p>
+                  )}
+                  {!existingProfile && (
+                    <>
+                      <div className="relative">
+                        <FiMapPin className="pointer-events-none absolute left-3 top-3 text-gray-400" size={16} />
+                        <textarea
+                          value={addressLine1}
+                          onChange={(e) => setAddressLine1(e.target.value)}
+                          placeholder="Address Line 1 *"
+                          rows={2}
+                          className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        value={addressLine2}
+                        onChange={(e) => setAddressLine2(e.target.value)}
+                        placeholder="Address Line 2 (optional)"
+                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
+                      />
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <input
+                          type="text"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          placeholder="City *"
+                          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
+                        />
+                        <input
+                          type="text"
+                          value={state}
+                          onChange={(e) => setState(e.target.value)}
+                          placeholder="State *"
+                          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
+                        />
+                        <input
+                          type="text"
+                          value={pincode}
+                          onChange={(e) => setPincode(e.target.value)}
+                          placeholder="Pincode *"
+                          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                    </>
+                  )}
 
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-all bg-primary-600 text-white hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                    className="w-full rounded-lg bg-primary-600 py-3 font-medium text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-gray-300"
                   >
                     {loading ? (
-                      <>
+                      <span className="inline-flex items-center gap-2">
                         <FiLoader className="animate-spin" size={16} />
-                        Logging in...
-                      </>
+                        Sending OTP...
+                      </span>
                     ) : (
-                      <>
-                        <FiCheckCircle size={16} />
-                        Login & Add to Cart
-                      </>
+                      'Send Verification Code'
+                    )}
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  <p className="text-sm text-gray-600">
+                    Enter the 6-digit code sent to <strong>{phone}</strong>.
+                  </p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Enter 6-digit OTP"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm tracking-[0.25em] focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
+                    autoFocus
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full rounded-lg bg-primary-600 py-3 font-medium text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                  >
+                    {loading ? (
+                      <span className="inline-flex items-center gap-2">
+                        <FiLoader className="animate-spin" size={16} />
+                        Verifying...
+                      </span>
+                    ) : (
+                      'Verify & Continue'
                     )}
                   </button>
 
-                  <p className="text-center text-sm text-gray-500">
-                    Don&apos;t have an account?{' '}
-                    <button
-                      type="button"
-                      onClick={() => { setMode('signup'); setError(''); setShowExistingAccount(false); }}
-                      className="text-primary-600 font-medium hover:underline"
-                    >
-                      Sign Up
-                    </button>
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep('details');
+                      setOtp('');
+                      setError('');
+                      setInfoMessage('');
+                    }}
+                    className="w-full rounded-lg border border-gray-300 py-2.5 text-sm text-gray-700 transition hover:bg-gray-50"
+                  >
+                    Edit Details
+                  </button>
                 </form>
               )}
             </div>

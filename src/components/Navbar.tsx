@@ -52,7 +52,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-accent-200">
+    <header className="fixed top-0 left-0 right-0 z-50 bg-[#FFF8E6]/95 backdrop-blur-md border-b border-accent-200">
       {/* Top Bar — compact on small screens so hero isn’t pushed down by wrapped text */}
       <div className="bg-primary-700 text-white text-center px-2 py-1 sm:px-3 sm:py-2">
         <p className="text-[11px] leading-snug sm:hidden">
@@ -109,7 +109,7 @@ export default function Navbar() {
               </button>
               {isShopMenuOpen && (
                 <div
-                  className="absolute left-0 top-full z-50 mt-1 min-w-[12rem] rounded-lg border border-accent-200 bg-white py-1 shadow-lg animate-fadeIn"
+                  className="absolute left-0 top-full z-50 mt-1 min-w-[12rem] rounded-lg border border-accent-200 bg-[#FFF8E6] py-1 shadow-lg animate-fadeIn"
                   role="menu"
                 >
                   <Link
@@ -200,7 +200,7 @@ export default function Navbar() {
 
               {/* User Dropdown */}
               {isUserMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 animate-fadeIn">
+                <div className="absolute right-0 top-full mt-2 w-48 bg-[#FFF8E6] rounded-lg shadow-lg border border-gray-100 py-2 animate-fadeIn">
                   {isAuthenticated ? (
                     <>
                       <div className="px-4 py-2 border-b border-gray-100">
@@ -286,7 +286,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-accent-200 animate-slideDown">
+        <div className="lg:hidden bg-[#FFF8E6] border-t border-accent-200 animate-slideDown">
           <div className="px-4 py-4 space-y-3">
             <Link href="/" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               Home

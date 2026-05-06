@@ -76,7 +76,7 @@ export default async function Home() {
       </section>
 
       {/* Features - Compact */}
-      <section className="py-4 bg-white border-y border-accent-200">
+      <section className="py-4 bg-[#FFF8E6] border-y border-accent-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap justify-center gap-4 md:gap-8">
             <div className="flex items-center gap-2 bg-green-50 px-3 py-1.5 rounded-full border border-green-200">
@@ -104,7 +104,7 @@ export default async function Home() {
       </section>
 
       {/* Pincode delivery check */}
-      <section id="delivery" className="py-8 sm:py-10 bg-accent-50 border-y border-accent-100">
+      <section id="delivery" className="py-8 sm:py-10 bg-[#FFF8E6] border-y border-accent-100">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <DeliveryPincodeChecker variant="compact" />
           <p className="text-center text-sm text-gray-500 mt-4">
@@ -116,7 +116,7 @@ export default async function Home() {
       </section>
 
       {/* Categories — rectangular cards */}
-      <section className="py-12 sm:py-16 bg-white">
+      <section className="py-12 sm:py-16 bg-[#FFF8E6]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimatedSection className="text-center mb-8 sm:mb-10">
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
@@ -137,7 +137,7 @@ export default async function Home() {
                   <div
                     className="relative w-full aspect-[3/4] max-h-[300px] sm:max-h-[340px] lg:max-h-[380px] mx-auto rounded-2xl border-2 border-gray-600 shadow-md ring-1 ring-gray-400/70 group-hover:border-gray-700 group-hover:ring-gray-500/80 group-hover:shadow-lg transition-all duration-300 bg-gradient-to-b from-amber-50/90 to-gray-100 p-2 sm:p-2.5"
                   >
-                    <div className="relative h-full min-h-[180px] w-full overflow-hidden rounded-xl bg-white/90">
+                    <div className="relative h-full min-h-[180px] w-full overflow-hidden rounded-xl bg-[#FFF8E6]/90">
                       <Image
                         src={item.image}
                         alt={item.alt}
@@ -158,7 +158,7 @@ export default async function Home() {
       </section>
 
       {/* Featured Products */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#FFF8E6]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimatedSection className="flex items-center justify-between mb-12">
             <div>
@@ -176,7 +176,7 @@ export default async function Home() {
           </AnimatedSection>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.slice(0, 8).map((product) => (
+            {featuredProducts.slice(0, 4).map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
@@ -184,7 +184,7 @@ export default async function Home() {
       </section>
 
       {/* Browse All Products */}
-      <section className="py-16 bg-gradient-to-b from-white to-accent-50">
+      <section className="py-16 bg-gradient-to-b from-[#FFF8E6] to-[#FFF8E6]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimatedSection className="text-center mb-12">
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
@@ -232,7 +232,7 @@ export default async function Home() {
                 rating: 5,
               },
             ].map((testimonial, index) => (
-              <div key={index} className="bg-white p-6 rounded-2xl shadow-sm">
+              <div key={index} className="bg-[#FFF8E6] p-6 rounded-2xl shadow-sm">
                 <div className="flex items-center gap-1 mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <span key={i} className="text-yellow-400">★</span>

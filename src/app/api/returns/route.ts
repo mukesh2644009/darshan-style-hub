@@ -107,6 +107,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // Enforce 3-day return window from delivery
+    const deliveredAt = order.updatedAt;
+    const daysSinceDelivery = (Date.now() - new Date(deliveredAt).getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceDelivery > 3) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Return window has expired. Returns must be requested within 3 days of delivery.',
+        },
+        { status: 400 }
+      );
+    }
+
     if (order.returnRequest) {
       return NextResponse.json(
         { success: false, error: 'A return request already exists for this order' },

@@ -46,8 +46,12 @@ export default function ReturnsPolicyPage() {
                   applicable.
                 </li>
                 <li>
-                  Please raise your request within <strong>7 days</strong> of delivery (unless we
+                  Please raise your request within <strong>3 days</strong> of delivery (unless we
                   specify otherwise for a promotion).
+                </li>
+                <li>
+                  A <strong>return handling fee of ₹100</strong> is applicable on all return requests.
+                  This amount will be deducted from your refund or collected at the time of pickup.
                 </li>
               </ul>
             </section>

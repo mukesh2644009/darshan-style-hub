@@ -133,9 +133,10 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     const newErrors: Record<string, string> = {};
     
-    const emailError = validateEmail(formData.email);
-    if (emailError) {
-      newErrors.email = emailError;
+    // Email is optional for OTP-verified users
+    if (formData.email?.trim()) {
+      const emailError = validateEmail(formData.email);
+      if (emailError) newErrors.email = emailError;
     }
     if (!formData.firstName?.trim()) newErrors.firstName = 'First name is required';
     if (!formData.phone?.trim()) newErrors.phone = 'Phone number is required';
@@ -345,6 +346,28 @@ export default function CheckoutPage() {
 
   if (orderPlaced) {
     const orderIdShort = orderId ? `#${orderId.slice(0, 8).toUpperCase()}` : '';
+
+    const orderWhatsAppMsg = [
+      `🛍️ *Order Confirmed — Darshan Style Hub*`,
+      ``,
+      `Order ID: ${orderIdShort}`,
+      `Date: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`,
+      ``,
+      `*Items:*`,
+      ...(items.length > 0
+        ? items.map(item => `• ${item.product.name}${item.selectedSize ? ` (${item.selectedSize})` : ''} x${item.quantity} — ₹${(item.product.price * item.quantity).toLocaleString('en-IN')}`)
+        : [`• Order Items — ₹${orderTotal.toLocaleString('en-IN')}`]),
+      ``,
+      `*Total: ₹${orderTotal.toLocaleString('en-IN')}*`,
+      `Payment: ${orderPaymentMethod === 'UPI' ? 'Paid via UPI' : orderPaymentMethod === 'WHATSAPP' ? 'UPI via WhatsApp' : 'Cash on Delivery'}`,
+      ``,
+      `Ship to: ${formData.firstName} ${formData.lastName}, ${formData.city} ${formData.pincode}`,
+      ``,
+      `Thank you for shopping with us! 🙏`,
+      `🌐 darshanstylehub.com`,
+    ].join('\n');
+
+    const selfWhatsAppUrl = `https://wa.me/${formData.phone.replace(/\D/g, '')}?text=${encodeURIComponent(orderWhatsAppMsg)}`;
     const whatsappPaymentMsg = `Hi! I just placed an order on Darshan Style Hub.\n\nOrder ID: ${orderIdShort}\nAmount: ₹${orderTotal.toLocaleString('en-IN')}\nName: ${formData.firstName} ${formData.lastName}\nPhone: ${formData.phone}\n\nPlease share the payment QR code or link.\n\n🌐 Website: https://www.darshanstylehub.com\n📸 Instagram: https://www.instagram.com/stylehubjaipur/\n📘 Facebook: https://www.facebook.com/profile.php?id=61587889244337`;
     const whatsappLink = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappPaymentMsg)}`;
 
@@ -381,6 +404,14 @@ export default function CheckoutPage() {
             >
               <FiDownload /> Download Receipt
             </button>
+            <a
+              href={selfWhatsAppUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-3 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-2 mb-3"
+            >
+              <FaWhatsapp className="w-5 h-5" /> Send to My WhatsApp
+            </a>
             <Link href="/products" className="w-full py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors text-center inline-block">
               Continue Shopping
             </Link>
@@ -476,6 +507,14 @@ export default function CheckoutPage() {
           >
             <FiDownload /> Download Receipt
           </button>
+          <a
+            href={selfWhatsAppUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition-colors flex items-center justify-center gap-2 mb-3"
+          >
+            <FaWhatsapp className="w-5 h-5" /> Send to My WhatsApp
+          </a>
           <Link href="/products" className="w-full py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors text-center inline-block">
             Continue Shopping
           </Link>
@@ -567,7 +606,7 @@ export default function CheckoutPage() {
                   {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-gray-400 font-normal">(optional)</span></label>
                   <input
                     type="email"
                     value={formData.email}
@@ -576,7 +615,7 @@ export default function CheckoutPage() {
                       if (errors.email) setErrors({ ...errors, email: '' });
                     }}
                     className={`input-field ${errors.email ? 'border-red-500' : ''}`}
-                    placeholder="john@example.com"
+                    placeholder="For order confirmation email (optional)"
                   />
                   {errors.email && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><FiAlertCircle className="w-3 h-3" />{errors.email}</p>}
                 </div>

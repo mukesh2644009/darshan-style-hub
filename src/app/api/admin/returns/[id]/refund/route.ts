@@ -59,16 +59,17 @@ export async function POST(
     }
 
     if (mode === 'manual') {
-      await prisma.$transaction([
-        prisma.order.update({
+      const completedOrderStatus = ret.requestType === 'EXCHANGE' ? 'EXCHANGED' : 'RETURNED';
+      await prisma.$transaction(async (tx) => {
+        await tx.order.update({
           where: { id: order.id },
-          data: { paymentStatus: 'REFUNDED' },
-        }),
-        prisma.returnRequest.update({
+          data: { paymentStatus: 'REFUNDED', status: completedOrderStatus },
+        });
+        await tx.returnRequest.update({
           where: { id: ret.id },
           data: { status: 'COMPLETED' },
-        }),
-      ]);
+        });
+      });
 
       return NextResponse.json({
         success: true,
@@ -123,19 +124,21 @@ export async function POST(
       speed: 'normal',
     })) as { id: string };
 
-    await prisma.$transaction([
-      prisma.order.update({
+    const completedOrderStatus = ret.requestType === 'EXCHANGE' ? 'EXCHANGED' : 'RETURNED';
+    await prisma.$transaction(async (tx) => {
+      await tx.order.update({
         where: { id: order.id },
         data: {
           paymentStatus: 'REFUNDED',
           razorpayRefundId: refund.id,
+          status: completedOrderStatus,
         },
-      }),
-      prisma.returnRequest.update({
+      });
+      await tx.returnRequest.update({
         where: { id: ret.id },
         data: { status: 'COMPLETED' },
-      }),
-    ]);
+      });
+    });
 
     return NextResponse.json({
       success: true,

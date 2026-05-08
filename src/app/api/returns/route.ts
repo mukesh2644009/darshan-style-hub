@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { isValidReturnReason } from '@/lib/return-reasons';
+import { sendAdminReturnNotification } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,6 +63,7 @@ export async function POST(request: Request) {
     const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
     const detailsRaw = typeof body.details === 'string' ? body.details.trim() : '';
     const details = detailsRaw.length > 0 ? detailsRaw.slice(0, MAX_DETAILS) : null;
+    const requestType = body.requestType === 'EXCHANGE' ? 'EXCHANGE' : 'RETURN';
 
     if (!orderId) {
       return NextResponse.json(
@@ -110,11 +112,11 @@ export async function POST(request: Request) {
     // Enforce 3-day return window from delivery
     const deliveredAt = order.updatedAt;
     const daysSinceDelivery = (Date.now() - new Date(deliveredAt).getTime()) / (1000 * 60 * 60 * 24);
-    if (daysSinceDelivery > 3) {
+    if (daysSinceDelivery > 7) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Return window has expired. Returns must be requested within 3 days of delivery.',
+          error: 'Return window has expired. Returns must be requested within 7 days of delivery.',
         },
         { status: 400 }
       );
@@ -127,26 +129,53 @@ export async function POST(request: Request) {
       );
     }
 
-    const created = await prisma.returnRequest.create({
-      data: {
-        userId: user.id,
-        orderId: order.id,
-        reason,
-        details,
-      },
+    // Returns: ₹99 flat pickup fee. Exchanges: free.
+    const pickupFee = requestType === 'RETURN' ? 99 : 0;
+
+    const newOrderStatus = requestType === 'EXCHANGE' ? 'EXCHANGE_REQUESTED' : 'RETURN_REQUESTED';
+
+    const created = await prisma.$transaction(async (tx) => {
+      const returnReq = await tx.returnRequest.create({
+        data: {
+          userId: user.id,
+          orderId: order.id,
+          reason,
+          details,
+          requestType,
+          pickupFee,
+        },
+      });
+      await tx.order.update({
+        where: { id: order.id },
+        data: { status: newOrderStatus },
+      });
+      return returnReq;
     });
+
+    // Notify admin (fire-and-forget)
+    sendAdminReturnNotification({
+      orderId: order.id,
+      customerName: user.name || order.shippingName,
+      customerPhone: user.phone || order.shippingPhone,
+      requestType,
+      reason,
+      details,
+      pickupFee,
+    }).catch(() => {});
 
     return NextResponse.json(
       {
         success: true,
         returnRequest: created,
+        pickupFee,
       },
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating return request:', error);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('Error creating return request:', msg);
     return NextResponse.json(
-      { success: false, error: 'Failed to submit return request' },
+      { success: false, error: msg },
       { status: 500 }
     );
   }

@@ -1,246 +1,182 @@
 import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
-import { FiShoppingBag, FiPackage, FiUsers, FiDollarSign, FiTrendingUp, FiArrowRight } from 'react-icons/fi';
+import {
+  FiShoppingBag, FiPackage, FiUsers, FiDollarSign,
+  FiArrowRight, FiTrendingUp, FiRotateCcw, FiClock,
+} from 'react-icons/fi';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-async function getStats() {
-  const [ordersCount, productsCount, customersCount, orders, suitsCount, coOrdSetsCount] = await Promise.all([
-    prisma.order.count(),
-    prisma.product.count(),
-    prisma.user.count(),
+const STATUS_META: Record<string, { label: string; dot: string; bg: string; text: string }> = {
+  PENDING:            { label: 'Pending',            dot: 'bg-yellow-400', bg: 'bg-yellow-50',  text: 'text-yellow-800' },
+  CONFIRMED:          { label: 'Confirmed',          dot: 'bg-blue-500',   bg: 'bg-blue-50',    text: 'text-blue-800'   },
+  SHIPPED:            { label: 'Shipped',            dot: 'bg-purple-500', bg: 'bg-purple-50',  text: 'text-purple-800' },
+  DELIVERED:          { label: 'Delivered',          dot: 'bg-green-500',  bg: 'bg-green-50',   text: 'text-green-800'  },
+  CANCELLED:          { label: 'Cancelled',          dot: 'bg-red-400',    bg: 'bg-red-50',     text: 'text-red-700'    },
+  RETURN_REQUESTED:   { label: 'Return Requested',   dot: 'bg-orange-400', bg: 'bg-orange-50',  text: 'text-orange-800' },
+  RETURN_APPROVED:    { label: 'Return Approved',    dot: 'bg-orange-500', bg: 'bg-orange-100', text: 'text-orange-900' },
+  RETURNED:           { label: 'Returned',           dot: 'bg-gray-400',   bg: 'bg-gray-100',   text: 'text-gray-700'   },
+  EXCHANGE_REQUESTED: { label: 'Exchange Requested', dot: 'bg-sky-400',    bg: 'bg-sky-50',     text: 'text-sky-800'    },
+  EXCHANGE_APPROVED:  { label: 'Exchange Approved',  dot: 'bg-sky-500',    bg: 'bg-sky-100',    text: 'text-sky-900'    },
+  EXCHANGED:          { label: 'Exchanged',          dot: 'bg-teal-500',   bg: 'bg-teal-50',    text: 'text-teal-800'   },
+};
+
+async function getData() {
+  const [orders, productsCount, customersCount, suitsCount, coOrdCount, pendingReturns] = await Promise.all([
     prisma.order.findMany({
-      select: { total: true },
+      take: 5, orderBy: { createdAt: 'desc' },
+      include: { user: true, items: { include: { product: true } } },
     }),
+    prisma.product.count(),
+    prisma.user.count({ where: { role: 'CUSTOMER' } }),
     prisma.product.count({ where: { category: 'Suits' } }),
     prisma.product.count({ where: { category: 'Co Ord Sets' } }),
+    prisma.returnRequest.count({ where: { status: 'PENDING' } }),
   ]);
 
-  const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+  const allOrders = await prisma.order.findMany({ select: { total: true, status: true, createdAt: true } });
+  const revenue = allOrders.filter(o => o.status !== 'CANCELLED').reduce((s, o) => s + o.total, 0);
+  const pending = allOrders.filter(o => o.status === 'PENDING').length;
 
-  return {
-    ordersCount,
-    productsCount,
-    customersCount,
-    totalRevenue,
-    suitsCount,
-    coOrdSetsCount,
-  };
-}
-
-async function getRecentOrders() {
-  return prisma.order.findMany({
-    take: 5,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      user: true,
-      items: {
-        include: {
-          product: true,
-        },
-      },
-    },
-  });
+  return { orders, productsCount, customersCount, revenue, suitsCount, coOrdCount, pendingReturns, pending, totalOrders: allOrders.length };
 }
 
 export default async function AdminDashboard() {
-  const stats = await getStats();
-  const recentOrders = await getRecentOrders();
+  const d = await getData();
 
-  const statCards = [
-    {
-      name: 'Total Orders',
-      value: stats.ordersCount,
-      icon: FiShoppingBag,
-      color: 'bg-blue-500',
-      href: '/admin/orders',
-    },
-    {
-      name: 'Total Revenue',
-      value: `₹${stats.totalRevenue.toLocaleString('en-IN')}`,
-      icon: FiDollarSign,
-      color: 'bg-green-500',
-      href: '/admin/orders',
-    },
-    {
-      name: 'Products',
-      value: stats.productsCount,
-      icon: FiPackage,
-      color: 'bg-purple-500',
-      href: '/admin/products',
-    },
-    {
-      name: 'Customers',
-      value: stats.customersCount,
-      icon: FiUsers,
-      color: 'bg-orange-500',
-      href: '/admin/customers',
-    },
+  const stats = [
+    { label: 'Total Orders',   value: d.totalOrders,           sub: `${d.pending} pending`,  icon: FiShoppingBag, color: 'from-primary-500 to-primary-700', href: '/admin/orders'   },
+    { label: 'Revenue',        value: `₹${d.revenue.toLocaleString('en-IN')}`, sub: 'all time', icon: FiDollarSign,  color: 'from-green-500 to-green-700',   href: '/admin/orders'   },
+    { label: 'Products',       value: d.productsCount,         sub: `${d.suitsCount} suits · ${d.coOrdCount} co-ord`, icon: FiPackage, color: 'from-purple-500 to-purple-700', href: '/admin/products' },
+    { label: 'Customers',      value: d.customersCount,        sub: 'registered',            icon: FiUsers,       color: 'from-blue-500 to-blue-700',     href: '/admin/customers' },
+    { label: 'Pending Returns',value: d.pendingReturns,        sub: 'awaiting action',       icon: FiRotateCcw,   color: 'from-orange-400 to-orange-600', href: '/admin/returns'   },
   ];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-      case 'CONFIRMED': return 'bg-blue-100 text-blue-800';
-      case 'SHIPPED': return 'bg-purple-100 text-purple-800';
-      case 'DELIVERED': return 'bg-green-100 text-green-800';
-      case 'CANCELLED': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Welcome back! Here's what's happening with your store.</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <p className="text-gray-500 mt-0.5 text-sm">Welcome back! Here&apos;s your store at a glance.</p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {statCards.map((stat) => (
-          <Link
-            key={stat.name}
-            href={stat.href}
-            className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500">{stat.name}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-              </div>
-              <div className={`${stat.color} p-3 rounded-lg`}>
-                <stat.icon className="w-6 h-6 text-white" />
-              </div>
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        {stats.map(({ label, value, sub, icon: Icon, color, href }) => (
+          <Link key={label} href={href} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:shadow-md transition-all group">
+            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${color} flex items-center justify-center mb-3 group-hover:scale-105 transition-transform`}>
+              <Icon className="w-5 h-5 text-white" />
             </div>
+            <p className="text-2xl font-bold text-gray-900">{value}</p>
+            <p className="text-xs font-medium text-gray-500 mt-0.5">{label}</p>
+            <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
           </Link>
         ))}
       </div>
 
-      {/* Category Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <Link
-          href="/admin/products"
-          className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow border-l-4 border-purple-500"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Suits</p>
-              <p className="text-3xl font-bold text-purple-600 mt-1">{stats.suitsCount}</p>
-              <p className="text-xs text-gray-400 mt-1">products listed</p>
+      {/* Quick actions */}
+      {d.pendingReturns > 0 && (
+        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+              <FiRotateCcw className="w-5 h-5 text-orange-600" />
             </div>
-            <div className="bg-purple-100 p-4 rounded-xl">
-              <FiPackage className="w-8 h-8 text-purple-600" />
+            <div>
+              <p className="font-semibold text-orange-900 text-sm">{d.pendingReturns} return request{d.pendingReturns > 1 ? 's' : ''} need your attention</p>
+              <p className="text-xs text-orange-600">Review and approve or reject pending returns</p>
             </div>
           </div>
-        </Link>
-        <Link
-          href="/admin/products"
-          className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow border-l-4 border-orange-500"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Co Ord Sets</p>
-              <p className="text-3xl font-bold text-orange-600 mt-1">{stats.coOrdSetsCount}</p>
-              <p className="text-xs text-gray-400 mt-1">products listed</p>
-            </div>
-            <div className="bg-orange-100 p-4 rounded-xl">
-              <FiPackage className="w-8 h-8 text-orange-600" />
-            </div>
-          </div>
-        </Link>
-      </div>
+          <Link href="/admin/returns" className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white text-sm font-semibold rounded-xl hover:bg-orange-700 transition-colors">
+            Review Now <FiArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
+      )}
 
-      {/* Recent Orders */}
-      <div className="bg-white rounded-xl shadow-sm">
-        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Recent Orders</h2>
-            <p className="text-sm text-gray-500 mt-1">Latest orders from your customers</p>
+      {/* Recent orders */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <FiClock className="w-4 h-4 text-gray-400" />
+            <h2 className="font-semibold text-gray-900">Recent Orders</h2>
           </div>
-          <Link
-            href="/admin/orders"
-            className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
-          >
-            View All <FiArrowRight />
+          <Link href="/admin/orders" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors">
+            View all <FiArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
 
-        {recentOrders.length === 0 ? (
+        {d.orders.length === 0 ? (
           <div className="p-12 text-center">
-            <FiShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
-            <p className="text-gray-500">Orders will appear here once customers start purchasing.</p>
+            <FiShoppingBag className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 text-sm">No orders yet</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Items
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {recentOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Link
-                        href={`/admin/orders/${order.id}`}
-                        className="text-primary-600 hover:text-primary-700 font-medium"
-                      >
-                        #{order.id.slice(0, 8)}
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-100">
+                {['Order', 'Customer', 'Items', 'Total', 'Status', 'Date'].map(h => (
+                  <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {d.orders.map(order => {
+                const sm = STATUS_META[order.status] ?? STATUS_META['PENDING'];
+                return (
+                  <tr key={order.id} className="hover:bg-gray-50/60 transition-colors">
+                    <td className="px-5 py-3.5">
+                      <Link href={`/admin/orders/${order.id}`} className="font-mono text-sm font-bold text-primary-600 hover:text-primary-700">
+                        #{order.id.slice(0, 8).toUpperCase()}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <p className="font-medium text-gray-900">{order.user?.name || 'Guest'}</p>
-                        <p className="text-sm text-gray-500">{order.user?.email}</p>
-                      </div>
+                    <td className="px-5 py-3.5">
+                      <p className="text-sm font-medium text-gray-900">{order.shippingName || order.user?.name || 'Guest'}</p>
+                      <p className="text-xs text-gray-400">{order.shippingPhone || order.user?.phone}</p>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-600">
-                      {order.items.length} item(s)
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                      ₹{order.total.toLocaleString('en-IN')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                        {order.status}
+                    <td className="px-5 py-3.5 text-sm text-gray-600">{order.items.length} item{order.items.length !== 1 ? 's' : ''}</td>
+                    <td className="px-5 py-3.5 text-sm font-bold text-gray-900">₹{order.total.toLocaleString('en-IN')}</td>
+                    <td className="px-5 py-3.5">
+                      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${sm.bg} ${sm.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
+                        {sm.label}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-500">
-                      {new Date(order.createdAt).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
+                    <td className="px-5 py-3.5 text-xs text-gray-500">
+                      {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata' })}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                );
+              })}
+            </tbody>
+          </table>
         )}
+      </div>
+
+      {/* Category cards */}
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Link href="/admin/products?category=Suits" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-all flex items-center gap-4 group">
+          <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+            <span className="text-2xl">👗</span>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 font-medium">Suits</p>
+            <p className="text-3xl font-bold text-purple-700">{d.suitsCount}</p>
+            <p className="text-xs text-gray-400">products listed</p>
+          </div>
+          <FiTrendingUp className="w-4 h-4 text-gray-300 ml-auto group-hover:text-purple-500 transition-colors" />
+        </Link>
+        <Link href="/admin/products?category=Co+Ord+Sets" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-all flex items-center gap-4 group">
+          <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+            <span className="text-2xl">👚</span>
+          </div>
+          <div>
+            <p className="text-xs text-gray-500 font-medium">Co Ord Sets</p>
+            <p className="text-3xl font-bold text-orange-600">{d.coOrdCount}</p>
+            <p className="text-xs text-gray-400">products listed</p>
+          </div>
+          <FiTrendingUp className="w-4 h-4 text-gray-300 ml-auto group-hover:text-orange-500 transition-colors" />
+        </Link>
       </div>
     </div>
   );
 }
-

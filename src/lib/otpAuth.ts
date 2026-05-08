@@ -170,10 +170,9 @@ async function sendFast2SmsOtp(phone: string, otp: string): Promise<boolean> {
   const apiKey = process.env.FAST2SMS_API_KEY;
   if (!apiKey) return false;
 
-  // Fast2SMS Quick SMS (OTP) route — no DLT required
   const mobile = phone.replace(/\D/g, '').slice(-10); // last 10 digits
-  const message = `${otp} is your Darshan Style Hub verification code. Valid for 10 minutes.`;
 
+  // Use Fast2SMS OTP route (₹0.25/SMS, no DLT needed for OTP)
   const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
     method: 'POST',
     headers: {
@@ -181,9 +180,8 @@ async function sendFast2SmsOtp(phone: string, otp: string): Promise<boolean> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      route: 'q',        // Quick SMS route (no DLT needed)
-      message,
-      language: 'english',
+      route: 'otp',
+      variables_values: otp,
       flash: 0,
       numbers: mobile,
     }),
@@ -196,8 +194,26 @@ async function sendFast2SmsOtp(phone: string, otp: string): Promise<boolean> {
     return true;
   }
 
-  console.error('[otp] Fast2SMS failed:', JSON.stringify(data));
-  return false;
+  // OTP route needs website verification — fall back to Quick SMS (₹5/SMS) until then
+  console.log('[otp] Fast2SMS OTP route not verified, falling back to Quick SMS route...');
+  const fallback = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+    method: 'POST',
+    headers: {
+      authorization: apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      route: 'q',
+      message: `${otp} is your Darshan Style Hub OTP. Valid for 10 minutes.`,
+      language: 'english',
+      flash: 0,
+      numbers: mobile,
+    }),
+  });
+
+  const fallbackData = await fallback.json().catch(() => ({}));
+  console.log('[otp] Fast2SMS Quick route response:', JSON.stringify(fallbackData));
+  return fallbackData?.return === true;
 }
 
 async function sendMsg91Otp(phone: string, otp: string): Promise<boolean> {
@@ -245,13 +261,14 @@ export async function sendSmsOtp(phone: string, otp: string): Promise<{ sent: bo
   // Try Fast2SMS first (no DLT needed)
   const fast2SmsSent = await sendFast2SmsOtp(phone, otp);
   if (fast2SmsSent) {
-    return { sent: true };
+    // Show OTP in dev mode so you don't burn SMS credits while testing locally
+    return { sent: true, debugMessage: isDev ? otp : undefined };
   }
 
   // Fallback to MSG91
   const msg91Sent = await sendMsg91Otp(phone, otp);
   if (msg91Sent) {
-    return { sent: true };
+    return { sent: true, debugMessage: isDev ? otp : undefined };
   }
 
   const accountSid = process.env.TWILIO_ACCOUNT_SID;

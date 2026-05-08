@@ -157,15 +157,17 @@ export async function POST(request: Request) {
     }
 
     const shipping = subtotal >= 999 ? 0 : 99;
-    const codCharge = paymentMethod === 'COD' ? 10 : 0;
+    const codCharge = paymentMethod === 'COD' ? 50 : 0;
     const total = subtotal + shipping + codCharge;
+
+    const isCod = paymentMethod === 'COD';
 
     // Create order
     const order = await prisma.order.create({
       data: {
         userId: user.id,
-        status: 'PENDING',
-        paymentStatus: 'PENDING',
+        status: isCod ? 'CONFIRMED' : 'PENDING',
+        paymentStatus: isCod ? 'PENDING' : 'PENDING',
         paymentMethod,
         subtotal,
         shipping,
@@ -190,9 +192,25 @@ export async function POST(request: Request) {
       },
     });
 
+    // If user has a guest email and provided a real email at checkout, save it to their profile
+    if (
+      shippingEmail &&
+      user.email?.endsWith('@darshan.local') &&
+      !shippingEmail.endsWith('@darshan.local')
+    ) {
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { email: shippingEmail.toLowerCase().trim() },
+        });
+      } catch {
+        // Email might already belong to another account — skip silently
+      }
+    }
+
     // Send order confirmation emails
     const customerEmail = shippingEmail || user?.email;
-    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub@gmail.com';
+    const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub.business@gmail.com';
     const fullAddress = `${shippingAddress}, ${shippingCity}, ${shippingState} - ${shippingPincode}`;
     const emailItems = orderItems.map((item, index) => ({
       name: order.items[index].product.name,
@@ -208,9 +226,9 @@ export async function POST(request: Request) {
 
       // Determine payment status for email
       // For UPI/Razorpay: payment is pending until verified
-      // For COD/WhatsApp: payment is pending but order is confirmed
+      // For COD/WhatsApp: order is confirmed, payment collected on delivery
       const isOnlinePayment = paymentMethod.includes('UPI') || paymentMethod.includes('Razorpay');
-      const emailPaymentStatus = isOnlinePayment ? 'PENDING' : 'PENDING';
+      const emailPaymentStatus: 'PENDING' | 'PAID' | 'FAILED' = isOnlinePayment ? 'PENDING' : 'PAID';
 
       // Send email to customer with PDF invoice
       if (customerEmail) {

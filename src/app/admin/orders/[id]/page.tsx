@@ -33,12 +33,18 @@ export default async function OrderDetailPage({ params }: { params: { id: string
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'CONFIRMED': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'SHIPPED': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'DELIVERED': return 'bg-green-100 text-green-800 border-green-200';
-      case 'CANCELLED': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'PENDING':            return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'CONFIRMED':          return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'SHIPPED':            return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'DELIVERED':          return 'bg-green-100 text-green-800 border-green-200';
+      case 'CANCELLED':          return 'bg-red-100 text-red-800 border-red-200';
+      case 'RETURN_REQUESTED':   return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'RETURN_APPROVED':    return 'bg-orange-200 text-orange-900 border-orange-300';
+      case 'RETURNED':           return 'bg-gray-200 text-gray-700 border-gray-300';
+      case 'EXCHANGE_REQUESTED': return 'bg-sky-100 text-sky-800 border-sky-200';
+      case 'EXCHANGE_APPROVED':  return 'bg-sky-200 text-sky-900 border-sky-300';
+      case 'EXCHANGED':          return 'bg-teal-100 text-teal-800 border-teal-200';
+      default:                   return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -68,6 +74,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
                 year: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit',
+                timeZone: 'Asia/Kolkata',
               })}
             </p>
           </div>
@@ -165,7 +172,9 @@ export default async function OrderDetailPage({ params }: { params: { id: string
             <div className="space-y-3">
               <div>
                 <p className="font-medium text-gray-900">{order.shippingName || order.user?.name}</p>
-                <p className="text-sm text-gray-500">{order.user?.email}</p>
+                {order.user?.email && !order.user.email.endsWith('@darshan.local') && (
+                  <p className="text-sm text-gray-500">{order.user.email}</p>
+                )}
               </div>
               {order.shippingPhone && (
                 <div className="flex items-center gap-2 text-gray-600">
@@ -244,6 +253,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
                       year: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit',
+                      timeZone: 'Asia/Kolkata',
                     })}
                   </p>
                 </div>
@@ -260,6 +270,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
                         year: 'numeric',
                         hour: '2-digit',
                         minute: '2-digit',
+                        timeZone: 'Asia/Kolkata',
                       })}
                     </p>
                   </div>

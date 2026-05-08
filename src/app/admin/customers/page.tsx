@@ -103,7 +103,9 @@ export default async function CustomersPage() {
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <FiMail className="w-4 h-4" />
-                            {customer.email}
+                            {customer.email?.endsWith('@darshan.local')
+                              ? <span className="text-gray-400 italic">Guest (phone login)</span>
+                              : customer.email}
                           </div>
                           {customer.phone && (
                             <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -140,6 +142,7 @@ export default async function CustomersPage() {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric',
+                          timeZone: 'Asia/Kolkata',
                         })}
                       </td>
                       <td className="px-6 py-4 text-right">

@@ -48,7 +48,7 @@ export async function POST(request: Request) {
       // Send payment confirmation emails
       try {
         const { sendPaymentConfirmationEmail } = await import('@/lib/email');
-        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub@gmail.com';
+        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub.business@gmail.com';
 
         // Send to customer
         const customerEmail = user.email || updatedOrder.user?.email;

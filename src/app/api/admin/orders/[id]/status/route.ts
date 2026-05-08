@@ -20,7 +20,11 @@ export async function PATCH(
 
     const { status, paymentStatus } = await request.json();
 
-    const validStatuses = ['PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+    const validStatuses = [
+      'PENDING', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED',
+      'RETURN_REQUESTED', 'RETURN_APPROVED', 'RETURNED',
+      'EXCHANGE_REQUESTED', 'EXCHANGE_APPROVED', 'EXCHANGED',
+    ];
     const validPaymentStatuses = ['PENDING', 'PAID', 'FAILED', 'REFUNDED'];
     
     if (status && !validStatuses.includes(status)) {
@@ -33,6 +37,15 @@ export async function PATCH(
     if (paymentStatus && !validPaymentStatuses.includes(paymentStatus)) {
       return NextResponse.json(
         { error: 'Invalid payment status' },
+        { status: 400 }
+      );
+    }
+
+    // Prevent modifying cancelled orders
+    const existing = await prisma.order.findUnique({ where: { id: params.id }, select: { status: true } });
+    if (existing?.status === 'CANCELLED') {
+      return NextResponse.json(
+        { error: 'Cancelled orders cannot be modified' },
         { status: 400 }
       );
     }

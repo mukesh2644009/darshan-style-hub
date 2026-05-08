@@ -42,18 +42,36 @@ export default function CheckoutPage() {
     checkAuth();
   }, [checkAuth]);
 
-  // Pre-fill form with logged-in user data
+  // Pre-fill form with logged-in user data and last saved address
   useEffect(() => {
-    if (user) {
-      const nameParts = (user.name || '').split(' ');
-      setFormData(prev => ({
-        ...prev,
-        firstName: prev.firstName || nameParts[0] || '',
-        lastName: prev.lastName || nameParts.slice(1).join(' ') || '',
-        email: prev.email || user.email || '',
-        phone: prev.phone || user.phone || '',
-      }));
-    }
+    if (!user) return;
+
+    const nameParts = (user.name || '').split(' ');
+    const realEmail = user.email && !user.email.endsWith('@darshan.local') ? user.email : '';
+    setFormData(prev => ({
+      ...prev,
+      firstName: prev.firstName || nameParts[0] || '',
+      lastName: prev.lastName || nameParts.slice(1).join(' ') || '',
+      email: prev.email || realEmail,
+      phone: prev.phone || user.phone || '',
+    }));
+
+    // Fetch saved address from profile
+    fetch('/api/profile')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.address) {
+          const a = data.address;
+          setFormData(prev => ({
+            ...prev,
+            address: prev.address || a.addressLine1 || '',
+            city: prev.city || a.city || '',
+            state: prev.state || a.state || 'Rajasthan',
+            pincode: prev.pincode || a.pincode || '',
+          }));
+        }
+      })
+      .catch(() => {});
   }, [user]);
 
   useEffect(() => {
@@ -127,7 +145,7 @@ export default function CheckoutPage() {
 
   const subtotal = getTotalPrice();
   const shipping = subtotal >= 999 ? 0 : 99;
-  const codCharge = paymentMethod === 'cod' ? 10 : 0;
+  const codCharge = paymentMethod === 'cod' ? 50 : 0;
   const total = subtotal + shipping + codCharge;
 
   const handlePlaceOrder = async () => {
@@ -314,7 +332,7 @@ export default function CheckoutPage() {
       ? items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
       : orderTotal;
     const shippingVal = subtotalVal >= 999 ? 0 : 99;
-    const codVal = orderPaymentMethod === 'COD' ? 10 : 0;
+    const codVal = orderPaymentMethod === 'COD' ? 50 : 0;
 
     downloadReceipt({
       orderId: orderId,
@@ -327,7 +345,7 @@ export default function CheckoutPage() {
       shippingState: formData.state,
       shippingPincode: formData.pincode,
       paymentMethod: orderPaymentMethod === 'UPI' ? 'UPI (Razorpay)' : orderPaymentMethod === 'WHATSAPP' ? 'UPI (WhatsApp)' : 'Cash on Delivery',
-      paymentStatus: orderPaymentMethod === 'UPI' ? 'Paid' : 'Pending',
+      paymentStatus: orderPaymentMethod === 'UPI' ? 'Paid' : orderPaymentMethod === 'COD' ? 'Confirmed (Pay on Delivery)' : 'Pending',
       items: items.length > 0
         ? items.map(item => ({
             name: item.product.name,
@@ -756,7 +774,7 @@ export default function CheckoutPage() {
                   <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
                     <FiInfo className="w-5 h-5 flex-shrink-0 mt-0.5" />
                     <p className="text-sm">
-                      <strong>₹10 extra charge</strong> will be added for Cash on Delivery. Choose online payment to avoid this charge.
+                      <strong>₹50 extra charge</strong> will be added for Cash on Delivery. Choose online payment to avoid this charge.
                     </p>
                   </div>
                 )}

@@ -16,6 +16,7 @@ export default function Navbar() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isShopMenuOpen, setIsShopMenuOpen] = useState(false);
   const shopMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const { openCart, getTotalItems } = useCartStore();
   const { user, isAuthenticated, isAdmin, logout, checkAuth } = useAuthStore();
@@ -43,6 +44,17 @@ export default function Navbar() {
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, [isShopMenuOpen]);
+
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, [isUserMenuOpen]);
 
   const handleLogout = async () => {
     await logout();
@@ -185,7 +197,7 @@ export default function Navbar() {
             </Link>
             
             {/* User Menu */}
-            <div className="relative">
+            <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="p-2 hover:bg-accent-100 rounded-full transition-colors hidden sm:flex items-center gap-2"
@@ -200,56 +212,94 @@ export default function Navbar() {
 
               {/* User Dropdown */}
               {isUserMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-[#FFF8E6] rounded-lg shadow-lg border border-gray-100 py-2 animate-fadeIn">
+                <div className="absolute right-0 top-full mt-3 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden animate-fadeIn">
                   {isAuthenticated ? (
                     <>
-                      <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="font-medium text-gray-900">{user?.name}</p>
-                        <p className="text-sm text-gray-500">{user?.email}</p>
+                      {/* Avatar header */}
+                      <div className="px-5 py-4 bg-gradient-to-br from-primary-50 to-accent-100 border-b border-gray-100">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary-600 flex items-center justify-center shrink-0">
+                            <span className="text-white font-bold text-sm">
+                              {user?.name?.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-gray-900 truncate">{user?.name}</p>
+                            {user?.email && !user.email.endsWith('@darshan.local') ? (
+                              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                            ) : (
+                              <p className="text-xs text-primary-600 font-medium">Guest account</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      {isAdmin && (
+
+                      {/* Menu items */}
+                      <div className="py-2 px-2">
+                        {isAdmin && (
+                          <Link
+                            href="/admin"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-primary-50 hover:text-primary-700 transition-colors group"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-primary-100 flex items-center justify-center transition-colors">
+                              <FiSettings size={15} className="text-gray-600 group-hover:text-primary-600" />
+                            </div>
+                            <span className="text-sm font-medium">Admin Dashboard</span>
+                          </Link>
+                        )}
                         <Link
-                          href="/admin"
+                          href="/my-orders"
                           onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50"
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-primary-50 hover:text-primary-700 transition-colors group"
                         >
-                          <FiSettings size={16} />
-                          Admin Dashboard
+                          <div className="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-primary-100 flex items-center justify-center transition-colors">
+                            <FiShoppingBag size={15} className="text-gray-600 group-hover:text-primary-600" />
+                          </div>
+                          <span className="text-sm font-medium">My Orders</span>
                         </Link>
-                      )}
-                      <Link
-                        href="/my-orders"
-                        onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-50"
-                      >
-                        <FiShoppingBag size={16} />
-                        My Orders
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 w-full text-left"
-                      >
-                        <FiLogOut size={16} />
-                        Logout
-                      </button>
+                        <Link
+                          href="/profile"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-primary-50 hover:text-primary-700 transition-colors group"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-gray-100 group-hover:bg-primary-100 flex items-center justify-center transition-colors">
+                            <FiUser size={15} className="text-gray-600 group-hover:text-primary-600" />
+                          </div>
+                          <span className="text-sm font-medium">My Profile</span>
+                        </Link>
+                      </div>
+
+                      {/* Logout */}
+                      <div className="px-2 pb-2 border-t border-gray-100 pt-2">
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 hover:bg-red-50 w-full transition-colors group"
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-red-50 group-hover:bg-red-100 flex items-center justify-center transition-colors">
+                            <FiLogOut size={15} className="text-red-500" />
+                          </div>
+                          <span className="text-sm font-medium">Logout</span>
+                        </button>
+                      </div>
                     </>
                   ) : (
-                    <>
+                    <div className="p-3 space-y-1.5">
                       <Link
                         href="/login"
                         onClick={() => setIsUserMenuOpen(false)}
-                        className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+                        className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-colors"
                       >
                         Sign In
                       </Link>
                       <Link
                         href="/register"
                         onClick={() => setIsUserMenuOpen(false)}
-                        className="block px-4 py-2 text-gray-700 hover:bg-gray-50"
+                        className="flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
                       >
                         Create Account
                       </Link>
-                    </>
+                    </div>
                   )}
                 </div>
               )}
@@ -317,7 +367,9 @@ export default function Navbar() {
               <>
                 <div className="py-2">
                   <p className="font-medium text-gray-900">{user?.name}</p>
-                  <p className="text-sm text-gray-500">{user?.email}</p>
+                  {user?.email && !user.email.endsWith('@darshan.local') && (
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                  )}
                 </div>
                 {isAdmin && (
                   <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
@@ -326,6 +378,9 @@ export default function Navbar() {
                 )}
                 <Link href="/my-orders" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
                   My Orders
+                </Link>
+                <Link href="/profile" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+                  My Profile
                 </Link>
                 <button
                   onClick={handleLogout}

@@ -40,20 +40,50 @@ export default function ReturnsPolicyPage() {
                 <h2 className="text-xl font-semibold text-gray-900">Eligibility</h2>
               </div>
               <ul className="list-disc pl-5 text-gray-700 space-y-2">
-                <li>Returns and size exchanges apply to <strong>delivered</strong> orders.</li>
+                <li>Returns and exchanges apply to <strong>delivered</strong> orders only.</li>
                 <li>
-                  Items should be <strong>unused</strong>, with original tags and packaging where
-                  applicable.
-                </li>
-                <li>
-                  Please raise your request within <strong>3 days</strong> of delivery (unless we
-                  specify otherwise for a promotion).
-                </li>
-                <li>
-                  A <strong>return handling fee of ₹100</strong> is applicable on all return requests.
-                  This amount will be deducted from your refund or collected at the time of pickup.
+                  Please raise your request within <strong>7 days</strong> of delivery.
                 </li>
               </ul>
+
+              <div className="mt-4 rounded-xl border border-gray-200 overflow-hidden">
+                <div className="bg-gray-50 px-4 py-2.5 border-b border-gray-200">
+                  <p className="text-sm font-semibold text-gray-800">All of the following must be met</p>
+                </div>
+                <ul className="divide-y divide-gray-100 text-sm text-gray-700">
+                  {[
+                    ['🏷️', 'Tags intact', 'Original tags must still be attached — this confirms the item was not worn.'],
+                    ['📸', 'Photo approval', 'You will be asked to share photos of the item before pickup is scheduled.'],
+                    ['📦', 'Original packaging', 'Item must be in its original packaging to prevent transit damage.'],
+                    ['✂️', 'No stitching or alterations', 'Stitched or altered suits/kurtas cannot be returned or exchanged.'],
+                  ].map(([icon, title, desc]) => (
+                    <li key={title} className="flex items-start gap-3 px-4 py-3">
+                      <span className="text-lg shrink-0">{icon}</span>
+                      <div>
+                        <p className="font-medium text-gray-900">{title}</p>
+                        <p className="text-gray-500 text-xs mt-0.5">{desc}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="mt-4 grid sm:grid-cols-2 gap-3">
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
+                  <span className="text-2xl shrink-0">🚚</span>
+                  <div>
+                    <p className="font-semibold text-amber-900">Returns — ₹99 pickup fee</p>
+                    <p className="text-xs text-amber-700 mt-0.5">A flat ₹99 pickup charge is deducted from your refund once the return is approved.</p>
+                  </div>
+                </div>
+                <div className="rounded-xl border border-green-200 bg-green-50 p-4 flex items-start gap-3">
+                  <span className="text-2xl shrink-0">🎉</span>
+                  <div>
+                    <p className="font-semibold text-green-900">Exchanges — always free</p>
+                    <p className="text-xs text-green-700 mt-0.5">Size or colour exchanges carry no pickup or handling fee.</p>
+                  </div>
+                </div>
+              </div>
             </section>
 
             <section>

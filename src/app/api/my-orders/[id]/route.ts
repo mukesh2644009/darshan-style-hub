@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
+import { sendAdminCancelNotification } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -98,19 +99,29 @@ export async function DELETE(
       );
     }
 
-    // Check if order can be cancelled
-    if (order.status !== 'PENDING') {
+    // Check if order can be cancelled (only before it is shipped)
+    if (!['PENDING', 'CONFIRMED'].includes(order.status)) {
       return NextResponse.json(
-        { success: false, error: 'Only pending orders can be cancelled' },
+        { success: false, error: 'Orders can only be cancelled before they are shipped' },
         { status: 400 }
       );
     }
 
     // Update order status to cancelled
-    await prisma.order.update({
+    const cancelled = await prisma.order.update({
       where: { id: params.id },
       data: { status: 'CANCELLED' },
+      include: { items: { include: { product: { select: { name: true } } } } },
     });
+
+    // Notify admin (fire-and-forget)
+    sendAdminCancelNotification({
+      orderId: cancelled.id,
+      customerName: cancelled.shippingName,
+      customerPhone: cancelled.shippingPhone,
+      total: cancelled.total,
+      items: cancelled.items.map(i => ({ name: i.product.name, quantity: i.quantity, price: i.price })),
+    }).catch(() => {});
 
     return NextResponse.json({ success: true, message: 'Order cancelled successfully' });
   } catch (error) {

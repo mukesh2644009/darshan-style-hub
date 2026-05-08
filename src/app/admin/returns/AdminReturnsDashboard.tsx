@@ -9,6 +9,7 @@ type ReturnRow = {
   id: string;
   reason: string;
   details: string | null;
+  requestType: string;
   adminNotes: string | null;
   status: string;
   createdAt: string;
@@ -175,6 +176,7 @@ export default function AdminReturnsDashboard({ initialReturns }: Props) {
                           year: 'numeric',
                           hour: '2-digit',
                           minute: '2-digit',
+                          timeZone: 'Asia/Kolkata',
                         })}
                       </td>
                       <td className="px-4 py-4 text-sm">
@@ -195,6 +197,9 @@ export default function AdminReturnsDashboard({ initialReturns }: Props) {
                         </p>
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-800 max-w-[200px]">
+                        <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold mb-1 ${row.requestType === 'EXCHANGE' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-800'}`}>
+                          {row.requestType === 'EXCHANGE' ? '🔄 Exchange' : '↩ Return'}
+                        </span>
                         <p>{reasonLabel(row.reason)}</p>
                         {row.details && (
                           <p className="text-gray-500 text-xs mt-1 line-clamp-3">{row.details}</p>

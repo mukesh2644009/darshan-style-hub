@@ -8,7 +8,7 @@ import { PUBLIC_SITE_URL } from '@/lib/site-url';
 const SHOP_NAME = 'Darshan Style Hub™';
 /** Links in emails — same canonical rules as WhatsApp (no *.vercel.app). */
 const SHOP_WEBSITE = PUBLIC_SITE_URL;
-const ADMIN_EMAILS = ['darshanstylehub.business@gmail.com', 'darshanstylehub@gmail.com'];
+const ADMIN_EMAILS = [process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub.business@gmail.com'];
 
 // Check which email service is available
 // Resend is prioritized for custom domain emails (info@darshanstylehub.com)
@@ -774,6 +774,149 @@ function getOrderConfirmationTemplate(
 </body>
 </html>
   `;
+}
+
+// ─── Admin: Return / Exchange request notification ───────────────────────────
+interface ReturnNotificationProps {
+  orderId: string;
+  customerName: string;
+  customerPhone?: string | null;
+  requestType: 'RETURN' | 'EXCHANGE';
+  reason: string;
+  details?: string | null;
+  pickupFee: number;
+}
+
+export async function sendAdminReturnNotification(props: ReturnNotificationProps) {
+  const service = getEmailService();
+  if (!service) return { success: false };
+
+  const { orderId, customerName, customerPhone, requestType, reason, details, pickupFee } = props;
+  const typeLabel = requestType === 'EXCHANGE' ? '🔄 Exchange' : '↩️ Return';
+  const feeNote = requestType === 'RETURN' ? `₹${pickupFee} pickup fee` : 'Free exchange';
+
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f8f4f0;margin:0;padding:0;">
+  <table style="width:100%;"><tr><td align="center" style="padding:40px 0;">
+  <table style="width:560px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);">
+    <tr><td style="background:linear-gradient(135deg,#ea580c,#f97316);padding:32px;text-align:center;">
+      <p style="font-size:40px;margin:0 0 8px;">${requestType === 'EXCHANGE' ? '🔄' : '↩️'}</p>
+      <h1 style="color:#fff;margin:0;font-size:22px;">${typeLabel} Request Received</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+      <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;">
+        <tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Order</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">#${orderId.slice(0,8).toUpperCase()}</td></tr>
+        <tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Customer</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">${customerName}${customerPhone ? ` · ${customerPhone}` : ''}</td></tr>
+        <tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Type</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">${typeLabel}</td></tr>
+        <tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Reason</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">${reason}</td></tr>
+        <tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Fee</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">${feeNote}</td></tr>
+        ${details ? `<tr><td style="padding:10px 14px;color:#6b7280;font-size:14px;">Notes</td>
+            <td style="padding:10px 14px;color:#111;">${details}</td></tr>` : ''}
+      </table>
+      <table style="width:100%;margin-top:20px;"><tr><td align="center">
+        <a href="${SHOP_WEBSITE}/admin/returns" style="display:inline-block;background:#9f1239;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;">
+          Review in Returns Dashboard →
+        </a>
+      </td></tr></table>
+    </td></tr>
+    <tr><td style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
+      <p style="color:#9ca3af;margin:0;font-size:12px;">${SHOP_NAME} | Returns Dashboard</p>
+    </td></tr>
+  </table></td></tr></table>
+</body></html>`;
+
+  const subject = `${typeLabel} Request — Order #${orderId.slice(0,8).toUpperCase()} from ${customerName}`;
+
+  try {
+    if (service === 'resend') {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({ from: `${SHOP_NAME} <info@darshanstylehub.com>`, to: ADMIN_EMAILS, subject, html });
+    } else {
+      const transporter = createGmailTransporter();
+      await transporter.sendMail({ from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`, to: ADMIN_EMAILS.join(', '), subject, html });
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('Admin return notification email failed:', e);
+    return { success: false };
+  }
+}
+
+// ─── Admin: Order cancelled notification ─────────────────────────────────────
+interface CancelNotificationProps {
+  orderId: string;
+  customerName: string;
+  customerPhone?: string | null;
+  total: number;
+  items: Array<{ name: string; quantity: number; price: number }>;
+}
+
+export async function sendAdminCancelNotification(props: CancelNotificationProps) {
+  const service = getEmailService();
+  if (!service) return { success: false };
+
+  const { orderId, customerName, customerPhone, total, items } = props;
+  const itemsHtml = items.map(i => `<tr>
+    <td style="padding:8px 14px;border-bottom:1px solid #e5e7eb;color:#111;">${i.name} × ${i.quantity}</td>
+    <td style="padding:8px 14px;border-bottom:1px solid #e5e7eb;color:#111;text-align:right;">₹${(i.price * i.quantity).toLocaleString('en-IN')}</td>
+  </tr>`).join('');
+
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f8f4f0;margin:0;padding:0;">
+  <table style="width:100%;"><tr><td align="center" style="padding:40px 0;">
+  <table style="width:560px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);">
+    <tr><td style="background:linear-gradient(135deg,#dc2626,#ef4444);padding:32px;text-align:center;">
+      <p style="font-size:40px;margin:0 0 8px;">❌</p>
+      <h1 style="color:#fff;margin:0;font-size:22px;">Order Cancelled</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+      <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;">
+        <tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Order</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">#${orderId.slice(0,8).toUpperCase()}</td></tr>
+        <tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Customer</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">${customerName}${customerPhone ? ` · ${customerPhone}` : ''}</td></tr>
+        <tr><td style="padding:10px 14px;color:#6b7280;font-size:14px;">Total</td>
+            <td style="padding:10px 14px;color:#111;font-weight:600;">₹${total.toLocaleString('en-IN')}</td></tr>
+      </table>
+      <table style="width:100%;border-collapse:collapse;margin-top:16px;">
+        <thead><tr>
+          <th style="padding:8px 14px;background:#f3f4f6;text-align:left;color:#6b7280;font-size:13px;">Item</th>
+          <th style="padding:8px 14px;background:#f3f4f6;text-align:right;color:#6b7280;font-size:13px;">Price</th>
+        </tr></thead>
+        <tbody>${itemsHtml}</tbody>
+      </table>
+      <table style="width:100%;margin-top:20px;"><tr><td align="center">
+        <a href="${SHOP_WEBSITE}/admin/orders" style="display:inline-block;background:#9f1239;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;">
+          View Orders →
+        </a>
+      </td></tr></table>
+    </td></tr>
+    <tr><td style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
+      <p style="color:#9ca3af;margin:0;font-size:12px;">${SHOP_NAME} | Order Cancellation Alert</p>
+    </td></tr>
+  </table></td></tr></table>
+</body></html>`;
+
+  const subject = `❌ Order Cancelled — #${orderId.slice(0,8).toUpperCase()} by ${customerName}`;
+
+  try {
+    if (service === 'resend') {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({ from: `${SHOP_NAME} <info@darshanstylehub.com>`, to: ADMIN_EMAILS, subject, html });
+    } else {
+      const transporter = createGmailTransporter();
+      await transporter.sendMail({ from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`, to: ADMIN_EMAILS.join(', '), subject, html });
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('Admin cancel notification email failed:', e);
+    return { success: false };
+  }
 }
 
 // Payment confirmation email - sent after successful online payment

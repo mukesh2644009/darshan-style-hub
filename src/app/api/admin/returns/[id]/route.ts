@@ -49,12 +49,42 @@ export async function PATCH(
 
     // Sensible transitions: allow any admin override but warn in UI; block only if already COMPLETED and trying to go backwards without meaning — keep simple: allow all updates from admin
 
-    const updated = await prisma.returnRequest.update({
-      where: { id: params.id },
-      data: {
-        status,
-        ...(adminNotes !== undefined ? { adminNotes: adminNotes || null } : {}),
+    // Derive new order status from return request status + type
+    const orderStatusMap: Record<string, Record<string, string>> = {
+      RETURN: {
+        APPROVED:  'RETURN_APPROVED',
+        REJECTED:  'DELIVERED',
+        COMPLETED: 'RETURNED',
+        PENDING:   'RETURN_REQUESTED',
       },
+      EXCHANGE: {
+        APPROVED:  'EXCHANGE_APPROVED',
+        REJECTED:  'DELIVERED',
+        COMPLETED: 'EXCHANGED',
+        PENDING:   'EXCHANGE_REQUESTED',
+      },
+    };
+
+    const newOrderStatus = orderStatusMap[existing.requestType]?.[status];
+    console.log(`[returns] PATCH id=${params.id} requestType=${existing.requestType} newReturnStatus=${status} newOrderStatus=${newOrderStatus}`);
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const returnReq = await tx.returnRequest.update({
+        where: { id: params.id },
+        data: {
+          status,
+          ...(adminNotes !== undefined ? { adminNotes: adminNotes || null } : {}),
+        },
+      });
+
+      if (newOrderStatus) {
+        await tx.order.update({
+          where: { id: existing.orderId },
+          data: { status: newOrderStatus },
+        });
+      }
+
+      return returnReq;
     });
 
     return NextResponse.json({ success: true, returnRequest: updated });

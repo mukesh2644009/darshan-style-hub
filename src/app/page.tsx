@@ -5,7 +5,6 @@ import { FaMoneyBillWave } from 'react-icons/fa';
 import ProductCard from '@/components/ProductCard';
 import HeroCarousel from '@/components/HeroCarousel';
 import AnimatedSection from '@/components/AnimatedSection';
-import DeliveryPincodeChecker from '@/components/DeliveryPincodeChecker';
 import { getFeaturedProducts, getProducts, type Product } from '@/lib/products';
 
 export const dynamic = 'force-dynamic';
@@ -103,17 +102,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Pincode delivery check */}
-      <section id="delivery" className="py-8 sm:py-10 bg-[#FFF8E6] border-y border-accent-100">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <DeliveryPincodeChecker variant="compact" />
-          <p className="text-center text-sm text-gray-500 mt-4">
-            <Link href="/delivery" className="text-primary-600 hover:text-primary-700 font-medium">
-              Delivery info &amp; policies →
-            </Link>
-          </p>
-        </div>
-      </section>
 
       {/* Categories — rectangular cards */}
       <section className="py-12 sm:py-16 bg-[#FFF8E6]">

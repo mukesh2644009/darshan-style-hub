@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { FiEye, FiShoppingBag, FiPackage, FiTruck, FiCheckCircle, FiClock, FiRotateCcw, FiAlertCircle } from 'react-icons/fi';
 import QuickOrderActions from './QuickOrderActions';
+import DeleteOrderButton from './DeleteOrderButton';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -182,6 +183,7 @@ export default async function OrdersPage() {
                             <FiEye className="w-3.5 h-3.5" /> View
                           </Link>
                           <QuickOrderActions orderId={order.id} currentStatus={order.status} />
+                          <DeleteOrderButton orderId={order.id} orderRef={order.id.slice(0, 8).toUpperCase()} />
                         </div>
                       </td>
                     </tr>

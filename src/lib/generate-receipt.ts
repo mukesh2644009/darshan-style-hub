@@ -51,7 +51,7 @@ export function generateReceipt(data: ReceiptData) {
   doc.setFont('helvetica', 'normal');
   doc.text('Sitapura Industrial Area, Jaipur, Rajasthan 302022 | +91 90190 76335', 15, y);
   y += 5;
-  doc.text('www.darshanstylehub.com | darshanstylehub@gmail.com', 15, y);
+  doc.text('www.darshanstylehub.com | darshanstylehub.business@gmail.com', 15, y);
 
   // "ORDER RECEIPT" badge
   doc.setFontSize(12);
@@ -189,7 +189,7 @@ export function generateReceipt(data: ReceiptData) {
   doc.setFontSize(8);
   doc.text('Thank you for shopping with Darshan Style Hub™!', pageWidth / 2, y, { align: 'center' });
   y += 5;
-  doc.text('For any queries, contact us at darshanstylehub@gmail.com or +91 90190 76335', pageWidth / 2, y, { align: 'center' });
+  doc.text('For any queries, contact us at darshanstylehub.business@gmail.com or +91 90190 76335', pageWidth / 2, y, { align: 'center' });
   y += 5;
   doc.text('Follow us: instagram.com/stylehubjaipur | facebook.com/darshanstylehub', pageWidth / 2, y, { align: 'center' });
 

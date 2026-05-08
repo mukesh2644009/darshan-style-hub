@@ -1083,3 +1083,93 @@ function getPaymentConfirmationTemplate(
 </html>
   `;
 }
+
+// ─── Customer: Return / Exchange status update ────────────────────────────────
+interface CustomerReturnStatusProps {
+  to: string;
+  customerName: string;
+  orderId: string;
+  requestType: 'RETURN' | 'EXCHANGE';
+  newStatus: 'APPROVED' | 'REJECTED' | 'COMPLETED';
+  adminNotes?: string;
+}
+
+export async function sendCustomerReturnStatusEmail(props: CustomerReturnStatusProps) {
+  const service = getEmailService();
+  if (!service || !props.to) return { success: false };
+
+  const { to, customerName, orderId, requestType, newStatus, adminNotes } = props;
+  const typeLabel = requestType === 'RETURN' ? 'Return' : 'Exchange';
+  const shortId = orderId.slice(0, 8).toUpperCase();
+
+  const configs: Record<string, { emoji: string; title: string; color: string; bg: string; msg: string }> = {
+    APPROVED:  { emoji: '✅', title: `${typeLabel} Approved!`,   color: '#16a34a', bg: 'linear-gradient(135deg,#16a34a,#22c55e)', msg: `Great news! Your ${typeLabel.toLowerCase()} request for order #${shortId} has been approved. Our team will be in touch shortly with next steps.` },
+    REJECTED:  { emoji: '❌', title: `${typeLabel} Not Approved`, color: '#dc2626', bg: 'linear-gradient(135deg,#dc2626,#ef4444)', msg: `Unfortunately your ${typeLabel.toLowerCase()} request for order #${shortId} could not be approved at this time.${adminNotes ? '' : ' Please contact us if you have any questions.'}` },
+    COMPLETED: { emoji: '🎉', title: `${typeLabel} Completed!`,  color: '#7c3aed', bg: 'linear-gradient(135deg,#7c3aed,#a855f7)', msg: requestType === 'RETURN' ? `Your return for order #${shortId} is complete and your refund has been processed. It may take 5-7 business days to reflect in your account.` : `Your exchange for order #${shortId} is complete. Your new item will be dispatched soon!` },
+  };
+  const cfg = configs[newStatus] ?? configs['COMPLETED'];
+
+  const notesHtml = adminNotes
+    ? `<div style="background:#f9fafb;border-left:4px solid ${cfg.color};border-radius:4px;padding:14px 16px;margin-bottom:20px;"><p style="color:#6b7280;font-size:13px;margin:0 0 4px;font-weight:600;">Note from our team</p><p style="color:#111;font-size:14px;margin:0;">${adminNotes}</p></div>`
+    : '';
+
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f8f4f0;margin:0;padding:0;"><table style="width:100%;"><tr><td align="center" style="padding:40px 0;"><table style="width:560px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);"><tr><td style="background:${cfg.bg};padding:32px;text-align:center;"><p style="font-size:40px;margin:0 0 8px;">${cfg.emoji}</p><h1 style="color:#fff;margin:0;font-size:22px;">${cfg.title}</h1></td></tr><tr><td style="padding:30px;"><p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">Hi ${customerName},</p><p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">${cfg.msg}</p>${notesHtml}<table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;"><tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Order</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">#${shortId}</td></tr><tr><td style="padding:10px 14px;color:#6b7280;font-size:14px;">Type</td><td style="padding:10px 14px;color:#111;font-weight:600;">${typeLabel}</td></tr></table><table style="width:100%;margin-top:24px;"><tr><td align="center"><a href="${SHOP_WEBSITE}/my-orders" style="display:inline-block;background:#9f1239;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;">View My Orders</a></td></tr></table></td></tr><tr><td style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb;"><p style="color:#9ca3af;margin:0;font-size:12px;">${SHOP_NAME} · Questions? Call +91 90190 76335</p></td></tr></table></td></tr></table></body></html>`;
+
+  const statusLabel = newStatus === 'APPROVED' ? 'Approved' : newStatus === 'REJECTED' ? 'Update' : 'Completed';
+  const subject = `${cfg.emoji} Your ${typeLabel} Request #${shortId} — ${statusLabel}`;
+
+  try {
+    if (service === 'resend') {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({ from: `${SHOP_NAME} <info@darshanstylehub.com>`, to: [to], subject, html });
+    } else {
+      const transporter = createGmailTransporter();
+      await transporter.sendMail({ from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`, to, subject, html });
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('Customer return status email failed:', e);
+    return { success: false };
+  }
+}
+
+// ─── Customer: Order Shipped notification ─────────────────────────────────────
+interface OrderShippedProps {
+  to: string;
+  customerName: string;
+  orderId: string;
+  total: number;
+  trackingInfo?: string;
+}
+
+export async function sendOrderShippedEmail(props: OrderShippedProps) {
+  const service = getEmailService();
+  if (!service || !props.to) return { success: false };
+
+  const { to, customerName, orderId, total, trackingInfo } = props;
+  const shortId = orderId.slice(0, 8).toUpperCase();
+
+  const trackingRow = trackingInfo
+    ? `<tr><td style="padding:10px 14px;color:#6b7280;font-size:14px;">Tracking</td><td style="padding:10px 14px;color:#111;font-weight:600;">${trackingInfo}</td></tr>`
+    : '';
+
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f8f4f0;margin:0;padding:0;"><table style="width:100%;"><tr><td align="center" style="padding:40px 0;"><table style="width:560px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);"><tr><td style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:32px;text-align:center;"><p style="font-size:40px;margin:0 0 8px;">🚚</p><h1 style="color:#fff;margin:0;font-size:22px;">Your Order is on its way!</h1></td></tr><tr><td style="padding:30px;"><p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">Hi ${customerName},</p><p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">Exciting news! Your order <strong>#${shortId}</strong> has been shipped and is on its way to you!</p><table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;"><tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Order</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">#${shortId}</td></tr><tr><td style="padding:10px 14px;${trackingInfo ? 'border-bottom:1px solid #e5e7eb;' : ''}color:#6b7280;font-size:14px;">Total</td><td style="padding:10px 14px;${trackingInfo ? 'border-bottom:1px solid #e5e7eb;' : ''}color:#111;font-weight:600;">&#8377;${total.toLocaleString('en-IN')}</td></tr>${trackingRow}</table><p style="color:#6b7280;font-size:14px;margin:20px 0;">For any queries, reach us at <a href="tel:+919019076335" style="color:#9f1239;">+91 90190 76335</a> or WhatsApp us.</p><table style="width:100%;margin-top:8px;"><tr><td align="center"><a href="${SHOP_WEBSITE}/my-orders" style="display:inline-block;background:#9f1239;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;">Track Order</a></td></tr></table></td></tr><tr><td style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb;"><p style="color:#9ca3af;margin:0;font-size:12px;">${SHOP_NAME} · ${SHOP_WEBSITE}</p></td></tr></table></td></tr></table></body></html>`;
+
+  const subject = `🚚 Your Order #${shortId} Has Been Shipped — ${SHOP_NAME}`;
+
+  try {
+    if (service === 'resend') {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({ from: `${SHOP_NAME} <info@darshanstylehub.com>`, to: [to], subject, html });
+    } else {
+      const transporter = createGmailTransporter();
+      await transporter.sendMail({ from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`, to, subject, html });
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('Order shipped email failed:', e);
+    return { success: false };
+  }
+}

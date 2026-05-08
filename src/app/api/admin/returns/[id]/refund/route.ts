@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
 import { getRazorpay } from '@/lib/razorpay-server';
+import { sendCustomerReturnStatusEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,7 @@ export async function POST(
       where: { id: params.id },
       include: {
         order: true,
+        user: { select: { email: true, name: true } },
       },
     });
 
@@ -70,6 +72,19 @@ export async function POST(
           data: { status: 'COMPLETED' },
         });
       });
+
+      // Notify customer
+      const customerEmail = ret.user?.email;
+      const customerName = order.shippingName || ret.user?.name || 'Customer';
+      if (customerEmail) {
+        sendCustomerReturnStatusEmail({
+          to: customerEmail,
+          customerName,
+          orderId: order.id,
+          requestType: ret.requestType as 'RETURN' | 'EXCHANGE',
+          newStatus: 'COMPLETED',
+        }).catch(() => {});
+      }
 
       return NextResponse.json({
         success: true,
@@ -139,6 +154,19 @@ export async function POST(
         data: { status: 'COMPLETED' },
       });
     });
+
+    // Notify customer
+    const customerEmailRz = ret.user?.email;
+    const customerNameRz = order.shippingName || ret.user?.name || 'Customer';
+    if (customerEmailRz) {
+      sendCustomerReturnStatusEmail({
+        to: customerEmailRz,
+        customerName: customerNameRz,
+        orderId: order.id,
+        requestType: ret.requestType as 'RETURN' | 'EXCHANGE',
+        newStatus: 'COMPLETED',
+      }).catch(() => {});
+    }
 
     return NextResponse.json({
       success: true,

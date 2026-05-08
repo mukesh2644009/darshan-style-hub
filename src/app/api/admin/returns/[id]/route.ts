@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { sendCustomerReturnStatusEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,6 +39,7 @@ export async function PATCH(
 
     const existing = await prisma.returnRequest.findUnique({
       where: { id: params.id },
+      include: { user: { select: { email: true, name: true } }, order: { select: { shippingName: true } } },
     });
 
     if (!existing) {
@@ -86,6 +88,22 @@ export async function PATCH(
 
       return returnReq;
     });
+
+    // Notify customer (fire-and-forget)
+    if (['APPROVED', 'REJECTED'].includes(status)) {
+      const customerEmail = existing.user?.email;
+      const customerName = existing.order?.shippingName || existing.user?.name || 'Customer';
+      if (customerEmail) {
+        sendCustomerReturnStatusEmail({
+          to: customerEmail,
+          customerName,
+          orderId: existing.orderId,
+          requestType: existing.requestType as 'RETURN' | 'EXCHANGE',
+          newStatus: status as 'APPROVED' | 'REJECTED',
+          adminNotes: adminNotes || undefined,
+        }).catch(() => {});
+      }
+    }
 
     return NextResponse.json({ success: true, returnRequest: updated });
   } catch (error) {

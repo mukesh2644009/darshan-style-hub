@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { sendOrderShippedEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +43,10 @@ export async function PATCH(
     }
 
     // Prevent modifying cancelled orders
-    const existing = await prisma.order.findUnique({ where: { id: params.id }, select: { status: true } });
+    const existing = await prisma.order.findUnique({
+      where: { id: params.id },
+      select: { status: true, shippingName: true, total: true, user: { select: { email: true, name: true } } },
+    });
     if (existing?.status === 'CANCELLED') {
       return NextResponse.json(
         { error: 'Cancelled orders cannot be modified' },
@@ -58,6 +62,16 @@ export async function PATCH(
       where: { id: params.id },
       data: updateData,
     });
+
+    // Send shipped email to customer
+    if (status === 'SHIPPED' && existing?.user?.email) {
+      sendOrderShippedEmail({
+        to: existing.user.email,
+        customerName: existing.shippingName || existing.user.name || 'Customer',
+        orderId: params.id,
+        total: existing.total,
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ success: true, order });
   } catch (error) {

@@ -560,9 +560,9 @@ export default function CheckoutPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-28 lg:pb-8">
         <h1 className="font-display text-xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-8">Checkout</h1>
 
-        <div className="grid lg:grid-cols-3 gap-5 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-8">
           {/* Checkout Form */}
-          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          <div className="lg:col-span-2 min-w-0 space-y-4 sm:space-y-6">
             {/* Shipping Info */}
             <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
               <h2 className="font-display text-base sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2">
@@ -592,7 +592,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               )}
-              <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="min-w-0">
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">First Name *</label>
                   <input
@@ -775,8 +775,8 @@ export default function CheckoutPage() {
           </div>
 
           {/* Order Summary */}
-          <div className="lg:col-span-1 order-first lg:order-none">
-            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm lg:sticky lg:top-32">
+          <div className="lg:col-span-1 order-first lg:order-none min-w-0 w-full">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm lg:sticky lg:top-32 overflow-hidden">
               <h2 className="font-display text-base sm:text-xl font-bold text-gray-900 mb-4">Order Summary</h2>
 
               {/* Items — hidden on mobile to keep it compact, visible on lg */}

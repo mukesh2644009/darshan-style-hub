@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiChevronLeft, FiTruck, FiAlertCircle, FiLoader, FiLock, FiCheck, FiInfo } from 'react-icons/fi';
+import { FiChevronLeft, FiTruck, FiAlertCircle, FiLoader, FiCheck, FiInfo, FiLock } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -108,40 +108,7 @@ export default function CheckoutPage() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-accent-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl p-8 text-center shadow-lg">
-          <div className="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <FiLock className="w-8 h-8 text-primary-600" />
-          </div>
-          <h1 className="font-display text-2xl font-bold text-gray-900 mb-2">
-            Login Required
-          </h1>
-          <p className="text-gray-600 mb-6">
-            Please login or create an account to place your order. Your cart items will be saved.
-          </p>
-          <div className="flex flex-col gap-3">
-            <Link
-              href="/login?redirect=/checkout"
-              className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors inline-block"
-            >
-              Login to Continue
-            </Link>
-            <Link
-              href="/register?redirect=/checkout"
-              className="w-full py-3 border-2 border-primary-600 text-primary-600 rounded-xl font-medium hover:bg-primary-50 transition-colors inline-block"
-            >
-              Create Account
-            </Link>
-          </div>
-          <Link href="/products" className="text-sm text-gray-500 hover:text-gray-700 mt-4 inline-block">
-            Continue Shopping
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // Guest checkout is allowed — no login required
 
   const subtotal = getTotalPrice();
   const shipping = subtotal >= 999 ? 0 : 99;
@@ -562,9 +529,9 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-accent-50 overflow-x-hidden">
-      {/* Header */}
-      <div className="bg-white border-b border-accent-200">
-        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-3 sm:py-4">
+      {/* Desktop back link */}
+      <div className="hidden lg:block bg-white border-b border-accent-200">
+        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-3">
           <Link href="/products" className="inline-flex items-center gap-1 text-gray-600 hover:text-primary-600 text-sm">
             <FiChevronLeft size={16} />
             <span>Continue Shopping</span>
@@ -572,20 +539,20 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Mobile sticky total bar */}
-      <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-accent-200 shadow-sm px-4 py-3 flex items-center justify-between">
+      {/* Mobile sticky total bar — sits just below the fixed navbar (84px tall on mobile) */}
+      <div className="lg:hidden sticky top-[84px] z-40 bg-white border-b border-accent-200 shadow-sm px-4 py-2.5 flex items-center justify-between">
         <div>
-          <p className="text-xs text-gray-500">{items.reduce((s, i) => s + i.quantity, 0)} item{items.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : ''}</p>
-          <p className="text-lg font-bold text-gray-900">₹{total.toLocaleString('en-IN')}</p>
+          <p className="text-[11px] text-gray-500 leading-tight">{items.reduce((s, i) => s + i.quantity, 0)} item{items.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : ''}</p>
+          <p className="text-base font-bold text-gray-900 leading-tight">₹{total.toLocaleString('en-IN')}</p>
         </div>
         <button
           onClick={handlePlaceOrder}
           disabled={orderLoading}
-          className={`px-5 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 transition-colors ${
+          className={`px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-1.5 transition-colors ${
             orderLoading ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-primary-600 text-white hover:bg-primary-700'
           }`}
         >
-          {orderLoading ? <><FiLoader className="animate-spin w-4 h-4" /> Placing…</> : 'Place Order'}
+          {orderLoading ? <><FiLoader className="animate-spin w-3.5 h-3.5" /> Placing…</> : 'Place Order'}
         </button>
       </div>
 
@@ -603,6 +570,13 @@ export default function CheckoutPage() {
                 </span>
                 <span>Shipping Info</span>
               </h2>
+
+              {!isAuthenticated && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3 text-blue-800">
+                  <FiInfo className="flex-shrink-0 mt-0.5 w-4 h-4" />
+                  <p className="text-sm">Checking out as <strong>guest</strong>. <Link href="/login?redirect=/checkout" className="underline font-medium">Login</Link> to track your order easily.</p>
+                </div>
+              )}
 
               {Object.keys(errors).length > 0 && (
                 <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 text-red-700">

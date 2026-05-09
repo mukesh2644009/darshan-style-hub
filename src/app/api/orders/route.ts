@@ -70,14 +70,8 @@ export async function POST(request: Request) {
       paymentMethod = 'COD',
     } = body;
 
-    // Require logged-in user
+    // Guest checkout allowed — userId is optional
     const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Please login to place an order' },
-        { status: 401 }
-      );
-    }
 
     // Validate required fields
     if (!items || !items.length) {
@@ -165,7 +159,7 @@ export async function POST(request: Request) {
     // Create order
     const order = await prisma.order.create({
       data: {
-        userId: user.id,
+        userId: user?.id ?? null,
         status: isCod ? 'CONFIRMED' : 'PENDING',
         paymentStatus: isCod ? 'PENDING' : 'PENDING',
         paymentMethod,
@@ -192,8 +186,9 @@ export async function POST(request: Request) {
       },
     });
 
-    // If user has a guest email and provided a real email at checkout, save it to their profile
+    // If logged-in user has a guest email and provided a real email at checkout, save it to their profile
     if (
+      user &&
       shippingEmail &&
       user.email?.endsWith('@darshan.local') &&
       !shippingEmail.endsWith('@darshan.local')
@@ -209,7 +204,7 @@ export async function POST(request: Request) {
     }
 
     // Send order confirmation emails
-    const customerEmail = shippingEmail || user?.email;
+    const customerEmail = shippingEmail || (user?.email?.endsWith('@darshan.local') ? null : user?.email);
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub.business@gmail.com';
     const fullAddress = `${shippingAddress}, ${shippingCity}, ${shippingState} - ${shippingPincode}`;
     const emailItems = orderItems.map((item, index) => ({

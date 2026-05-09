@@ -15,6 +15,16 @@ import { FiDownload } from 'react-icons/fi';
 import { gaBeginCheckout, gaPurchase } from '@/lib/google-analytics';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 
+const INDIAN_STATES = [
+  'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh',
+  'Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka',
+  'Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram',
+  'Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana',
+  'Tripura','Uttar Pradesh','Uttarakhand','West Bengal',
+  'Andaman & Nicobar Islands','Chandigarh','Dadra & Nagar Haveli and Daman & Diu',
+  'Delhi','Jammu & Kashmir','Ladakh','Lakshadweep','Puducherry',
+];
+
 export default function CheckoutPage() {
   const { items, getTotalPrice, clearCart } = useCartStore();
   const { user, isAuthenticated, isLoading, checkAuth } = useAuthStore();
@@ -546,6 +556,7 @@ export default function CheckoutPage() {
           <p className="text-lg font-bold text-primary-700 leading-tight">₹{total.toLocaleString('en-IN')}</p>
         </div>
         <button
+          type="button"
           onClick={handlePlaceOrder}
           disabled={orderLoading}
           className={`flex-shrink-0 px-6 py-3 rounded-xl font-semibold text-sm flex items-center gap-2 transition-colors ${
@@ -560,7 +571,7 @@ export default function CheckoutPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-28 lg:pb-8">
         <h1 className="font-display text-xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-8">Checkout</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-8">
+        <form onSubmit={(e) => { e.preventDefault(); handlePlaceOrder(); }} className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-8">
           {/* Checkout Form */}
           <div className="lg:col-span-2 min-w-0 space-y-4 sm:space-y-6">
             {/* Shipping Info */}
@@ -664,13 +675,15 @@ export default function CheckoutPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-                  <input
-                    type="text"
+                  <select
                     value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    className="input-field"
-                    placeholder="Rajasthan"
-                  />
+                    className="input-field bg-white"
+                  >
+                    {INDIAN_STATES.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Pincode *</label>
@@ -851,7 +864,7 @@ export default function CheckoutPage() {
 
               {/* Place Order button — desktop only; mobile uses fixed bottom bar */}
               <button
-                onClick={handlePlaceOrder}
+                type="submit"
                 disabled={orderLoading}
                 className={`hidden lg:flex w-full mt-5 py-3 rounded-xl font-medium items-center justify-center gap-2 transition-colors ${
                   orderLoading
@@ -867,7 +880,7 @@ export default function CheckoutPage() {
               </p>
             </div>
           </div>
-        </div>
+        </form>
       </div>
     </div>
   );

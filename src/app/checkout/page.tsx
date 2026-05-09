@@ -528,10 +528,10 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-accent-50 overflow-x-hidden">
-      {/* Desktop back link */}
-      <div className="hidden lg:block bg-white border-b border-accent-200">
-        <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-3">
+    <div className="min-h-screen bg-accent-50">
+      {/* Back link (all screens) */}
+      <div className="bg-white border-b border-accent-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <Link href="/products" className="inline-flex items-center gap-1 text-gray-600 hover:text-primary-600 text-sm">
             <FiChevronLeft size={16} />
             <span>Continue Shopping</span>
@@ -539,24 +539,25 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      {/* Mobile sticky total bar — sits just below the fixed navbar (84px tall on mobile) */}
-      <div className="lg:hidden sticky top-[84px] z-40 bg-white border-b border-accent-200 shadow-sm px-4 py-2.5 flex items-center justify-between">
-        <div>
-          <p className="text-[11px] text-gray-500 leading-tight">{items.reduce((s, i) => s + i.quantity, 0)} item{items.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : ''}</p>
-          <p className="text-base font-bold text-gray-900 leading-tight">₹{total.toLocaleString('en-IN')}</p>
+      {/* Mobile fixed bottom bar — total + place order button always visible */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-accent-200 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] px-4 py-3 flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] text-gray-500 leading-none">{items.reduce((s, i) => s + i.quantity, 0)} item{items.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : ''}</p>
+          <p className="text-lg font-bold text-primary-700 leading-tight">₹{total.toLocaleString('en-IN')}</p>
         </div>
         <button
           onClick={handlePlaceOrder}
           disabled={orderLoading}
-          className={`px-4 py-2 rounded-xl font-semibold text-sm flex items-center gap-1.5 transition-colors ${
+          className={`flex-shrink-0 px-6 py-3 rounded-xl font-semibold text-sm flex items-center gap-2 transition-colors ${
             orderLoading ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-primary-600 text-white hover:bg-primary-700'
           }`}
         >
-          {orderLoading ? <><FiLoader className="animate-spin w-3.5 h-3.5" /> Placing…</> : 'Place Order'}
+          {orderLoading ? <><FiLoader className="animate-spin w-4 h-4" /> Placing…</> : 'Place Order'}
         </button>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+      {/* Extra bottom padding on mobile to account for fixed bottom bar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 pb-28 lg:pb-8">
         <h1 className="font-display text-xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-8">Checkout</h1>
 
         <div className="grid lg:grid-cols-3 gap-5 lg:gap-8">
@@ -591,7 +592,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
               )}
-              <div className="grid sm:grid-cols-2 gap-3 sm:gap-4 overflow-hidden">
+              <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="min-w-0">
                   <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">First Name *</label>
                   <input
@@ -848,7 +849,7 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              {/* Place Order button — only on desktop; mobile uses sticky top bar */}
+              {/* Place Order button — desktop only; mobile uses fixed bottom bar */}
               <button
                 onClick={handlePlaceOrder}
                 disabled={orderLoading}
@@ -861,20 +862,7 @@ export default function CheckoutPage() {
                 {orderLoading ? <><FiLoader className="animate-spin w-4 h-4" /> Placing Order…</> : 'Place Order'}
               </button>
 
-              {/* Mobile place order button below summary */}
-              <button
-                onClick={handlePlaceOrder}
-                disabled={orderLoading}
-                className={`lg:hidden w-full mt-4 py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors ${
-                  orderLoading
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-primary-600 text-white hover:bg-primary-700'
-                }`}
-              >
-                {orderLoading ? <><FiLoader className="animate-spin w-4 h-4" /> Placing Order…</> : `Place Order — ₹${total.toLocaleString('en-IN')}`}
-              </button>
-
-              <p className="text-xs text-gray-400 text-center mt-3">
+              <p className="text-xs text-gray-400 text-center mt-3 hidden lg:block">
                 By placing this order, you agree to our Terms of Service
               </p>
             </div>

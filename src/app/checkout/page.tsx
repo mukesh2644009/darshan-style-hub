@@ -811,35 +811,35 @@ export default function CheckoutPage() {
               {/* Mobile: compact item list */}
               <div className="lg:hidden space-y-1.5 mb-4">
                 {items.map((item) => (
-                  <div key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}`} className="flex justify-between text-sm">
-                    <span className="text-gray-700 truncate max-w-[65%]">{item.product.name} ×{item.quantity}</span>
-                    <span className="font-medium text-gray-900">₹{(item.product.price * item.quantity).toLocaleString('en-IN')}</span>
+                  <div key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}`} className="w-full flex justify-between items-baseline gap-2 text-sm">
+                    <span className="text-gray-700 truncate min-w-0 flex-1">{item.product.name} ×{item.quantity}</span>
+                    <span className="font-medium text-gray-900 flex-shrink-0">₹{(item.product.price * item.quantity).toLocaleString('en-IN')}</span>
                   </div>
                 ))}
               </div>
 
               {/* Totals */}
               <div className="space-y-2 border-t border-accent-200 pt-3">
-                <div className="flex justify-between text-sm text-gray-600">
+                <div className="w-full flex justify-between items-center text-sm text-gray-600">
                   <span>Subtotal</span>
-                  <span>₹{subtotal.toLocaleString('en-IN')}</span>
+                  <span className="flex-shrink-0">₹{subtotal.toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between text-sm text-gray-600">
+                <div className="w-full flex justify-between items-center text-sm text-gray-600">
                   <span>Shipping</span>
-                  <span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
+                  <span className="flex-shrink-0">{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
                 </div>
                 {shipping > 0 && (
                   <p className="text-xs text-primary-600">Add ₹{(999 - subtotal).toLocaleString('en-IN')} more for free shipping</p>
                 )}
                 {codCharge > 0 && (
-                  <div className="flex justify-between text-sm text-gray-600">
+                  <div className="w-full flex justify-between items-center text-sm text-gray-600">
                     <span>COD Charge</span>
-                    <span>₹{codCharge}</span>
+                    <span className="flex-shrink-0">₹{codCharge}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-base font-bold border-t border-accent-200 pt-3">
+                <div className="w-full flex justify-between items-center text-base font-bold border-t border-accent-200 pt-3">
                   <span>Total</span>
-                  <span className="text-primary-700">₹{total.toLocaleString('en-IN')}</span>
+                  <span className="flex-shrink-0 text-primary-700">₹{total.toLocaleString('en-IN')}</span>
                 </div>
               </div>
 

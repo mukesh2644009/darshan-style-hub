@@ -1,13 +1,18 @@
 'use client';
 
+import { usePathname } from 'next/navigation';
 import { FaWhatsapp, FaInstagram } from 'react-icons/fa';
 import { buildDefaultStoreWhatsAppUrl, STORE_WHATSAPP_E164 } from '@/lib/whatsapp-customer';
 
 const INSTAGRAM_URL = 'https://www.instagram.com/stylehubjaipur/';
 
-/** Single-tap WhatsApp — no in-page chat popup (avoids overlaying the hero). */
+/** Single-tap WhatsApp — hidden on checkout page to avoid covering the Place Order button. */
 export default function WhatsAppButton() {
+  const pathname = usePathname();
   const whatsappLink = buildDefaultStoreWhatsAppUrl();
+
+  // Hide on checkout so floating buttons don't cover the fixed bottom bar
+  if (pathname === '/checkout') return null;
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 sm:bottom-6 sm:right-6 sm:gap-3">

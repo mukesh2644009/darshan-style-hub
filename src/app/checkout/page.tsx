@@ -572,12 +572,29 @@ export default function CheckoutPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-5 sm:py-8">
-        <h1 className="font-display text-xl sm:text-3xl font-bold text-gray-900 mb-5 sm:mb-8">Checkout</h1>
+      {/* Mobile sticky total bar */}
+      <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-accent-200 shadow-sm px-4 py-3 flex items-center justify-between">
+        <div>
+          <p className="text-xs text-gray-500">{items.reduce((s, i) => s + i.quantity, 0)} item{items.reduce((s, i) => s + i.quantity, 0) !== 1 ? 's' : ''}</p>
+          <p className="text-lg font-bold text-gray-900">₹{total.toLocaleString('en-IN')}</p>
+        </div>
+        <button
+          onClick={handlePlaceOrder}
+          disabled={orderLoading}
+          className={`px-5 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 transition-colors ${
+            orderLoading ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-primary-600 text-white hover:bg-primary-700'
+          }`}
+        >
+          {orderLoading ? <><FiLoader className="animate-spin w-4 h-4" /> Placing…</> : 'Place Order'}
+        </button>
+      </div>
 
-        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <h1 className="font-display text-xl sm:text-3xl font-bold text-gray-900 mb-4 sm:mb-8">Checkout</h1>
+
+        <div className="grid lg:grid-cols-3 gap-5 lg:gap-8">
           {/* Checkout Form */}
-          <div className="lg:col-span-2 space-y-5 sm:space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Shipping Info */}
             <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm">
               <h2 className="font-display text-base sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center gap-2">
@@ -783,12 +800,12 @@ export default function CheckoutPage() {
           </div>
 
           {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm sticky top-32">
-              <h2 className="font-display text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">Order Summary</h2>
+          <div className="lg:col-span-1 order-first lg:order-none">
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm lg:sticky lg:top-32">
+              <h2 className="font-display text-base sm:text-xl font-bold text-gray-900 mb-4">Order Summary</h2>
 
-              {/* Items */}
-              <div className="space-y-4 mb-6">
+              {/* Items — hidden on mobile to keep it compact, visible on lg */}
+              <div className="hidden lg:block space-y-4 mb-6">
                 {items.map((item) => (
                   <div
                     key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}`}
@@ -809,60 +826,82 @@ export default function CheckoutPage() {
                         {item.selectedSize} • {item.selectedColor} • Qty: {item.quantity}
                       </p>
                       <p className="text-sm font-medium text-gray-900 mt-1">
-                        ₹{(item.product.price * item.quantity).toLocaleString()}
+                        ₹{(item.product.price * item.quantity).toLocaleString('en-IN')}
                       </p>
                     </div>
                   </div>
                 ))}
               </div>
 
+              {/* Mobile: compact item list */}
+              <div className="lg:hidden space-y-1.5 mb-4">
+                {items.map((item) => (
+                  <div key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}`} className="flex justify-between text-sm">
+                    <span className="text-gray-700 truncate max-w-[65%]">{item.product.name} ×{item.quantity}</span>
+                    <span className="font-medium text-gray-900">₹{(item.product.price * item.quantity).toLocaleString('en-IN')}</span>
+                  </div>
+                ))}
+              </div>
+
               {/* Totals */}
-              <div className="space-y-3 border-t border-accent-200 pt-4">
-                <div className="flex justify-between text-gray-600">
+              <div className="space-y-2 border-t border-accent-200 pt-3">
+                <div className="flex justify-between text-sm text-gray-600">
                   <span>Subtotal</span>
-                  <span>₹{subtotal.toLocaleString()}</span>
+                  <span>₹{subtotal.toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between text-sm text-gray-600">
                   <span>Shipping</span>
                   <span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
                 </div>
                 {shipping > 0 && (
-                  <p className="text-xs text-primary-600">
-                    Add ₹{(999 - subtotal).toLocaleString()} more for free shipping
-                  </p>
+                  <p className="text-xs text-primary-600">Add ₹{(999 - subtotal).toLocaleString('en-IN')} more for free shipping</p>
                 )}
                 {codCharge > 0 && (
-                  <div className="flex justify-between text-gray-600">
+                  <div className="flex justify-between text-sm text-gray-600">
                     <span>COD Charge</span>
                     <span>₹{codCharge}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-lg font-bold border-t border-accent-200 pt-3">
+                <div className="flex justify-between text-base font-bold border-t border-accent-200 pt-3">
                   <span>Total</span>
-                  <span>₹{total.toLocaleString()}</span>
+                  <span className="text-primary-700">₹{total.toLocaleString('en-IN')}</span>
                 </div>
               </div>
 
               {errors.form && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">
-                  <FiAlertCircle /> {errors.form}
+                  <FiAlertCircle className="flex-shrink-0" /> {errors.form}
                 </div>
               )}
 
-              <button 
-                onClick={handlePlaceOrder} 
+              {/* Place Order button — only on desktop; mobile uses sticky top bar */}
+              <button
+                onClick={handlePlaceOrder}
                 disabled={orderLoading}
-                className={`w-full mt-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors ${
-                  orderLoading 
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                className={`hidden lg:flex w-full mt-5 py-3 rounded-xl font-medium items-center justify-center gap-2 transition-colors ${
+                  orderLoading
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-primary-600 text-white hover:bg-primary-700'
                 }`}
               >
-                {orderLoading ? 'Placing Order...' : 'Place Order'}
+                {orderLoading ? <><FiLoader className="animate-spin w-4 h-4" /> Placing Order…</> : 'Place Order'}
               </button>
 
-              <p className="text-xs text-gray-500 text-center mt-4">
-                By placing this order, you agree to our Terms of Service and Privacy Policy
+              {/* Mobile place order button below summary */}
+              <button
+                onClick={handlePlaceOrder}
+                disabled={orderLoading}
+                className={`lg:hidden w-full mt-4 py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-colors ${
+                  orderLoading
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-primary-600 text-white hover:bg-primary-700'
+                }`}
+              >
+                {orderLoading ? <><FiLoader className="animate-spin w-4 h-4" /> Placing Order…</> : `Place Order — ₹${total.toLocaleString('en-IN')}`}
+              </button>
+
+              <p className="text-xs text-gray-400 text-center mt-3">
+                By placing this order, you agree to our Terms of Service
               </p>
             </div>
           </div>

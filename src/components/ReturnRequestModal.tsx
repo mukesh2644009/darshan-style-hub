@@ -9,7 +9,11 @@ interface OrderForReturn {
   id: string;
   paymentMethod: string;
   items: Array<{
-    product: { name: string; sizes: string[]; colors: string[] };
+    product: {
+      name: string;
+      sizes: Array<{ size: string; quantity?: number }>;
+      colors: Array<{ name: string; hex?: string }>;
+    };
     quantity: number;
     size?: string | null;
     color?: string | null;
@@ -41,9 +45,17 @@ export default function ReturnRequestModal({ order, requestType, onClose, onSucc
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Collect unique sizes and colors across all items
-  const allSizes = Array.from(new Set(order.items.flatMap(i => i.product.sizes ?? [])));
-  const allColors = Array.from(new Set(order.items.flatMap(i => i.product.colors ?? [])));
+  // Collect unique sizes and colors across all items (dedup by string value)
+  const allSizes: string[] = Array.from(
+    new Set(order.items.flatMap(i => (i.product.sizes ?? []).map(s => s.size).filter(Boolean)))
+  );
+  const colorMap = new Map<string, string | undefined>();
+  order.items.forEach(i => {
+    (i.product.colors ?? []).forEach(c => {
+      if (c?.name && !colorMap.has(c.name)) colorMap.set(c.name, c.hex);
+    });
+  });
+  const allColors: Array<{ name: string; hex?: string }> = Array.from(colorMap.entries()).map(([name, hex]) => ({ name, hex }));
 
   const allChecked = CONDITIONS.every(c => checked[c.id]);
 
@@ -186,16 +198,22 @@ export default function ReturnRequestModal({ order, requestType, onClose, onSucc
                   <div className="flex flex-wrap gap-2">
                     {allColors.map(c => (
                       <button
-                        key={c}
+                        key={c.name}
                         type="button"
-                        onClick={() => setExchangeColor(exchangeColor === c ? '' : c)}
-                        className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
-                          exchangeColor === c
+                        onClick={() => setExchangeColor(exchangeColor === c.name ? '' : c.name)}
+                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                          exchangeColor === c.name
                             ? 'bg-primary-600 border-primary-600 text-white'
                             : 'bg-white border-gray-300 text-gray-700 hover:border-primary-400'
                         }`}
                       >
-                        {c}
+                        {c.hex && (
+                          <span
+                            className="w-3.5 h-3.5 rounded-full border border-gray-300"
+                            style={{ backgroundColor: c.hex }}
+                          />
+                        )}
+                        {c.name}
                       </button>
                     ))}
                   </div>

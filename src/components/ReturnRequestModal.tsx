@@ -9,7 +9,7 @@ interface OrderForReturn {
   id: string;
   paymentMethod: string;
   items: Array<{
-    product: { name: string };
+    product: { name: string; sizes: string[]; colors: string[] };
     quantity: number;
     size?: string | null;
     color?: string | null;
@@ -35,9 +35,15 @@ export default function ReturnRequestModal({ order, requestType, onClose, onSucc
 
   const [reason, setReason] = useState<string>(RETURN_REASONS[0].value);
   const [details, setDetails] = useState('');
+  const [exchangeSize, setExchangeSize] = useState<string>('');
+  const [exchangeColor, setExchangeColor] = useState<string>('');
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Collect unique sizes and colors across all items
+  const allSizes = Array.from(new Set(order.items.flatMap(i => i.product.sizes ?? [])));
+  const allColors = Array.from(new Set(order.items.flatMap(i => i.product.colors ?? [])));
 
   const allChecked = CONDITIONS.every(c => checked[c.id]);
 
@@ -53,14 +59,21 @@ export default function ReturnRequestModal({ order, requestType, onClose, onSucc
     setLoading(true);
 
     try {
+      const exchangeDetails = isExchange
+        ? [exchangeSize && `Size: ${exchangeSize}`, exchangeColor && `Colour: ${exchangeColor}`, details.trim()]
+            .filter(Boolean).join(' · ')
+        : details.trim();
+
       const res = await fetch('/api/returns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId: order.id,
           reason,
-          details: details.trim() || undefined,
+          details: exchangeDetails || undefined,
           requestType,
+          exchangeSize: exchangeSize || undefined,
+          exchangeColor: exchangeColor || undefined,
         }),
       });
       const data = await res.json();
@@ -138,18 +151,71 @@ export default function ReturnRequestModal({ order, requestType, onClose, onSucc
             </select>
           </div>
 
-          {/* Details */}
+          {/* Exchange: size + color pickers */}
+          {isExchange && (
+            <div className="space-y-4">
+              {allSizes.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Preferred size <span className="font-normal text-gray-400">(for exchange)</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {allSizes.map(s => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setExchangeSize(exchangeSize === s ? '' : s)}
+                        className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                          exchangeSize === s
+                            ? 'bg-primary-600 border-primary-600 text-white'
+                            : 'bg-white border-gray-300 text-gray-700 hover:border-primary-400'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {allColors.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Preferred colour <span className="font-normal text-gray-400">(for exchange)</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {allColors.map(c => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setExchangeColor(exchangeColor === c ? '' : c)}
+                        className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                          exchangeColor === c
+                            ? 'bg-primary-600 border-primary-600 text-white'
+                            : 'bg-white border-gray-300 text-gray-700 hover:border-primary-400'
+                        }`}
+                      >
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Details / additional notes */}
           <div>
             <label htmlFor="return-details" className="block text-sm font-medium text-gray-700 mb-1.5">
-              {isExchange ? 'What size / colour do you want?' : 'Additional details'}
+              {isExchange ? 'Any additional notes' : 'Additional details'}
               <span className="font-normal text-gray-400 ml-1">(optional)</span>
             </label>
             <textarea
               id="return-details"
-              rows={3}
+              rows={2}
               value={details}
               onChange={e => setDetails(e.target.value.slice(0, 2000))}
-              placeholder={isExchange ? 'e.g. Size M in Red, same style' : 'Tell us anything that helps us process your request faster.'}
+              placeholder={isExchange ? 'e.g. same style but different size, any specific preference...' : 'Tell us anything that helps us process your request faster.'}
               className="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-gray-900 placeholder:text-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
             />
             <p className="text-xs text-gray-400 mt-1">{details.length}/2000</p>

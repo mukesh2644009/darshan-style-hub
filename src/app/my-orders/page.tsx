@@ -19,7 +19,7 @@ interface OrderItem {
   price: number;
   size: string;
   color: string;
-  product: { name: string };
+  product: { name: string; sizes: string[]; colors: string[] };
 }
 
 interface Order {

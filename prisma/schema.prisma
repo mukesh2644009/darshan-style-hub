@@ -160,6 +160,13 @@ model Order {
   shipping        Float       @default(0)
   discount        Float       @default(0)
   total           Float
+
+  // Order classification — STANDARD (paid) or REPLACEMENT (₹0 exchange replacement)
+  orderType       String      @default("STANDARD")
+  // For REPLACEMENT orders, points back to the original paid order
+  parentOrderId   String?
+  parentOrder     Order?      @relation("OrderReplacements", fields: [parentOrderId], references: [id], onDelete: SetNull)
+  replacements    Order[]     @relation("OrderReplacements")
   
   // Shipping details
   shippingName    String
@@ -178,6 +185,7 @@ model Order {
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+  @@index([parentOrderId])
 }
 
 // Order items
@@ -254,7 +262,14 @@ model ReturnRequest {
   requestType String   @default("RETURN") // RETURN or EXCHANGE
   adminNotes  String?
   status      String   @default("PENDING") // PENDING, APPROVED, REJECTED, COMPLETED
-  pickupFee   Int      @default(0) // ₹50 for COD orders, 0 otherwise
+  pickupFee   Int      @default(0) // ₹99 flat pickup for returns, 0 for exchanges
+
+  // For EXCHANGE requests — desired replacement attributes
+  exchangeSize  String?
+  exchangeColor String?
+  // Set when admin marks the exchange completed and creates a replacement order
+  replacementOrderId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

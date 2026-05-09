@@ -34,6 +34,8 @@ interface Order {
   total: number;
   createdAt: string;
   updatedAt: string;
+  orderType?: string;
+  parentOrderId?: string | null;
   shippingName: string;
   shippingEmail: string;
   shippingPhone: string;
@@ -196,14 +198,16 @@ export default function MyOrdersPage() {
         ) : (
           <div className="space-y-5">
             {orders.map((order) => {
+              const replacementForThis = orders.find(o => o.orderType === 'REPLACEMENT' && o.parentOrderId === order.id);
               const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG['PENDING'];
               const StatusIcon = cfg.icon;
-              const canCancel = ['PENDING', 'CONFIRMED'].includes(order.status);
+              const isReplacement = order.orderType === 'REPLACEMENT';
+              const canCancel = !isReplacement && ['PENDING', 'CONFIRMED'].includes(order.status);
               const daysSinceUpdate = (Date.now() - new Date(order.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
               const withinReturnWindow = daysSinceUpdate <= 7;
               const returnFlowStatuses = ['RETURN_REQUESTED','RETURN_APPROVED','RETURNED','EXCHANGE_REQUESTED','EXCHANGE_APPROVED','EXCHANGED'];
               const inReturnFlow = returnFlowStatuses.includes(order.status);
-              const canReturn = order.status === 'DELIVERED' && !order.returnRequest && !inReturnFlow && withinReturnWindow;
+              const canReturn = !isReplacement && order.status === 'DELIVERED' && !order.returnRequest && !inReturnFlow && withinReturnWindow;
               const rCfg = order.returnRequest ? (RETURN_STATUS_CONFIG[order.returnRequest.status] ?? RETURN_STATUS_CONFIG['PENDING']) : null;
 
               return (
@@ -216,11 +220,24 @@ export default function MyOrdersPage() {
                         <StatusIcon className={`w-4 h-4 ${cfg.text}`} />
                       </div>
                       <div className="min-w-0">
-                        <p className="font-mono font-semibold text-gray-900 text-sm">#{order.id.slice(0, 8).toUpperCase()}</p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-mono font-semibold text-gray-900 text-sm">#{order.id.slice(0, 8).toUpperCase()}</p>
+                          {isReplacement && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 text-[10px] font-bold uppercase tracking-wide">
+                              <FiRefreshCw className="w-3 h-3" /> Replacement · FREE
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-400">
                           {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' })}
                           <span className="mx-1">·</span>
-                          {order.paymentMethod}
+                          {isReplacement ? 'Free exchange' : order.paymentMethod}
+                          {isReplacement && order.parentOrderId && (
+                            <>
+                              <span className="mx-1">·</span>
+                              for #{order.parentOrderId.slice(0, 8).toUpperCase()}
+                            </>
+                          )}
                         </p>
                       </div>
                     </div>
@@ -331,7 +348,13 @@ export default function MyOrdersPage() {
                         {order.status === 'RETURNED'           && <p className="text-xs text-gray-500 mt-0.5">Your return is complete and refund has been processed.</p>}
                         {order.status === 'EXCHANGE_REQUESTED' && <p className="text-xs text-gray-500 mt-0.5">We have received your exchange request. Our team will review it shortly.</p>}
                         {order.status === 'EXCHANGE_APPROVED'  && <p className="text-xs text-gray-500 mt-0.5">Exchange approved! We are preparing your replacement item.</p>}
-                        {order.status === 'EXCHANGED'          && <p className="text-xs text-gray-500 mt-0.5">Exchange fulfilled! Your new item is on its way.</p>}
+                        {order.status === 'EXCHANGED'          && (
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            Exchange fulfilled! {replacementForThis ? (
+                              <>Track your replacement on order <span className="font-mono font-semibold text-gray-700">#{replacementForThis.id.slice(0, 8).toUpperCase()}</span> below.</>
+                            ) : 'Your new item is on its way.'}
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}

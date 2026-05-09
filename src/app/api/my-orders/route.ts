@@ -19,6 +19,7 @@ export async function GET() {
 
     const orders = await prisma.order.findMany({
       where: { userId: user.id },
+      // schema returns all top-level fields by default — that includes orderType, parentOrderId
       include: {
         items: {
           include: {

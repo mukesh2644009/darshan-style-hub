@@ -64,6 +64,8 @@ export async function POST(request: Request) {
     const detailsRaw = typeof body.details === 'string' ? body.details.trim() : '';
     const details = detailsRaw.length > 0 ? detailsRaw.slice(0, MAX_DETAILS) : null;
     const requestType = body.requestType === 'EXCHANGE' ? 'EXCHANGE' : 'RETURN';
+    const exchangeSize  = requestType === 'EXCHANGE' && typeof body.exchangeSize  === 'string' && body.exchangeSize.trim()  ? body.exchangeSize.trim().slice(0, 32)  : null;
+    const exchangeColor = requestType === 'EXCHANGE' && typeof body.exchangeColor === 'string' && body.exchangeColor.trim() ? body.exchangeColor.trim().slice(0, 64) : null;
 
     if (!orderId) {
       return NextResponse.json(
@@ -143,6 +145,8 @@ export async function POST(request: Request) {
           details,
           requestType,
           pickupFee,
+          exchangeSize,
+          exchangeColor,
         },
       });
       await tx.order.update({

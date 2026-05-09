@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { FiLoader, FiRefreshCw, FiExternalLink, FiCheck, FiX, FiDollarSign } from 'react-icons/fi';
+import { FiLoader, FiRefreshCw, FiExternalLink, FiCheck, FiX, FiDollarSign, FiPackage } from 'react-icons/fi';
 import { RETURN_REASONS } from '@/lib/return-reasons';
 
 type ReturnRow = {
@@ -12,6 +12,9 @@ type ReturnRow = {
   requestType: string;
   adminNotes: string | null;
   status: string;
+  exchangeSize: string | null;
+  exchangeColor: string | null;
+  replacementOrderId: string | null;
   createdAt: string;
   updatedAt: string;
   user: {
@@ -88,6 +91,26 @@ export default function AdminReturnsDashboard({ initialReturns }: Props) {
       setLoadingId(null);
       setRejectId(null);
       setRejectNotes('');
+    }
+  };
+
+  const completeExchange = async (id: string) => {
+    if (!confirm('Original item received & inspected? This will:\n\n• Mark the original order as Exchanged\n• Create a new ₹0 replacement order with the customer\'s requested size / colour\n• Email the customer\n\nProceed?')) return;
+    setLoadingId(id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/admin/returns/${id}/complete-exchange`, { method: 'POST' });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || 'Failed to complete exchange');
+        return;
+      }
+      await refresh();
+      alert(`Replacement order #${data.replacementOrderId.slice(0, 8).toUpperCase()} created — ship it like a normal order.`);
+    } catch {
+      setError('Request failed');
+    } finally {
+      setLoadingId(null);
     }
   };
 
@@ -196,13 +219,36 @@ export default function AdminReturnsDashboard({ initialReturns }: Props) {
                           ₹{row.order.total.toLocaleString('en-IN')}
                         </p>
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-800 max-w-[200px]">
+                      <td className="px-4 py-4 text-sm text-gray-800 max-w-[220px]">
                         <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold mb-1 ${row.requestType === 'EXCHANGE' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-800'}`}>
                           {row.requestType === 'EXCHANGE' ? '🔄 Exchange' : '↩ Return'}
                         </span>
                         <p>{reasonLabel(row.reason)}</p>
+                        {row.requestType === 'EXCHANGE' && (row.exchangeSize || row.exchangeColor) && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {row.exchangeSize && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-medium">
+                                Size: {row.exchangeSize}
+                              </span>
+                            )}
+                            {row.exchangeColor && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-medium">
+                                Colour: {row.exchangeColor}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {row.details && (
                           <p className="text-gray-500 text-xs mt-1 line-clamp-3">{row.details}</p>
+                        )}
+                        {row.replacementOrderId && (
+                          <Link
+                            href={`/admin/orders/${row.replacementOrderId}`}
+                            className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium"
+                          >
+                            <FiPackage className="w-3 h-3" />
+                            Replacement #{row.replacementOrderId.slice(0, 8).toUpperCase()}
+                          </Link>
                         )}
                       </td>
                       <td className="px-4 py-4">
@@ -254,7 +300,22 @@ export default function AdminReturnsDashboard({ initialReturns }: Props) {
                               </button>
                             </div>
                           )}
-                          {!busy && canRefund && (
+                          {!busy && canRefund && row.requestType === 'EXCHANGE' && (
+                            <div className="flex flex-col gap-2">
+                              <button
+                                type="button"
+                                onClick={() => completeExchange(row.id)}
+                                className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm hover:bg-blue-700"
+                              >
+                                <FiPackage className="w-4 h-4" />
+                                Mark received &amp; create replacement
+                              </button>
+                              <p className="text-[11px] text-gray-500 leading-snug">
+                                Creates a ₹0 replacement order with the customer's requested size / colour and notifies them.
+                              </p>
+                            </div>
+                          )}
+                          {!busy && canRefund && row.requestType !== 'EXCHANGE' && (
                             <div className="flex flex-col gap-2">
                               {online && (
                                 <button
@@ -276,7 +337,7 @@ export default function AdminReturnsDashboard({ initialReturns }: Props) {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (confirm('Close this return as completed without changing payment? (e.g. exchange fulfilled)')) {
+                                  if (confirm('Close this return as completed without changing payment?')) {
                                     patchStatus(row.id, 'COMPLETED');
                                   }
                                 }}

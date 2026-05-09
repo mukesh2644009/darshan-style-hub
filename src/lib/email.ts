@@ -1173,3 +1173,50 @@ export async function sendOrderShippedEmail(props: OrderShippedProps) {
     return { success: false };
   }
 }
+
+// ─── Customer: Replacement order created (free exchange) ──────────────────────
+interface ReplacementOrderProps {
+  to: string;
+  customerName: string;
+  originalOrderId: string;
+  replacementOrderId: string;
+  productName: string;
+  size?: string;
+  color?: string;
+}
+
+export async function sendReplacementOrderEmail(props: ReplacementOrderProps) {
+  const service = getEmailService();
+  if (!service || !props.to) return { success: false };
+
+  const { to, customerName, originalOrderId, replacementOrderId, productName, size, color } = props;
+  const shortOriginal = originalOrderId.slice(0, 8).toUpperCase();
+  const shortReplacement = replacementOrderId.slice(0, 8).toUpperCase();
+
+  const variantLine = [size ? `Size: ${size}` : null, color ? `Colour: ${color}` : null]
+    .filter(Boolean)
+    .join(' · ');
+
+  const variantRow = variantLine
+    ? `<tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Replacement</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">${variantLine}</td></tr>`
+    : '';
+
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f8f4f0;margin:0;padding:0;"><table style="width:100%;"><tr><td align="center" style="padding:40px 0;"><table style="width:560px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);"><tr><td style="background:linear-gradient(135deg,#0ea5e9,#22d3ee);padding:32px;text-align:center;"><p style="font-size:40px;margin:0 0 8px;">🔄</p><h1 style="color:#fff;margin:0;font-size:22px;">Your Replacement is on the way!</h1></td></tr><tr><td style="padding:30px;"><p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">Hi ${customerName},</p><p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">We've received your original item and a replacement order for <strong>${productName}</strong> has been created. We'll dispatch it shortly — no extra charge.</p><table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;"><tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Replacement Order</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">#${shortReplacement}</td></tr><tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Original Order</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">#${shortOriginal}</td></tr>${variantRow}<tr><td style="padding:10px 14px;color:#6b7280;font-size:14px;">Amount</td><td style="padding:10px 14px;color:#16a34a;font-weight:700;">FREE — &#8377;0</td></tr></table><p style="color:#6b7280;font-size:13px;margin:20px 0 0;">You'll get another email the moment we ship the replacement.</p><table style="width:100%;margin-top:24px;"><tr><td align="center"><a href="${SHOP_WEBSITE}/my-orders" style="display:inline-block;background:#9f1239;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;">View My Orders</a></td></tr></table></td></tr><tr><td style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb;"><p style="color:#9ca3af;margin:0;font-size:12px;">${SHOP_NAME} · ${SHOP_WEBSITE}</p></td></tr></table></td></tr></table></body></html>`;
+
+  const subject = `🔄 Replacement Order #${shortReplacement} Created — ${SHOP_NAME}`;
+
+  try {
+    if (service === 'resend') {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({ from: `${SHOP_NAME} <info@darshanstylehub.com>`, to: [to], subject, html });
+    } else {
+      const transporter = createGmailTransporter();
+      await transporter.sendMail({ from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`, to, subject, html });
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('Replacement order email failed:', e);
+    return { success: false };
+  }
+}

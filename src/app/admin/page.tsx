@@ -111,7 +111,8 @@ export default async function AdminDashboard() {
             <p className="text-gray-500 text-sm">No orders yet</p>
           </div>
         ) : (
-          <table className="w-full">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px]">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
                 {['Order', 'Customer', 'Items', 'Total', 'Status', 'Date'].map(h => (
@@ -149,6 +150,7 @@ export default async function AdminDashboard() {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

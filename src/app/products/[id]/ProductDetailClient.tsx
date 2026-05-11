@@ -8,9 +8,7 @@ import { FaWhatsapp, FaMoneyBillWave } from 'react-icons/fa';
 import { Product } from '@/lib/products';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
-import { useAuthStore } from '@/store/authStore';
 import ProductCard from '@/components/ProductCard';
-import QuickSignupModal from '@/components/QuickSignupModal';
 import { createWhatsAppOrderLink, createWhatsAppShareLink } from '@/components/WhatsAppButton';
 import { gaViewItem, gaAddToCart, gaWhatsAppClick } from '@/lib/google-analytics';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
@@ -130,13 +128,11 @@ interface ProductDetailClientProps {
 export default function ProductDetailClient({ product, relatedProducts }: ProductDetailClientProps) {
   const { addItem, openCart } = useCartStore();
   const { toggleItem, isInWishlist } = useWishlistStore();
-  const { isAuthenticated } = useAuthStore();
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor] = useState(product.colors?.[0]?.name || 'Default');
   const [quantity, setQuantity] = useState(1);
-  const [showSignupModal, setShowSignupModal] = useState(false);
   const isWishlisted = isInWishlist(product.id);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [showFullName, setShowFullName] = useState(false);
@@ -213,11 +209,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const handleAddToCart = () => {
     if (!selectedSize) {
       alert('Please select a size');
-      return;
-    }
-
-    if (!isAuthenticated) {
-      setShowSignupModal(true);
       return;
     }
 
@@ -661,14 +652,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
         </div>
       )}
 
-      <QuickSignupModal
-        isOpen={showSignupModal}
-        onClose={() => setShowSignupModal(false)}
-        onSuccess={() => {
-          setShowSignupModal(false);
-          doAddToCart();
-        }}
-      />
     </div>
   );
 }

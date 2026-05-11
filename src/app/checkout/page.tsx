@@ -14,6 +14,7 @@ import { downloadReceipt } from '@/lib/generate-receipt';
 import { FiDownload } from 'react-icons/fi';
 import { gaBeginCheckout, gaPurchase } from '@/lib/google-analytics';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
+import QuickSignupModal from '@/components/QuickSignupModal';
 
 const INDIAN_STATES = [
   'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh',
@@ -47,10 +48,23 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [orderTotal, setOrderTotal] = useState(0);
   const [orderPaymentMethod, setOrderPaymentMethod] = useState('');
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [signupPrompted, setSignupPrompted] = useState(false);
 
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
+
+  // Prompt guests with items in cart to sign up once when they reach checkout.
+  // If they close the modal, they can still continue as a guest below.
+  useEffect(() => {
+    if (isLoading) return;
+    if (signupPrompted) return;
+    if (isAuthenticated) return;
+    if (items.length === 0) return;
+    setShowSignupModal(true);
+    setSignupPrompted(true);
+  }, [isLoading, isAuthenticated, items.length, signupPrompted]);
 
   // Pre-fill form with logged-in user data and last saved address
   useEffect(() => {
@@ -882,6 +896,15 @@ export default function CheckoutPage() {
           </div>
         </form>
       </div>
+
+      <QuickSignupModal
+        isOpen={showSignupModal}
+        onClose={() => setShowSignupModal(false)}
+        onSuccess={() => {
+          setShowSignupModal(false);
+          checkAuth();
+        }}
+      />
     </div>
   );
 }

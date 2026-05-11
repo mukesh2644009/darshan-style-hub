@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { FiMail, FiLock, FiLoader, FiAlertCircle, FiShield, FiPhone, FiUser } from 'react-icons/fi';
 import { useAuthStore } from '@/store/authStore';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 type Tab = 'email' | 'phone';
 
@@ -29,6 +30,7 @@ export default function LoginPage() {
 
   const redirectUrl = searchParams.get('redirect');
   const errorType = searchParams.get('error');
+  const googleErrorMessage = errorType === 'google' ? (searchParams.get('message') || 'Google sign-in failed.') : null;
 
   useEffect(() => { checkAuth(); }, [checkAuth]);
 
@@ -104,6 +106,24 @@ export default function LoginPage() {
             <span>Admin access required. Please login with an admin account.</span>
           </div>
         )}
+
+        {googleErrorMessage && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3 text-red-700 text-sm">
+            <FiAlertCircle className="flex-shrink-0" />
+            <span>{googleErrorMessage}</span>
+          </div>
+        )}
+
+        {/* Google sign-in */}
+        <div className="mb-5">
+          <GoogleSignInButton />
+        </div>
+
+        <div className="relative my-5 flex items-center">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="px-3 text-xs text-gray-400 uppercase tracking-wider">or</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
 
         {/* Tabs */}
         <div className="flex rounded-xl border border-gray-200 p-1 mb-6 gap-1">

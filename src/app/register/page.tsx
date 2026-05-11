@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { FiUser, FiMail, FiPhone, FiLock, FiLoader, FiAlertCircle } from 'react-icons/fi';
 import { useAuthStore } from '@/store/authStore';
 import { validateEmail } from '@/lib/validation';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -76,6 +77,17 @@ export default function RegisterPage() {
             <span>{error}</span>
           </div>
         )}
+
+        {/* Google sign-up */}
+        <div className="mb-5">
+          <GoogleSignInButton label="Sign up with Google" />
+        </div>
+
+        <div className="relative my-5 flex items-center">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="px-3 text-xs text-gray-400 uppercase tracking-wider">or</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>

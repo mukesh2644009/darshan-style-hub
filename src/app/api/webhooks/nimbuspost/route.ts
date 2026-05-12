@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,20 +42,46 @@ function mapNimbusToOrderStatus(statusRaw?: string): string | null {
   return null;
 }
 
-function verifyWebhookSecret(request: Request): boolean {
-  const configured = process.env.NIMBUSPOST_WEBHOOK_SECRET;
-  if (!configured) return true;
-  const received = request.headers.get('x-nimbuspost-secret') || '';
-  return received === configured;
+function safeEqual(a: string, b: string): boolean {
+  const aBuf = Buffer.from(a);
+  const bBuf = Buffer.from(b);
+  if (aBuf.length !== bBuf.length) return false;
+  return crypto.timingSafeEqual(aBuf, bBuf);
+}
+
+function verifyWebhookSecret(request: Request, rawBody: string): boolean {
+  const secret = process.env.NIMBUSPOST_WEBHOOK_SECRET;
+  if (!secret) return true;
+
+  // 1) Simple shared-secret header mode
+  const sharedSecretHeaderName = (process.env.NIMBUSPOST_WEBHOOK_SECRET_HEADER || 'x-nimbuspost-secret').toLowerCase();
+  const sharedSecretHeaderValue = request.headers.get(sharedSecretHeaderName);
+  if (sharedSecretHeaderValue) {
+    return safeEqual(sharedSecretHeaderValue, secret);
+  }
+
+  // 2) HMAC signature mode (Nimbus/account specific)
+  const signatureHeaderName = (process.env.NIMBUSPOST_WEBHOOK_SIGNATURE_HEADER || 'x-nimbuspost-signature').toLowerCase();
+  const receivedSignatureRaw = request.headers.get(signatureHeaderName);
+  if (!receivedSignatureRaw) return false;
+
+  const receivedSignature = receivedSignatureRaw.replace(/^sha256=/i, '').trim();
+  const computedHex = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  if (safeEqual(receivedSignature, computedHex)) return true;
+
+  // Optional base64 compatibility
+  const computedBase64 = crypto.createHmac('sha256', secret).update(rawBody).digest('base64');
+  return safeEqual(receivedSignature, computedBase64);
 }
 
 export async function POST(request: Request) {
   try {
-    if (!verifyWebhookSecret(request)) {
+    const rawBody = await request.text();
+    if (!verifyWebhookSecret(request, rawBody)) {
       return NextResponse.json({ success: false, error: 'Invalid webhook secret' }, { status: 401 });
     }
 
-    const payload = (await request.json()) as Record<string, unknown>;
+    const payload = JSON.parse(rawBody) as Record<string, unknown>;
 
     const awbNumber = getNestedString(payload, [
       'awb_number',

@@ -321,7 +321,9 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
     consignee_email: input.customerEmail || '',
     order_number: input.orderNumber,
     payment_type: paymentType,
+    payment_method: paymentType,
     order_total: input.amount,
+    order_value: input.amount,
     pickup_warehouse_name: pickupWarehouseName,
     pickup_contact_name: pickupContactName,
     pickup_address: pickupAddress,
@@ -392,6 +394,9 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
 
   const payloadCandidates: Array<{ label: string; payload: Record<string, unknown> }> = [
     { label: 'legacy', payload: legacyFields },
+    { label: 'root-array', payload: { shipments: [legacyFields], orders: [legacyFields] } },
+    { label: 'order-wrapper', payload: { order: legacyFields } },
+    { label: 'orders-wrapper', payload: { orders: [legacyFields] } },
     { label: 'shipment-wrapper', payload: { shipment: legacyFields } },
     { label: 'data-wrapper', payload: { data: legacyFields } },
     { label: 'shipments-array', payload: { shipments: [legacyFields] } },

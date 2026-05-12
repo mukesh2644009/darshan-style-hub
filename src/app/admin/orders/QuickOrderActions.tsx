@@ -34,6 +34,20 @@ export default function QuickOrderActions({
   const handleAction = async (newStatus: string) => {
     setLoading(newStatus);
     try {
+      if (newStatus === 'SHIPPED' && !awbNumber) {
+        const createRes = await fetch('/api/admin/shipping/nimbuspost/create-shipment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId }),
+        });
+        if (!createRes.ok) {
+          const data = (await createRes.json().catch(() => ({}))) as { error?: string };
+          alert(data.error || 'Failed to create shipment');
+        }
+        router.refresh();
+        return;
+      }
+
       await fetch(`/api/admin/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -95,7 +109,7 @@ export default function QuickOrderActions({
 
   return (
     <div className="flex items-center gap-1 flex-wrap">
-      {!awbNumber && currentStatus === 'CONFIRMED' && (
+      {!awbNumber && ['CONFIRMED', 'SHIPPED'].includes(currentStatus) && (
         <button
           onClick={handleCreateShipment}
           disabled={loading !== null}

@@ -1,5 +1,6 @@
 import { FiSettings, FiHome, FiPhone, FiMail, FiMapPin } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
+import NimbusConnectionTestCard from './NimbusConnectionTestCard';
 
 export default function SettingsPage() {
   return (
@@ -130,6 +131,8 @@ export default function SettingsPage() {
             Save Settings
           </button>
         </div>
+
+        <NimbusConnectionTestCard />
       </div>
     </div>
   );

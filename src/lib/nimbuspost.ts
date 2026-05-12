@@ -47,6 +47,10 @@ function getCancelShipmentPathTemplate(): string {
   return process.env.NIMBUSPOST_CANCEL_SHIPMENT_PATH_TEMPLATE || '/shipments/cancel';
 }
 
+function getTestConnectionPath(): string {
+  return process.env.NIMBUSPOST_TEST_CONNECTION_PATH || '/couriers';
+}
+
 function joinUrl(base: string, path: string): string {
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
@@ -166,5 +170,32 @@ export async function cancelNimbusShipment(awb: string): Promise<unknown> {
     },
     body: JSON.stringify({ awb }),
   });
+}
+
+export async function testNimbusConnection(): Promise<{ ok: boolean; message: string; raw?: unknown }> {
+  const apiKey = getRequiredEnv('NIMBUSPOST_API_KEY');
+  const url = joinUrl(getBaseUrl(), getTestConnectionPath());
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'NP-API-KEY': apiKey,
+    },
+  });
+
+  const json = await response.json().catch(() => null);
+  if (!response.ok) {
+    return {
+      ok: false,
+      message: `NimbusPost connection failed (${response.status})`,
+      raw: json,
+    };
+  }
+
+  return {
+    ok: true,
+    message: 'NimbusPost API connection successful',
+    raw: json,
+  };
 }
 

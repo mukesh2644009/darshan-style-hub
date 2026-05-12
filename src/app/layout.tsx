@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 import CartSidebar from '@/components/CartSidebar';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
+import InactivityLogout from '@/components/InactivityLogout';
 
 const outfit = Outfit({ 
   subsets: ['latin'],
@@ -95,6 +96,7 @@ export default function RootLayout({
           </main>
           <Footer />
           <WhatsAppButton />
+          <InactivityLogout />
         </div>
       </body>
     </html>

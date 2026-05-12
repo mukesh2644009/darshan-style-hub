@@ -209,13 +209,23 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               ))}
             </div>
           </div>
-          <a
-            href="/"
-            target="_blank"
-            className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-primary-600 transition-colors shrink-0"
-          >
-            View Store ↗
-          </a>
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="/"
+              target="_blank"
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-primary-600 transition-colors"
+            >
+              View Store ↗
+            </a>
+            {/* Logout shortcut visible on mobile */}
+            <button
+              onClick={handleLogout}
+              className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-xs font-semibold hover:bg-red-100 transition-colors"
+            >
+              <FiLogOut className="w-3.5 h-3.5" />
+              Logout
+            </button>
+          </div>
         </div>
         <div className="p-4 sm:p-6 lg:p-8">
           {children}

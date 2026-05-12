@@ -180,7 +180,7 @@ export default function Navbar() {
           </div>
 
           {/* Right Icons */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-1 sm:space-x-4">
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
               className="p-2 hover:bg-accent-100 rounded-full transition-colors"
@@ -196,15 +196,26 @@ export default function Navbar() {
               )}
             </Link>
             
-            {/* User Menu */}
+            {/* User Menu — visible on ALL screen sizes */}
             <div className="relative" ref={userMenuRef}>
+              {/* Mobile: show Login button when not authenticated, user icon when authenticated */}
+              {mounted && !isAuthenticated ? (
+                <Link
+                  href="/login"
+                  className="sm:hidden px-3 py-1.5 rounded-full bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700 transition-colors"
+                >
+                  Login
+                </Link>
+              ) : null}
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="p-2 hover:bg-accent-100 rounded-full transition-colors hidden sm:flex items-center gap-2"
+                className={`p-2 hover:bg-accent-100 rounded-full transition-colors flex items-center gap-2 ${
+                  mounted && !isAuthenticated ? 'hidden sm:flex' : 'flex'
+                }`}
               >
                 <FiUser size={20} />
                 {mounted && isAuthenticated && (
-                  <span className="text-sm font-medium text-gray-700 max-w-[100px] truncate">
+                  <span className="hidden sm:block text-sm font-medium text-gray-700 max-w-[100px] truncate">
                     {user?.name?.split(' ')[0]}
                   </span>
                 )}
@@ -365,11 +376,20 @@ export default function Navbar() {
             <hr className="border-accent-200" />
             {isAuthenticated ? (
               <>
-                <div className="py-2">
-                  <p className="font-medium text-gray-900">{user?.name}</p>
-                  {user?.email && !user.email.endsWith('@darshan.local') && (
-                    <p className="text-sm text-gray-500">{user.email}</p>
-                  )}
+                <div className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="font-medium text-gray-900">{user?.name}</p>
+                    {user?.email && !user.email.endsWith('@darshan.local') && (
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition-colors"
+                  >
+                    <FiLogOut size={14} />
+                    Logout
+                  </button>
                 </div>
                 {isAdmin && (
                   <Link href="/admin" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
@@ -382,19 +402,17 @@ export default function Navbar() {
                 <Link href="/profile" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
                   My Profile
                 </Link>
-                <button
-                  onClick={handleLogout}
-                  className="block py-2 text-red-600 hover:text-red-700 font-medium w-full text-left"
-                >
-                  Logout
-                </button>
               </>
             ) : (
               <>
-                <Link href="/login" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+                <Link
+                  href="/login"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="flex items-center justify-center py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-sm hover:bg-primary-700 transition-colors"
+                >
                   Sign In
                 </Link>
-                <Link href="/register" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+                <Link href="/register" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium text-center">
                   Create Account
                 </Link>
               </>

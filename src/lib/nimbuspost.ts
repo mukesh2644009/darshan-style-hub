@@ -59,6 +59,17 @@ function getTestConnectionPath(): string {
   return process.env.NIMBUSPOST_TEST_CONNECTION_PATH || '/couriers';
 }
 
+function getTestConnectionPaths(): string[] {
+  const custom = process.env.NIMBUSPOST_TEST_CONNECTION_PATHS;
+  if (custom) {
+    return custom
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
+  }
+  return [getTestConnectionPath(), '/shipments', '/orders'];
+}
+
 function getLoginPath(): string {
   return process.env.NIMBUSPOST_LOGIN_PATH || '/users/login';
 }
@@ -245,52 +256,34 @@ export async function cancelNimbusShipment(awb: string): Promise<unknown> {
 
 export async function testNimbusConnection(): Promise<{ ok: boolean; message: string; raw?: unknown }> {
   const apiKey = getRequiredEnv('NIMBUSPOST_API_KEY');
-  const url = joinUrl(getBaseUrl(), getTestConnectionPath());
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: getNimbusAuthHeaders(apiKey),
-  });
+  const paths = getTestConnectionPaths();
 
-  const json = await response.json().catch(() => null);
-  if (!response.ok) {
-    // Fallback test via API user login-token mode (account-dependent).
-    if (response.status === 401 || response.status === 403) {
-      try {
-        const token = await getNimbusLoginToken();
-        if (token) {
-          const retry = await fetch(url, {
-            method: 'GET',
-            headers: {
-              ...getNimbusAuthHeaders(apiKey),
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          const retryJson = await retry.json().catch(() => null);
-          if (retry.ok) {
-            return {
-              ok: true,
-              message: 'NimbusPost API connection successful (login-token fallback)',
-              raw: retryJson,
-            };
-          }
-          return {
-            ok: false,
-            message: `NimbusPost connection failed (${retry.status})`,
-            raw: retryJson,
-          };
-        }
-      } catch {
-        // continue and return primary failure below
-      }
+  let lastError: { message: string; raw?: unknown } = { message: 'NimbusPost connection failed' };
+
+  for (const path of paths) {
+    const url = joinUrl(getBaseUrl(), path);
+    try {
+      const result = await nimbusFetch<unknown>(
+        url,
+        {
+          method: 'GET',
+          headers: getNimbusAuthHeaders(apiKey),
+        },
+        { allowLoginFallback: true, apiKey }
+      );
+      return {
+        ok: true,
+        message: `NimbusPost API connection successful via ${path}`,
+        raw: result,
+      };
+    } catch (error) {
+      lastError = {
+        message: `NimbusPost test failed on ${path}`,
+        raw: error instanceof Error ? error.message : String(error),
+      };
     }
-
-    return { ok: false, message: `NimbusPost connection failed (${response.status})`, raw: json };
   }
 
-  return {
-    ok: true,
-    message: 'NimbusPost API connection successful',
-    raw: json,
-  };
+  return { ok: false, message: lastError.message, raw: lastError.raw };
 }
 

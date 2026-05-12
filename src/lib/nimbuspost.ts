@@ -18,6 +18,14 @@ type NimbusCreateShipmentInput = {
   deadWeightGrams: number;
 };
 
+type NimbusLoginResponse = {
+  status?: boolean;
+  message?: string;
+  data?: string | { token?: string; access_token?: string };
+  token?: string;
+  access_token?: string;
+};
+
 export type NimbusCreateShipmentResult = {
   shipmentId?: string;
   awbNumber?: string;
@@ -51,6 +59,10 @@ function getTestConnectionPath(): string {
   return process.env.NIMBUSPOST_TEST_CONNECTION_PATH || '/couriers';
 }
 
+function getLoginPath(): string {
+  return process.env.NIMBUSPOST_LOGIN_PATH || '/users/login';
+}
+
 function getNimbusAuthHeaders(apiKey: string): HeadersInit {
   // Nimbus accounts can be configured on different auth gateways.
   // Send both common variants for compatibility.
@@ -66,9 +78,64 @@ function joinUrl(base: string, path: string): string {
   return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
-async function nimbusFetch<T>(url: string, init: RequestInit): Promise<T> {
+function parseNimbusToken(data: NimbusLoginResponse): string | null {
+  if (typeof data.data === 'string' && data.data) return data.data;
+  if (data.token) return data.token;
+  if (data.access_token) return data.access_token;
+  if (typeof data.data === 'object' && data.data) {
+    if (data.data.token) return data.data.token;
+    if (data.data.access_token) return data.data.access_token;
+  }
+  return null;
+}
+
+async function getNimbusLoginToken(): Promise<string | null> {
+  const email = process.env.NIMBUSPOST_EMAIL;
+  const password = process.env.NIMBUSPOST_PASSWORD;
+  if (!email || !password) return null;
+
+  const loginUrl = joinUrl(getBaseUrl(), getLoginPath());
+  const response = await fetch(loginUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const json = (await response.json().catch(() => null)) as NimbusLoginResponse | null;
+  if (!response.ok || !json) return null;
+  return parseNimbusToken(json);
+}
+
+async function nimbusFetch<T>(
+  url: string,
+  init: RequestInit,
+  options?: { allowLoginFallback?: boolean; apiKey?: string }
+): Promise<T> {
   const response = await fetch(url, init);
-  const json = await response.json().catch(() => null);
+  let json: unknown = await response.json().catch(() => null);
+
+  if (!response.ok && options?.allowLoginFallback && (response.status === 401 || response.status === 403)) {
+    const token = await getNimbusLoginToken();
+    if (token) {
+      const retryHeaders: Record<string, string> = {
+        ...((init.headers as Record<string, string>) || {}),
+        Authorization: `Bearer ${token}`,
+      };
+      if (options.apiKey) {
+        retryHeaders['NP-API-KEY'] = options.apiKey;
+      }
+
+      const retryResponse = await fetch(url, {
+        ...init,
+        headers: retryHeaders,
+      });
+      json = await retryResponse.json().catch(() => null);
+      if (!retryResponse.ok) {
+        throw new Error(`NimbusPost API failed (${retryResponse.status}): ${JSON.stringify(json)}`);
+      }
+      return json as T;
+    }
+  }
+
   if (!response.ok) {
     throw new Error(`NimbusPost API failed (${response.status}): ${JSON.stringify(json)}`);
   }
@@ -161,7 +228,7 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
     method: 'POST',
     headers: getNimbusAuthHeaders(apiKey),
     body: JSON.stringify(payload),
-  });
+  }, { allowLoginFallback: true, apiKey });
 
   return mapShipmentResponse(raw);
 }
@@ -173,7 +240,7 @@ export async function cancelNimbusShipment(awb: string): Promise<unknown> {
     method: 'POST',
     headers: getNimbusAuthHeaders(apiKey),
     body: JSON.stringify({ awb }),
-  });
+  }, { allowLoginFallback: true, apiKey });
 }
 
 export async function testNimbusConnection(): Promise<{ ok: boolean; message: string; raw?: unknown }> {
@@ -186,11 +253,38 @@ export async function testNimbusConnection(): Promise<{ ok: boolean; message: st
 
   const json = await response.json().catch(() => null);
   if (!response.ok) {
-    return {
-      ok: false,
-      message: `NimbusPost connection failed (${response.status})`,
-      raw: json,
-    };
+    // Fallback test via API user login-token mode (account-dependent).
+    if (response.status === 401 || response.status === 403) {
+      try {
+        const token = await getNimbusLoginToken();
+        if (token) {
+          const retry = await fetch(url, {
+            method: 'GET',
+            headers: {
+              ...getNimbusAuthHeaders(apiKey),
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          const retryJson = await retry.json().catch(() => null);
+          if (retry.ok) {
+            return {
+              ok: true,
+              message: 'NimbusPost API connection successful (login-token fallback)',
+              raw: retryJson,
+            };
+          }
+          return {
+            ok: false,
+            message: `NimbusPost connection failed (${retry.status})`,
+            raw: retryJson,
+          };
+        }
+      } catch {
+        // continue and return primary failure below
+      }
+    }
+
+    return { ok: false, message: `NimbusPost connection failed (${response.status})`, raw: json };
   }
 
   return {

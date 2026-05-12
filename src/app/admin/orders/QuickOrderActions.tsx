@@ -69,9 +69,15 @@ export default function QuickOrderActions({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId }),
       });
+      const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string; awbFound?: boolean };
       if (!res.ok) {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
         alert(data.error || 'Failed to create shipment');
+      } else {
+        alert(
+          data.awbFound
+            ? (data.message || 'Shipment created and AWB captured')
+            : (data.message || 'Shipment created, AWB pending from Nimbus')
+        );
       }
       router.refresh();
     } catch {

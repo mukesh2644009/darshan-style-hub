@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
 import { createNimbusShipment } from '@/lib/nimbuspost';
+import { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +71,8 @@ export async function POST(request: Request) {
         courierName: shipment.courierName || undefined,
         trackingUrl: shipment.trackingUrl || undefined,
         labelUrl: shipment.labelUrl || undefined,
+        nimbusStatus: shipment.awbNumber ? 'SHIPMENT_CREATED' : 'SHIPMENT_CREATED_AWB_PENDING',
+        nimbusWebhookPayload: shipment.raw as Prisma.InputJsonValue,
         status: order.status === 'CONFIRMED' ? 'SHIPPED' : order.status,
         shippedAt: new Date(),
       },
@@ -85,7 +88,15 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ success: true, order: updated, shipment: shipment.raw });
+    return NextResponse.json({
+      success: true,
+      order: updated,
+      shipment: shipment.raw,
+      message: shipment.awbNumber
+        ? 'Shipment created successfully'
+        : 'Shipment created, but AWB not returned by Nimbus yet',
+      awbFound: Boolean(shipment.awbNumber),
+    });
   } catch (error) {
     console.error('Nimbus create shipment error:', error);
     return NextResponse.json(

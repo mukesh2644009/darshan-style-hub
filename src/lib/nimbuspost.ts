@@ -150,6 +150,18 @@ async function nimbusFetch<T>(
   if (!response.ok) {
     throw new Error(`NimbusPost API failed (${response.status}): ${JSON.stringify(json)}`);
   }
+  const body = json as Record<string, unknown> | null;
+  if (body && typeof body === 'object') {
+    const status = body.status;
+    const success = body.success;
+    if (status === false || success === false) {
+      const message =
+        (typeof body.message === 'string' && body.message) ||
+        (typeof body.error === 'string' && body.error) ||
+        JSON.stringify(body);
+      throw new Error(`NimbusPost business error: ${message}`);
+    }
+  }
   return json as T;
 }
 

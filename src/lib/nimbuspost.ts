@@ -390,17 +390,17 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
     products: legacyFields.products,
   };
 
-  const payloadCandidates: Record<string, unknown>[] = [
-    legacyFields,
-    { shipment: legacyFields },
-    { data: legacyFields },
-    { shipments: [legacyFields] },
-    camelCaseFields,
-    modernFields,
+  const payloadCandidates: Array<{ label: string; payload: Record<string, unknown> }> = [
+    { label: 'legacy', payload: legacyFields },
+    { label: 'shipment-wrapper', payload: { shipment: legacyFields } },
+    { label: 'data-wrapper', payload: { data: legacyFields } },
+    { label: 'shipments-array', payload: { shipments: [legacyFields] } },
+    { label: 'camelCase', payload: camelCaseFields },
+    { label: 'modern', payload: modernFields },
   ];
 
   const mode = (process.env.NIMBUSPOST_CREATE_SHIPMENT_PAYLOAD_MODE || '').toLowerCase();
-  const preferred =
+  const preferredPayload =
     mode === 'legacy'
       ? legacyFields
       : mode === 'modern'
@@ -409,27 +409,34 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
           ? camelCaseFields
           : null;
 
-  const candidates = preferred
-    ? [preferred, ...payloadCandidates.filter((candidate) => candidate !== preferred)]
+  const preferredCandidate = preferredPayload
+    ? payloadCandidates.find((candidate) => candidate.payload === preferredPayload) || null
+    : null;
+
+  const candidates = preferredCandidate
+    ? [preferredCandidate, ...payloadCandidates.filter((candidate) => candidate !== preferredCandidate)]
     : payloadCandidates;
 
   let lastError: unknown = null;
   let raw: Record<string, unknown> | null = null;
+  const variantErrors: string[] = [];
 
-  for (const payload of candidates) {
+  for (const candidate of candidates) {
     try {
       raw = await nimbusFetch<Record<string, unknown>>(
         url,
         {
           method: 'POST',
           headers: getNimbusAuthHeaders(apiKey),
-          body: JSON.stringify(payload),
+          body: JSON.stringify(candidate.payload),
         },
         { allowLoginFallback: true, apiKey }
       );
       break;
     } catch (error) {
       lastError = error;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      variantErrors.push(`${candidate.label}: ${errorMessage}`);
       if (!isNimbusRequiredFieldError(error)) {
         throw error;
       }
@@ -437,6 +444,11 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
   }
 
   if (!raw) {
+    if (variantErrors.length > 0) {
+      throw new Error(
+        `NimbusPost shipment creation failed for all JSON variants. ${variantErrors.join(' | ')}`
+      );
+    }
     throw lastError instanceof Error ? lastError : new Error('NimbusPost shipment creation failed');
   }
 

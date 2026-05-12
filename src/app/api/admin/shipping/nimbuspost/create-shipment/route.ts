@@ -33,6 +33,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 });
     }
 
+    const missingOrderFields: string[] = [];
+    if (!order.shippingName?.trim()) missingOrderFields.push('shippingName');
+    if (!order.shippingAddress?.trim()) missingOrderFields.push('shippingAddress');
+    if (!order.shippingCity?.trim()) missingOrderFields.push('shippingCity');
+    if (!order.shippingState?.trim()) missingOrderFields.push('shippingState');
+    if (!order.shippingPincode?.trim()) missingOrderFields.push('shippingPincode');
+    if (!order.shippingPhone?.trim()) missingOrderFields.push('shippingPhone');
+    if (!order.total || Number(order.total) <= 0) missingOrderFields.push('total');
+    if (!order.items?.length) missingOrderFields.push('items');
+
+    if (missingOrderFields.length > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Order is missing required shipment fields: ${missingOrderFields.join(', ')}`,
+        },
+        { status: 400 }
+      );
+    }
+
     if (order.shippingPartner === 'NIMBUSPOST' && order.awbNumber) {
       return NextResponse.json(
         { success: false, error: 'Shipment already created', awbNumber: order.awbNumber },

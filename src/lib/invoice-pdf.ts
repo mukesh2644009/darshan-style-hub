@@ -68,7 +68,7 @@ export async function generateOrderInvoicePDF(data: InvoiceData): Promise<Buffer
          .fillColor(grayColor)
          .font('Helvetica')
          .text('Sitapura, Jaipur, Rajasthan 302022', textLeftX, headerStartY + 30)
-         .text('Phone: +91 90190 76335  |  Email: info@darshanstylehub.com', textLeftX, headerStartY + 43)
+         .text('Phone: +91 90190 76335  |  Email: darshanstylehub.business@gmail.com', textLeftX, headerStartY + 43)
          .text('www.darshanstylehub.com', textLeftX, headerStartY + 56);
 
       // --- Invoice Title (right side, below top margin) ---
@@ -255,7 +255,7 @@ export async function generateOrderInvoicePDF(data: InvoiceData): Promise<Buffer
          .fillColor(grayColor)
          .font('Helvetica')
          .text('Thank you for shopping with Darshan Style Hub!', margin, footerY + 15, { align: 'center', width: contentWidth })
-         .text('For any queries, contact us at +91 90190 76335 or info@darshanstylehub.com', margin, footerY + 30, { align: 'center', width: contentWidth });
+         .text('For any queries, contact us at +91 90190 76335 or darshanstylehub.business@gmail.com', margin, footerY + 30, { align: 'center', width: contentWidth });
 
       doc.fontSize(8)
          .fillColor('#9ca3af')

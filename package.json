@@ -22,9 +22,12 @@
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "@prisma/adapter-neon": "^5.22.0",
     "@prisma/client": "^5.22.0",
     "@types/bcryptjs": "^3.0.0",
     "@types/nodemailer": "^7.0.5",
+    "@types/ws": "^8.18.1",
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.38.0",
     "jspdf": "^4.2.0",
@@ -37,6 +40,7 @@
     "react-dom": "^18.2.0",
     "react-icons": "^4.12.0",
     "resend": "^6.6.0",
+    "ws": "^8.20.0",
     "zustand": "^4.4.7"
   },
   "devDependencies": {

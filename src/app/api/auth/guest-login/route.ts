@@ -14,7 +14,7 @@ function guestEmailForPhone(phone: string): string {
 export async function POST(request: Request) {
   try {
     const payload = await request.json();
-    const { name, phone, addressLine1, addressLine2, city, state, pincode } = payload ?? {};
+    const { name, phone, email, addressLine1, addressLine2, city, state, pincode } = payload ?? {};
 
     if (!phone) {
       return NextResponse.json(
@@ -37,31 +37,41 @@ export async function POST(request: Request) {
     });
 
     let isNewUser = false;
+    const realEmail = email?.trim()?.toLowerCase() || null;
+
     if (!user) {
-      // New user — name is required
       if (!name?.trim()) {
         return NextResponse.json(
           { success: false, error: 'new_user', newUser: true },
           { status: 200 }
         );
       }
-      const generatedEmail = guestEmailForPhone(normalizedPhone);
+      const userEmail = realEmail || guestEmailForPhone(normalizedPhone);
       const randomPassword = await hashPassword(crypto.randomUUID());
       user = await prisma.user.create({
         data: {
           name: name.trim(),
           phone: normalizedPhone,
-          email: generatedEmail,
+          email: userEmail,
           password: randomPassword,
           role: 'CUSTOMER',
         },
       });
       isNewUser = true;
-    } else if (!user.name && name?.trim()) {
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { name: name.trim() },
-      });
+    } else {
+      const updates: Record<string, string> = {};
+      if (!user.name && name?.trim()) updates.name = name.trim();
+      if (realEmail && user.email?.endsWith('@darshan.local')) updates.email = realEmail;
+      if (Object.keys(updates).length > 0) {
+        try {
+          user = await prisma.user.update({
+            where: { id: user.id },
+            data: updates,
+          });
+        } catch {
+          // email might already belong to another account
+        }
+      }
     }
 
     // Save address if provided

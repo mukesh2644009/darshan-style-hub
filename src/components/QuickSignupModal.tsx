@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FiAlertCircle, FiLoader, FiMapPin, FiPhone, FiUser, FiX } from 'react-icons/fi';
+import { FiAlertCircle, FiLoader, FiMail, FiMapPin, FiPhone, FiUser, FiX } from 'react-icons/fi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
 
@@ -25,6 +25,7 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
   const { checkAuth } = useAuthStore();
 
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [addressLine1, setAddressLine1] = useState('');
   const [addressLine2, setAddressLine2] = useState('');
@@ -38,6 +39,7 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
 
   const resetForm = () => {
     setName('');
+    setEmail('');
     setPhone('');
     setAddressLine1('');
     setAddressLine2('');
@@ -109,6 +111,7 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
         body: JSON.stringify({
           name: name.trim(),
           phone: phone.trim(),
+          email: email.trim() || undefined,
           addressLine1: (existingProfile?.addressLine1 || addressLine1).trim(),
           addressLine2: (existingProfile?.addressLine2 || addressLine2).trim(),
           city: (existingProfile?.city || city).trim(),
@@ -190,6 +193,16 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
                     onChange={(e) => setPhone(e.target.value)}
                     onBlur={handlePhoneBlur}
                     placeholder="Mobile Number (10 digits) *"
+                    className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div className="relative">
+                  <FiMail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email (optional)"
                     className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
                   />
                 </div>

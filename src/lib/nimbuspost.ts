@@ -51,6 +51,16 @@ function getTestConnectionPath(): string {
   return process.env.NIMBUSPOST_TEST_CONNECTION_PATH || '/couriers';
 }
 
+function getNimbusAuthHeaders(apiKey: string): HeadersInit {
+  // Nimbus accounts can be configured on different auth gateways.
+  // Send both common variants for compatibility.
+  return {
+    'Content-Type': 'application/json',
+    'NP-API-KEY': apiKey,
+    Authorization: `Bearer ${apiKey}`,
+  };
+}
+
 function joinUrl(base: string, path: string): string {
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
@@ -149,10 +159,7 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
 
   const raw = await nimbusFetch<Record<string, unknown>>(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'NP-API-KEY': apiKey,
-    },
+    headers: getNimbusAuthHeaders(apiKey),
     body: JSON.stringify(payload),
   });
 
@@ -164,10 +171,7 @@ export async function cancelNimbusShipment(awb: string): Promise<unknown> {
   const url = joinUrl(getBaseUrl(), getCancelShipmentPathTemplate());
   return nimbusFetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'NP-API-KEY': apiKey,
-    },
+    headers: getNimbusAuthHeaders(apiKey),
     body: JSON.stringify({ awb }),
   });
 }
@@ -177,10 +181,7 @@ export async function testNimbusConnection(): Promise<{ ok: boolean; message: st
   const url = joinUrl(getBaseUrl(), getTestConnectionPath());
   const response = await fetch(url, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      'NP-API-KEY': apiKey,
-    },
+    headers: getNimbusAuthHeaders(apiKey),
   });
 
   const json = await response.json().catch(() => null);

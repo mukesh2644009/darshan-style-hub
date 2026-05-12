@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiCheck, FiTruck, FiPackage, FiX, FiLoader, FiExternalLink, FiTag, FiSlash } from 'react-icons/fi';
+import { FiCheck, FiTruck, FiPackage, FiX, FiLoader, FiExternalLink, FiTag, FiSlash, FiRefreshCw } from 'react-icons/fi';
 
 const ACTIONS = [
   { status: 'CONFIRMED', label: 'Confirm', icon: FiCheck, color: 'text-blue-600 hover:bg-blue-50', show: ['PENDING'] },
@@ -103,6 +103,28 @@ export default function QuickOrderActions({
     }
   };
 
+  const handleSyncShipment = async () => {
+    setLoading('SYNC_SHIPMENT');
+    try {
+      const res = await fetch('/api/admin/shipping/nimbuspost/sync-shipment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string; awbFound?: boolean };
+      if (!res.ok) {
+        alert(data.error || 'Failed to sync shipment');
+      } else {
+        alert(data.message || 'Synced from Nimbus');
+      }
+      router.refresh();
+    } catch {
+      alert('Failed to sync shipment');
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const handleCancelShipment = async () => {
     setLoading('CANCEL_SHIPMENT');
     try {
@@ -186,6 +208,21 @@ export default function QuickOrderActions({
           <FiExternalLink className="w-3.5 h-3.5" />
           Label
         </a>
+      )}
+
+      {shippingPartner === 'NIMBUSPOST' && !awbNumber && (
+        <button
+          onClick={handleSyncShipment}
+          disabled={loading !== null}
+          title="Sync AWB from Nimbus"
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 transition-colors disabled:opacity-50"
+        >
+          {loading === 'SYNC_SHIPMENT'
+            ? <FiLoader className="w-3.5 h-3.5 animate-spin" />
+            : <FiRefreshCw className="w-3.5 h-3.5" />
+          }
+          Sync AWB
+        </button>
       )}
 
       {shippingPartner === 'NIMBUSPOST' && awbNumber && (

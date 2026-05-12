@@ -121,29 +121,50 @@ async function nimbusFetch<T>(
   init: RequestInit,
   options?: { allowLoginFallback?: boolean; apiKey?: string }
 ): Promise<T> {
+  const tryLoginFallback = async (): Promise<T | null> => {
+    const token = await getNimbusLoginToken();
+    if (!token) return null;
+
+    const retryHeaders: Record<string, string> = {
+      ...((init.headers as Record<string, string>) || {}),
+      Authorization: `Bearer ${token}`,
+    };
+    if (options?.apiKey) {
+      retryHeaders['NP-API-KEY'] = options.apiKey;
+    }
+
+    const retryResponse = await fetch(url, {
+      ...init,
+      headers: retryHeaders,
+    });
+    const retryJson = await retryResponse.json().catch(() => null);
+    if (!retryResponse.ok) {
+      throw new Error(`NimbusPost API failed (${retryResponse.status}): ${JSON.stringify(retryJson)}`);
+    }
+
+    const retryBody = retryJson as Record<string, unknown> | null;
+    if (retryBody && typeof retryBody === 'object') {
+      const retryStatus = retryBody.status;
+      const retrySuccess = retryBody.success;
+      if (retryStatus === false || retrySuccess === false) {
+        const retryMessage =
+          (typeof retryBody.message === 'string' && retryBody.message) ||
+          (typeof retryBody.error === 'string' && retryBody.error) ||
+          JSON.stringify(retryBody);
+        throw new Error(`NimbusPost business error: ${retryMessage}`);
+      }
+    }
+
+    return retryJson as T;
+  };
+
   const response = await fetch(url, init);
   let json: unknown = await response.json().catch(() => null);
 
   if (!response.ok && options?.allowLoginFallback && (response.status === 401 || response.status === 403)) {
-    const token = await getNimbusLoginToken();
-    if (token) {
-      const retryHeaders: Record<string, string> = {
-        ...((init.headers as Record<string, string>) || {}),
-        Authorization: `Bearer ${token}`,
-      };
-      if (options.apiKey) {
-        retryHeaders['NP-API-KEY'] = options.apiKey;
-      }
-
-      const retryResponse = await fetch(url, {
-        ...init,
-        headers: retryHeaders,
-      });
-      json = await retryResponse.json().catch(() => null);
-      if (!retryResponse.ok) {
-        throw new Error(`NimbusPost API failed (${retryResponse.status}): ${JSON.stringify(json)}`);
-      }
-      return json as T;
+    const fallbackResult = await tryLoginFallback();
+    if (fallbackResult) {
+      return fallbackResult;
     }
   }
 
@@ -159,6 +180,18 @@ async function nimbusFetch<T>(
         (typeof body.message === 'string' && body.message) ||
         (typeof body.error === 'string' && body.error) ||
         JSON.stringify(body);
+
+      // Some Nimbus endpoints respond HTTP 200 with business auth failure.
+      if (
+        options?.allowLoginFallback &&
+        /missing or invalid token|invalid token|unauthorized|auth/i.test(message)
+      ) {
+        const fallbackResult = await tryLoginFallback();
+        if (fallbackResult) {
+          return fallbackResult;
+        }
+      }
+
       throw new Error(`NimbusPost business error: ${message}`);
     }
   }

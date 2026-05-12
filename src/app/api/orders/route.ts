@@ -232,8 +232,7 @@ export async function POST(request: Request) {
       const { sendOrderConfirmationEmail } = await import('@/lib/email');
       const { sendOrderWhatsAppNotification } = await import('@/lib/whatsapp');
 
-      const isOnlinePayment = paymentMethod.includes('UPI') || paymentMethod.includes('Razorpay');
-      const emailPaymentStatus: 'PENDING' | 'PAID' | 'FAILED' = isOnlinePayment ? 'PENDING' : 'PAID';
+      const emailPaymentStatus: 'PENDING' | 'PAID' | 'FAILED' = 'PENDING';
 
       const emailPromises: Promise<unknown>[] = [];
 

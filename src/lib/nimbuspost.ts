@@ -202,6 +202,11 @@ function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, '').replace(/^91/, '');
 }
 
+function isNimbusRequiredFieldError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /is required/i.test(message);
+}
+
 function resolveAddressLine(address: string): { addressLine1: string; addressLine2: string } {
   const cleaned = address.trim();
   if (cleaned.length <= 64) {
@@ -340,53 +345,96 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
     })),
   };
 
-  // Default to Nimbus' commonly required legacy field contract.
-  // Use mode=modern only if your account explicitly requires the new contract.
-  const mode = process.env.NIMBUSPOST_CREATE_SHIPMENT_PAYLOAD_MODE || 'legacy';
-  const payload = mode === 'modern'
-    ? {
-        ...legacyFields,
-        orderNumber: input.orderNumber,
-        paymentMode: input.paymentMode,
-        amount: input.amount,
-        customer: {
-          name: input.customerName,
-          phone: normalizePhone(input.customerPhone),
-          email: input.customerEmail || '',
-        },
-        address: {
-          line1: addressLine1,
-          line2: addressLine2,
-          city: input.city,
-          state: input.state,
-          pincode: input.pincode,
-        },
-        parcel: {
-          deadWeightKg: weightKg,
-        },
-        items: input.items,
-        // Compatibility wrappers observed across Nimbus tenants/integrations.
-        shipment: legacyFields,
-        data: legacyFields,
-        shipments: [legacyFields],
-      }
-    : {
-        ...legacyFields,
-        // Compatibility wrappers observed across Nimbus tenants/integrations.
-        shipment: legacyFields,
-        data: legacyFields,
-        shipments: [legacyFields],
-      };
-
-  const raw = await nimbusFetch<Record<string, unknown>>(
-    url,
-    {
-      method: 'POST',
-      headers: getNimbusAuthHeaders(apiKey),
-      body: JSON.stringify(payload),
+  const modernFields = {
+    orderNumber: input.orderNumber,
+    paymentMode: input.paymentMode,
+    amount: input.amount,
+    customer: {
+      name: input.customerName,
+      phone: normalizePhone(input.customerPhone),
+      email: input.customerEmail || '',
     },
-    { allowLoginFallback: true, apiKey }
-  );
+    address: {
+      line1: addressLine1,
+      line2: addressLine2,
+      city: input.city,
+      state: input.state,
+      pincode: input.pincode,
+    },
+    parcel: {
+      deadWeightKg: weightKg,
+    },
+    items: input.items,
+  };
+
+  const camelCaseFields = {
+    consigneeName: input.customerName,
+    consigneeAddress: consigneeAddress,
+    consigneeCity: input.city,
+    consigneeState: input.state,
+    consigneePincode: input.pincode,
+    consigneePhone: normalizePhone(input.customerPhone),
+    consigneeEmail: input.customerEmail || '',
+    orderNumber: input.orderNumber,
+    paymentType: paymentType,
+    orderTotal: input.amount,
+    pickupWarehouseName: pickupWarehouseName,
+    pickupContactName: pickupContactName,
+    pickupAddress: pickupAddress,
+    pickupCity: pickupCity,
+    pickupState: pickupState,
+    pickupPincode: pickupPincode,
+    pickupPhone: pickupPhone,
+    weight: weightKg,
+    orderItems: legacyFields.order_items,
+    products: legacyFields.products,
+  };
+
+  const payloadCandidates: Record<string, unknown>[] = [
+    legacyFields,
+    { shipment: legacyFields },
+    { data: legacyFields },
+    { shipments: [legacyFields] },
+    camelCaseFields,
+    modernFields,
+  ];
+
+  const mode = process.env.NIMBUSPOST_CREATE_SHIPMENT_PAYLOAD_MODE;
+  const candidates =
+    mode === 'legacy'
+      ? [legacyFields]
+      : mode === 'modern'
+        ? [modernFields]
+        : mode === 'camel'
+          ? [camelCaseFields]
+          : payloadCandidates;
+
+  let lastError: unknown = null;
+  let raw: Record<string, unknown> | null = null;
+
+  for (const payload of candidates) {
+    try {
+      raw = await nimbusFetch<Record<string, unknown>>(
+        url,
+        {
+          method: 'POST',
+          headers: getNimbusAuthHeaders(apiKey),
+          body: JSON.stringify(payload),
+        },
+        { allowLoginFallback: true, apiKey }
+      );
+      break;
+    } catch (error) {
+      lastError = error;
+      if (!isNimbusRequiredFieldError(error)) {
+        throw error;
+      }
+    }
+  }
+
+  if (!raw) {
+    throw lastError instanceof Error ? lastError : new Error('NimbusPost shipment creation failed');
+  }
 
   return mapShipmentResponse(raw);
 }

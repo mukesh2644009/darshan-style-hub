@@ -25,11 +25,11 @@ export async function POST(request: Request) {
     if (!order) {
       return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 });
     }
-    if (!order.shipmentId) {
-      return NextResponse.json({ success: false, error: 'No shipmentId found on order' }, { status: 400 });
+    if (!order.awbNumber) {
+      return NextResponse.json({ success: false, error: 'No AWB found on order' }, { status: 400 });
     }
 
-    await cancelNimbusShipment(order.shipmentId);
+    await cancelNimbusShipment(order.awbNumber);
 
     const updated = await prisma.order.update({
       where: { id: order.id },

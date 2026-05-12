@@ -1,10 +1,3 @@
-type NimbusAuthResponse = {
-  status?: boolean;
-  data?: string | { token?: string };
-  token?: string;
-  message?: string;
-};
-
 type NimbusCreateShipmentInput = {
   orderNumber: string;
   paymentMode: 'COD' | 'PREPAID';
@@ -43,31 +36,20 @@ function getRequiredEnv(name: string): string {
 }
 
 function getBaseUrl(): string {
-  return (process.env.NIMBUSPOST_API_BASE || 'https://api.nimbuspost.com').replace(/\/+$/, '');
-}
-
-function getLoginPath(): string {
-  return process.env.NIMBUSPOST_LOGIN_PATH || '/v1/users/login';
+  return (process.env.NIMBUSPOST_API_BASE || 'https://api.nimbuspost.com/v1').replace(/\/+$/, '');
 }
 
 function getCreateShipmentPath(): string {
-  return process.env.NIMBUSPOST_CREATE_SHIPMENT_PATH || '/v1/shipments';
+  return process.env.NIMBUSPOST_CREATE_SHIPMENT_PATH || '/shipments';
 }
 
 function getCancelShipmentPathTemplate(): string {
-  return process.env.NIMBUSPOST_CANCEL_SHIPMENT_PATH_TEMPLATE || '/v1/shipments/{shipmentId}/cancel';
+  return process.env.NIMBUSPOST_CANCEL_SHIPMENT_PATH_TEMPLATE || '/shipments/cancel';
 }
 
 function joinUrl(base: string, path: string): string {
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
   return `${base}${path.startsWith('/') ? '' : '/'}${path}`;
-}
-
-function normalizeAuthToken(data: NimbusAuthResponse): string {
-  if (typeof data.data === 'string' && data.data) return data.data;
-  if (data.token) return data.token;
-  if (typeof data.data === 'object' && data.data?.token) return data.data.token;
-  throw new Error('NimbusPost auth token missing in response');
 }
 
 async function nimbusFetch<T>(url: string, init: RequestInit): Promise<T> {
@@ -107,20 +89,13 @@ function mapShipmentResponse(raw: Record<string, unknown>): NimbusCreateShipment
 }
 
 export async function getNimbusAuthToken(): Promise<string> {
-  const email = getRequiredEnv('NIMBUSPOST_EMAIL');
-  const password = getRequiredEnv('NIMBUSPOST_PASSWORD');
-  const url = joinUrl(getBaseUrl(), getLoginPath());
-
-  const auth = await nimbusFetch<NimbusAuthResponse>(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-  return normalizeAuthToken(auth);
+  // Backward-compatibility no-op for legacy callers.
+  // Nimbus v1 prefers NP-API-KEY header on each request.
+  return '';
 }
 
 export async function createNimbusShipment(input: NimbusCreateShipmentInput): Promise<NimbusCreateShipmentResult> {
-  const token = await getNimbusAuthToken();
+  const apiKey = getRequiredEnv('NIMBUSPOST_API_KEY');
   const url = joinUrl(getBaseUrl(), getCreateShipmentPath());
   const { addressLine1, addressLine2 } = resolveAddressLine(input.address);
 
@@ -172,7 +147,7 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      'NP-API-KEY': apiKey,
     },
     body: JSON.stringify(payload),
   });
@@ -180,17 +155,16 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
   return mapShipmentResponse(raw);
 }
 
-export async function cancelNimbusShipment(shipmentId: string): Promise<unknown> {
-  const token = await getNimbusAuthToken();
-  const template = getCancelShipmentPathTemplate();
-  const path = template.replace('{shipmentId}', shipmentId);
-  const url = joinUrl(getBaseUrl(), path);
+export async function cancelNimbusShipment(awb: string): Promise<unknown> {
+  const apiKey = getRequiredEnv('NIMBUSPOST_API_KEY');
+  const url = joinUrl(getBaseUrl(), getCancelShipmentPathTemplate());
   return nimbusFetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      'NP-API-KEY': apiKey,
     },
+    body: JSON.stringify({ awb }),
   });
 }
 

@@ -50,6 +50,13 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 function verifyWebhookSecret(request: Request, rawBody: string): boolean {
+  // If configured, allow Nimbus NP-API-KEY header verification for webhook calls.
+  const apiKey = process.env.NIMBUSPOST_API_KEY;
+  const incomingApiKey = request.headers.get('np-api-key');
+  if (apiKey && incomingApiKey) {
+    return safeEqual(incomingApiKey, apiKey);
+  }
+
   const secret = process.env.NIMBUSPOST_WEBHOOK_SECRET;
   if (!secret) return true;
 

@@ -182,7 +182,14 @@ export default async function OrdersPage() {
                           >
                             <FiEye className="w-3.5 h-3.5" /> View
                           </Link>
-                          <QuickOrderActions orderId={order.id} currentStatus={order.status} />
+                          <QuickOrderActions
+                            orderId={order.id}
+                            currentStatus={order.status}
+                            shippingPartner={order.shippingPartner}
+                            awbNumber={order.awbNumber}
+                            trackingUrl={order.trackingUrl}
+                            labelUrl={order.labelUrl}
+                          />
                           <DeleteOrderButton orderId={order.id} orderRef={order.id.slice(0, 8).toUpperCase()} />
                         </div>
                       </td>

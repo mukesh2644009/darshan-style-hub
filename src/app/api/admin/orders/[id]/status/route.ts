@@ -54,9 +54,11 @@ export async function PATCH(
       );
     }
 
-    const updateData: Record<string, string> = {};
+    const updateData: Record<string, string | Date> = {};
     if (status) updateData.status = status;
     if (paymentStatus) updateData.paymentStatus = paymentStatus;
+    if (status === 'SHIPPED') updateData.shippedAt = new Date();
+    if (status === 'DELIVERED') updateData.deliveredAt = new Date();
 
     const order = await prisma.order.update({
       where: { id: params.id },

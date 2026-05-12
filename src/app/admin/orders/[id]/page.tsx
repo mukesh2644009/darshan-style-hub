@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { FiArrowLeft, FiPackage, FiMapPin, FiPhone, FiUser, FiCalendar } from 'react-icons/fi';
+import { FiArrowLeft, FiPackage, FiMapPin, FiPhone, FiUser, FiCalendar, FiExternalLink, FiTruck } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import OrderStatusUpdater from './OrderStatusUpdater';
 
@@ -233,6 +233,66 @@ export default async function OrderDetailPage({ params }: { params: { id: string
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Shipment Info */}
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <FiTruck />
+              Shipment
+            </h2>
+            {order.shippingPartner ? (
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between gap-4">
+                  <span className="text-gray-600">Partner</span>
+                  <span className="font-medium">{order.shippingPartner}</span>
+                </div>
+                {order.awbNumber && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-gray-600">AWB</span>
+                    <span className="font-mono text-xs font-semibold">{order.awbNumber}</span>
+                  </div>
+                )}
+                {order.courierName && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-gray-600">Courier</span>
+                    <span className="font-medium">{order.courierName}</span>
+                  </div>
+                )}
+                {order.nimbusStatus && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-gray-600">Nimbus Status</span>
+                    <span className="font-medium">{order.nimbusStatus}</span>
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {order.trackingUrl && (
+                    <a
+                      href={order.trackingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-colors"
+                    >
+                      <FiExternalLink className="w-3.5 h-3.5" />
+                      Track
+                    </a>
+                  )}
+                  {order.labelUrl && (
+                    <a
+                      href={order.labelUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors"
+                    >
+                      <FiExternalLink className="w-3.5 h-3.5" />
+                      Label
+                    </a>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">Shipment not created yet.</p>
+            )}
           </div>
 
           {/* Timeline */}

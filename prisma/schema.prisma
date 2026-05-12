@@ -180,6 +180,20 @@ model Order {
   shippingCity    String
   shippingState   String
   shippingPincode String
+
+  // NimbusPost (or other aggregator) shipping metadata
+  shippingPartner     String?
+  shipmentId          String?
+  awbNumber           String?
+  courierName         String?
+  trackingUrl         String?
+  labelUrl            String?
+  pickupScheduledAt   DateTime?
+  shippedAt           DateTime?
+  deliveredAt         DateTime?
+  nimbusStatus        String?
+  nimbusStatusCode    String?
+  nimbusWebhookPayload Json?
   
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -191,6 +205,9 @@ model Order {
   @@index([status])
   @@index([createdAt])
   @@index([parentOrderId])
+  @@index([awbNumber])
+  @@index([shipmentId])
+  @@index([shippingPartner])
 }
 
 // Order items

@@ -43,6 +43,11 @@ interface Order {
   shippingCity: string;
   shippingState: string;
   shippingPincode: string;
+  shippingPartner?: string | null;
+  awbNumber?: string | null;
+  courierName?: string | null;
+  trackingUrl?: string | null;
+  nimbusStatus?: string | null;
   items: OrderItem[];
   returnRequest?: {
     id: string;
@@ -291,6 +296,25 @@ export default function MyOrdersPage() {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                      {order.shippingPartner === 'NIMBUSPOST' && order.awbNumber && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 text-xs font-semibold">
+                          <FiTruck className="w-3.5 h-3.5" />
+                          AWB: {order.awbNumber}
+                        </span>
+                      )}
+
+                      {order.trackingUrl && (
+                        <a
+                          href={order.trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 transition-colors text-xs font-medium"
+                        >
+                          <FiTruck className="w-3.5 h-3.5" />
+                          Track shipment
+                        </a>
+                      )}
+
                       {/* Receipt — hide for returned/exchanged orders */}
                       {!['RETURNED', 'EXCHANGED'].includes(order.status) && (
                         <button
@@ -336,6 +360,21 @@ export default function MyOrdersPage() {
                       )}
                     </div>
                   </div>
+
+                  {order.shippingPartner === 'NIMBUSPOST' && (order.courierName || order.nimbusStatus) && (
+                    <div className="px-5 py-2 border-t border-gray-100 bg-sky-50/50 flex flex-wrap items-center gap-x-4 gap-y-1">
+                      {order.courierName && (
+                        <p className="text-xs text-sky-700">
+                          <span className="font-semibold">Courier:</span> {order.courierName}
+                        </p>
+                      )}
+                      {order.nimbusStatus && (
+                        <p className="text-xs text-sky-700">
+                          <span className="font-semibold">Shipping status:</span> {order.nimbusStatus}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Return / exchange flow status banner */}
                   {inReturnFlow && (

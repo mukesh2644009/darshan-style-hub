@@ -365,8 +365,18 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
           deadWeightKg: weightKg,
         },
         items: input.items,
+        // Compatibility wrappers observed across Nimbus tenants/integrations.
+        shipment: legacyFields,
+        data: legacyFields,
+        shipments: [legacyFields],
       }
-    : legacyFields;
+    : {
+        ...legacyFields,
+        // Compatibility wrappers observed across Nimbus tenants/integrations.
+        shipment: legacyFields,
+        data: legacyFields,
+        shipments: [legacyFields],
+      };
 
   const raw = await nimbusFetch<Record<string, unknown>>(url, {
     method: 'POST',

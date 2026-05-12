@@ -92,25 +92,22 @@ export async function POST(request: Request) {
       path: '/',
     });
 
-    // Send welcome email + owner notification (non-blocking)
+    // Await emails — serverless functions terminate after response
     try {
       const { sendWelcomeEmail, sendNewSignupNotification } = await import('@/lib/email');
-      sendWelcomeEmail({
-        to: user.email,
-        customerName: user.name || 'Valued Customer',
-      }).catch((err) => {
-        console.error('Failed to send welcome email:', err);
-      });
-
-      sendNewSignupNotification({
-        customerName: user.name || 'Unknown',
-        customerEmail: user.email,
-        customerPhone: user.phone,
-      }).catch((err) => {
-        console.error('Failed to send signup notification:', err);
-      });
+      await Promise.allSettled([
+        sendWelcomeEmail({
+          to: user.email,
+          customerName: user.name || 'Valued Customer',
+        }),
+        sendNewSignupNotification({
+          customerName: user.name || 'Unknown',
+          customerEmail: user.email,
+          customerPhone: user.phone,
+        }),
+      ]);
     } catch (emailError) {
-      console.log('Email service not available, skipping emails');
+      console.error('Email service error:', emailError);
     }
 
     return NextResponse.json({

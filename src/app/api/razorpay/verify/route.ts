@@ -45,36 +45,42 @@ export async function POST(request: Request) {
         },
       });
 
-      // Send payment confirmation emails
+      // Await emails before returning — serverless functions terminate after response
       try {
         const { sendPaymentConfirmationEmail } = await import('@/lib/email');
         const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub.business@gmail.com';
 
-        // Send to customer
+        const emailPromises: Promise<unknown>[] = [];
+
         const customerEmail = user.email || updatedOrder.user?.email;
         if (customerEmail) {
+          emailPromises.push(
+            sendPaymentConfirmationEmail({
+              to: customerEmail,
+              customerName: updatedOrder.shippingName,
+              orderId: orderId,
+              total: updatedOrder.total,
+              paymentId: razorpay_payment_id,
+            }).catch((err: unknown) => {
+              console.error('Failed to send customer payment confirmation:', err);
+            })
+          );
+        }
+
+        emailPromises.push(
           sendPaymentConfirmationEmail({
-            to: customerEmail,
+            to: adminEmail,
             customerName: updatedOrder.shippingName,
             orderId: orderId,
             total: updatedOrder.total,
             paymentId: razorpay_payment_id,
-          }).catch((err) => {
-            console.error('Failed to send customer payment confirmation:', err);
-          });
-        }
+            isAdminCopy: true,
+          }).catch((err: unknown) => {
+            console.error('Failed to send admin payment confirmation:', err);
+          })
+        );
 
-        // Send to admin
-        sendPaymentConfirmationEmail({
-          to: adminEmail,
-          customerName: updatedOrder.shippingName,
-          orderId: orderId,
-          total: updatedOrder.total,
-          paymentId: razorpay_payment_id,
-          isAdminCopy: true,
-        }).catch((err) => {
-          console.error('Failed to send admin payment confirmation:', err);
-        });
+        await Promise.allSettled(emailPromises);
       } catch (emailError) {
         console.error('Email service not available:', emailError);
       }

@@ -68,6 +68,8 @@ export async function POST(request: Request) {
       shippingState,
       shippingPincode,
       paymentMethod = 'COD',
+      couponCode,
+      couponDiscount: clientCouponDiscount,
     } = body;
 
     // Guest checkout allowed — userId is optional
@@ -152,9 +154,17 @@ export async function POST(request: Request) {
 
     const shipping = subtotal >= 999 ? 0 : 99;
     const codCharge = paymentMethod === 'COD' ? 50 : 0;
-    const total = subtotal + shipping + codCharge;
-
     const isCod = paymentMethod === 'COD';
+
+    // Server-side coupon validation — only DSH10 (10% off) for prepaid orders
+    let discount = 0;
+    if (!isCod && couponCode && String(couponCode).toUpperCase() === 'DSH10') {
+      discount = Math.round(subtotal * 0.10);
+      if (clientCouponDiscount && Math.abs(discount - Number(clientCouponDiscount)) > 1) {
+        discount = Math.min(discount, Number(clientCouponDiscount));
+      }
+    }
+    const total = subtotal + shipping + codCharge - discount;
 
     // Create order
     const order = await prisma.order.create({
@@ -165,7 +175,7 @@ export async function POST(request: Request) {
         paymentMethod,
         subtotal,
         shipping,
-        discount: 0,
+        discount,
         total,
         shippingName: shippingName.trim(),
         shippingPhone: shippingPhone.trim(),
@@ -215,20 +225,43 @@ export async function POST(request: Request) {
       color: item.color,
     }));
 
+    // Must await all notifications before returning — Vercel serverless
+    // terminates the function once the response is sent, killing any
+    // in-flight promises that haven't resolved yet.
     try {
       const { sendOrderConfirmationEmail } = await import('@/lib/email');
       const { sendOrderWhatsAppNotification } = await import('@/lib/whatsapp');
 
-      // Determine payment status for email
-      // For UPI/Razorpay: payment is pending until verified
-      // For COD/WhatsApp: order is confirmed, payment collected on delivery
       const isOnlinePayment = paymentMethod.includes('UPI') || paymentMethod.includes('Razorpay');
       const emailPaymentStatus: 'PENDING' | 'PAID' | 'FAILED' = isOnlinePayment ? 'PENDING' : 'PAID';
 
-      // Send email to customer with PDF invoice
+      const emailPromises: Promise<unknown>[] = [];
+
       if (customerEmail) {
+        emailPromises.push(
+          sendOrderConfirmationEmail({
+            to: customerEmail,
+            customerName: shippingName,
+            orderId: order.id,
+            total: order.total,
+            subtotal: order.subtotal,
+            shipping: order.shipping,
+            discount: order.discount,
+            items: emailItems,
+            shippingAddress: fullAddress,
+            shippingPhone: shippingPhone,
+            paymentMethod,
+            paymentStatus: emailPaymentStatus,
+            orderDate: order.createdAt,
+          }).catch((err: unknown) => {
+            console.error('Failed to send customer order email:', err);
+          })
+        );
+      }
+
+      emailPromises.push(
         sendOrderConfirmationEmail({
-          to: customerEmail,
+          to: adminEmail,
           customerName: shippingName,
           orderId: order.id,
           total: order.total,
@@ -238,50 +271,34 @@ export async function POST(request: Request) {
           items: emailItems,
           shippingAddress: fullAddress,
           shippingPhone: shippingPhone,
+          shippingEmail: customerEmail || undefined,
           paymentMethod,
           paymentStatus: emailPaymentStatus,
+          isAdminCopy: true,
           orderDate: order.createdAt,
-        }).catch((err) => {
-          console.error('Failed to send customer order email:', err);
-        });
-      }
+        }).catch((err: unknown) => {
+          console.error('Failed to send admin order email:', err);
+        })
+      );
 
-      // Send email to admin (owner) with PDF invoice
-      sendOrderConfirmationEmail({
-        to: adminEmail,
-        customerName: shippingName,
-        orderId: order.id,
-        total: order.total,
-        subtotal: order.subtotal,
-        shipping: order.shipping,
-        discount: order.discount,
-        items: emailItems,
-        shippingAddress: fullAddress,
-        shippingPhone: shippingPhone,
-        shippingEmail: customerEmail || undefined,
-        paymentMethod,
-        paymentStatus: emailPaymentStatus,
-        isAdminCopy: true,
-        orderDate: order.createdAt,
-      }).catch((err) => {
-        console.error('Failed to send admin order email:', err);
-      });
+      emailPromises.push(
+        sendOrderWhatsAppNotification({
+          orderId: order.id,
+          customerName: shippingName,
+          customerPhone: shippingPhone,
+          customerEmail: customerEmail || undefined,
+          items: emailItems,
+          total: order.total,
+          paymentMethod,
+          shippingAddress: fullAddress,
+        }).catch((err: unknown) => {
+          console.error('Failed to send WhatsApp notification:', err);
+        })
+      );
 
-      // Send WhatsApp notification to admin
-      sendOrderWhatsAppNotification({
-        orderId: order.id,
-        customerName: shippingName,
-        customerPhone: shippingPhone,
-        customerEmail: customerEmail || undefined,
-        items: emailItems,
-        total: order.total,
-        paymentMethod,
-        shippingAddress: fullAddress,
-      }).catch((err) => {
-        console.error('Failed to send WhatsApp notification:', err);
-      });
+      await Promise.allSettled(emailPromises);
     } catch (notificationError) {
-      console.log('Notification service not available');
+      console.error('Notification service error:', notificationError);
     }
 
     return NextResponse.json(order, { status: 201 });

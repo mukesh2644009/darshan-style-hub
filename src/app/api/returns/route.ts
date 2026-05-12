@@ -156,29 +156,36 @@ export async function POST(request: Request) {
       return returnReq;
     });
 
-    // Notify admin (fire-and-forget)
-    sendAdminReturnNotification({
-      orderId: order.id,
-      customerName: user.name || order.shippingName,
-      customerPhone: user.phone || order.shippingPhone,
-      requestType,
-      reason,
-      details,
-      pickupFee,
-    }).catch(() => {});
+    // Await notifications — serverless functions terminate after response
+    const returnEmailPromises: Promise<unknown>[] = [];
 
-    // Notify customer (fire-and-forget)
+    returnEmailPromises.push(
+      sendAdminReturnNotification({
+        orderId: order.id,
+        customerName: user.name || order.shippingName,
+        customerPhone: user.phone || order.shippingPhone,
+        requestType,
+        reason,
+        details,
+        pickupFee,
+      }).catch(() => {})
+    );
+
     const customerEmail = user.email && !user.email.endsWith('@darshan.local') ? user.email : null;
     if (customerEmail) {
-      sendCustomerReturnNotification({
-        to: customerEmail,
-        customerName: user.name || order.shippingName,
-        orderId: order.id,
-        requestType: requestType as 'RETURN' | 'EXCHANGE',
-        reason,
-        pickupFee,
-      }).catch(() => {});
+      returnEmailPromises.push(
+        sendCustomerReturnNotification({
+          to: customerEmail,
+          customerName: user.name || order.shippingName,
+          orderId: order.id,
+          requestType: requestType as 'RETURN' | 'EXCHANGE',
+          reason,
+          pickupFee,
+        }).catch(() => {})
+      );
     }
+
+    await Promise.allSettled(returnEmailPromises);
 
     return NextResponse.json(
       {

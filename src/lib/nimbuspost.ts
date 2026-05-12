@@ -116,6 +116,11 @@ async function getNimbusLoginToken(): Promise<string | null> {
   return parseNimbusToken(json);
 }
 
+function isNonFatalNimbusError(message: string): boolean {
+  // Nimbus creates the shipment but returns status:false for these — treat as partial success.
+  return /no autoship rule/i.test(message) || /autoship/i.test(message);
+}
+
 async function nimbusFetch<T>(
   url: string,
   init: RequestInit,
@@ -190,6 +195,14 @@ async function nimbusFetch<T>(
         if (fallbackResult) {
           return fallbackResult;
         }
+      }
+
+      // Nimbus sometimes creates the shipment but still returns status:false
+      // for soft errors like "No autoship rule found". Return the body so
+      // the caller can extract whatever shipment data was created.
+      if (isNonFatalNimbusError(message)) {
+        console.warn(`NimbusPost soft error (shipment may still be created): ${message}`);
+        return json as T;
       }
 
       throw new Error(`NimbusPost business error: ${message}`);
@@ -492,6 +505,7 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
       lastError = error;
       const errorMessage = error instanceof Error ? error.message : String(error);
       variantErrors.push(`${candidate.label}: ${errorMessage}`);
+      // Only retry on "required field" validation errors; all other errors stop retrying.
       if (!isNimbusRequiredFieldError(error)) {
         throw error;
       }

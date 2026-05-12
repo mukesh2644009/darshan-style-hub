@@ -1,6 +1,5 @@
 import PDFDocument from 'pdfkit';
-import path from 'path';
-import fs from 'fs';
+import { LOGO_BUFFER } from './logo-data';
 
 interface InvoiceItem {
   name: string;
@@ -48,12 +47,14 @@ export async function generateOrderInvoicePDF(data: InvoiceData): Promise<Buffer
       const contentWidth = pageWidth - margin * 2;
 
       // --- Logo + Brand Header ---
-      const logoPath = path.join(process.cwd(), 'public', 'logo.png');
-      const hasLogo = fs.existsSync(logoPath);
       const headerStartY = 40;
+      let hasLogo = false;
 
-      if (hasLogo) {
-        doc.image(logoPath, margin, headerStartY, { width: 70, height: 70 });
+      try {
+        doc.image(LOGO_BUFFER, margin, headerStartY, { width: 70, height: 70 });
+        hasLogo = true;
+      } catch {
+        hasLogo = false;
       }
 
       const textLeftX = hasLogo ? margin + 80 : margin;

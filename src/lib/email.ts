@@ -67,19 +67,17 @@ export async function sendWelcomeEmail({ to, customerName }: WelcomeEmailProps) 
       });
 
       if (error) {
-        console.error('Resend error:', error);
-        return { success: false, error };
+        console.error('Resend welcome email error, falling through to Gmail:', error);
+      } else {
+        console.log('Welcome email sent via Resend:', data);
+        return { success: true, data, via: 'resend' };
       }
-
-      console.log('Welcome email sent via Resend:', data);
-      return { success: true, data, via: 'resend' };
     } catch (resendError) {
       console.error('Resend failed, trying Gmail...', resendError);
-      // Fall through to try Gmail
     }
   }
 
-  // Try Gmail as fallback
+  // Try Gmail as fallback (always attempted when Resend fails)
   if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
     try {
       const transporter = createGmailTransporter();
@@ -130,12 +128,11 @@ export async function sendPasswordResetEmail({ to, customerName, resetUrl }: Pas
       });
 
       if (error) {
-        console.error('Resend error:', error);
-        return { success: false, error };
+        console.error('Resend password reset error, falling through to Gmail:', error);
+      } else {
+        console.log('Password reset email sent via Resend:', data);
+        return { success: true, data, via: 'resend' };
       }
-
-      console.log('Password reset email sent via Resend:', data);
-      return { success: true, data, via: 'resend' };
     } catch (resendError) {
       console.error('Resend failed, trying Gmail...', resendError);
     }
@@ -457,10 +454,10 @@ export async function sendNewSignupNotification({ customerName, customerEmail, c
       });
 
       if (error) {
-        console.error('Resend signup notification error:', error);
-        return { success: false, error };
+        console.error('Resend signup notification error, falling through to Gmail:', error);
+      } else {
+        return { success: true, data, via: 'resend' };
       }
-      return { success: true, data, via: 'resend' };
     } catch (resendError) {
       console.error('Resend failed for signup notification:', resendError);
     }
@@ -581,19 +578,17 @@ export async function sendOrderConfirmationEmail(props: OrderEmailProps) {
       const { data, error } = await resend.emails.send(emailOptions);
 
       if (error) {
-        console.error('Resend error:', error);
-        return { success: false, error };
+        console.error('Resend order email error, falling through to Gmail:', error);
+      } else {
+        console.log('Order email sent via Resend with PDF:', data);
+        return { success: true, data, via: 'resend' };
       }
-
-      console.log('Order email sent via Resend with PDF:', data);
-      return { success: true, data, via: 'resend' };
     } catch (resendError) {
       console.error('Resend failed, trying Gmail...', resendError);
-      // Fall through to try Gmail
     }
   }
 
-  // Try Gmail as fallback
+  // Try Gmail as fallback (always attempted when Resend fails for any reason)
   if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
     try {
       const transporter = createGmailTransporter();
@@ -954,12 +949,11 @@ export async function sendPaymentConfirmationEmail(props: PaymentConfirmationPro
       });
 
       if (error) {
-        console.error('Resend error:', error);
-        return { success: false, error };
+        console.error('Resend payment email error, falling through to Gmail:', error);
+      } else {
+        console.log('Payment confirmation email sent via Resend:', data);
+        return { success: true, data, via: 'resend' };
       }
-
-      console.log('Payment confirmation email sent via Resend:', data);
-      return { success: true, data, via: 'resend' };
     } catch (resendError) {
       console.error('Resend failed, trying Gmail...', resendError);
     }

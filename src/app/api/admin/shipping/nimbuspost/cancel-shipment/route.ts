@@ -20,16 +20,22 @@ export async function POST(request: Request) {
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      select: { id: true, shipmentId: true, awbNumber: true, status: true },
+      select: { id: true, shipmentId: true, awbNumber: true, shippingPartner: true, status: true, nimbusStatus: true },
     });
     if (!order) {
       return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 });
     }
-    if (!order.awbNumber) {
-      return NextResponse.json({ success: false, error: 'No AWB found on order' }, { status: 400 });
-    }
 
-    await cancelNimbusShipment(order.awbNumber);
+    // Try to cancel in Nimbus if we have an AWB or shipment reference
+    const cancelRef = order.awbNumber || order.shipmentId;
+    if (order.shippingPartner === 'NIMBUSPOST' && cancelRef) {
+      try {
+        await cancelNimbusShipment(cancelRef);
+      } catch (nimbusError) {
+        // Log but don't block local status update
+        console.warn('Nimbus cancel API warning:', nimbusError instanceof Error ? nimbusError.message : nimbusError);
+      }
+    }
 
     const updated = await prisma.order.update({
       where: { id: order.id },

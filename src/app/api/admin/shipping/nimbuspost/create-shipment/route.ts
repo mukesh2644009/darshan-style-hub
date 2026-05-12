@@ -53,9 +53,24 @@ export async function POST(request: Request) {
       );
     }
 
-    if (order.shippingPartner === 'NIMBUSPOST' && order.awbNumber) {
+    const alreadyCreatedInNimbus =
+      order.shippingPartner === 'NIMBUSPOST' &&
+      Boolean(
+        order.awbNumber ||
+        order.shipmentId ||
+        order.nimbusStatus === 'SHIPMENT_CREATED' ||
+        order.nimbusStatus === 'SHIPMENT_CREATED_AWB_PENDING'
+      );
+
+    if (alreadyCreatedInNimbus) {
       return NextResponse.json(
-        { success: false, error: 'Shipment already created', awbNumber: order.awbNumber },
+        {
+          success: false,
+          error: 'Shipment already created for this order',
+          awbNumber: order.awbNumber || undefined,
+          shipmentId: order.shipmentId || undefined,
+          nimbusStatus: order.nimbusStatus || undefined,
+        },
         { status: 409 }
       );
     }

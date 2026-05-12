@@ -40,12 +40,28 @@ export default function QuickOrderActions({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ orderId }),
         });
+        const createData = (await createRes.json().catch(() => ({}))) as { error?: string; message?: string; awbFound?: boolean };
         if (!createRes.ok) {
-          const data = (await createRes.json().catch(() => ({}))) as { error?: string };
-          alert(data.error || 'Failed to create shipment');
+          alert(createData.error || 'Failed to create shipment');
+        } else {
+          alert(createData.awbFound ? (createData.message || 'Shipment created') : (createData.message || 'Shipment created, AWB pending from Nimbus'));
         }
         router.refresh();
         return;
+      }
+
+      // If cancelling an order that has a Nimbus shipment, also cancel in Nimbus
+      if (newStatus === 'CANCELLED' && shippingPartner === 'NIMBUSPOST') {
+        const cancelRes = await fetch('/api/admin/shipping/nimbuspost/cancel-shipment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId }),
+        });
+        if (!cancelRes.ok) {
+          const cancelData = (await cancelRes.json().catch(() => ({}))) as { error?: string };
+          // Show warning but still proceed to update local status
+          console.warn('Nimbus cancel warning:', cancelData.error);
+        }
       }
 
       await fetch(`/api/admin/orders/${orderId}/status`, {

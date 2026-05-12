@@ -77,7 +77,8 @@ export default function Navbar() {
 
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16">
-          {/* Mobile Menu Button */}
+          {/* Left: Menu + Logo grouped together */}
+          <div className="flex items-center gap-1">
           <button
             className="lg:hidden p-2"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -99,6 +100,7 @@ export default function Navbar() {
               Darshan Style Hub™
             </span>
           </Link>
+          </div>
 
           {/* Desktop Navigation — Shop dropdown keeps the bar on one row */}
           <div className="hidden lg:flex items-center gap-x-3 xl:gap-x-5 2xl:gap-x-6 flex-nowrap min-w-0">

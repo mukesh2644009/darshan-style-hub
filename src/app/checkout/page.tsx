@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiChevronLeft, FiTruck, FiAlertCircle, FiLoader, FiCheck, FiInfo, FiLock } from 'react-icons/fi';
+import { FiChevronLeft, FiTruck, FiAlertCircle, FiLoader, FiCheck, FiInfo, FiLock, FiTag, FiX } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -46,6 +46,10 @@ export default function CheckoutPage() {
     pincode: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [couponCode, setCouponCode] = useState('');
+  const [couponApplied, setCouponApplied] = useState(false);
+  const [couponError, setCouponError] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
   const [orderTotal, setOrderTotal] = useState(0);
   const [orderPaymentMethod, setOrderPaymentMethod] = useState('');
   const [showSignupModal, setShowSignupModal] = useState(false);
@@ -137,7 +141,33 @@ export default function CheckoutPage() {
   const subtotal = getTotalPrice();
   const shipping = subtotal >= 999 ? 0 : 99;
   const codCharge = paymentMethod === 'cod' ? 50 : 0;
-  const total = subtotal + shipping + codCharge;
+  const appliedDiscount = (paymentMethod !== 'cod' && couponApplied) ? couponDiscount : 0;
+  const total = subtotal + shipping + codCharge - appliedDiscount;
+
+  const handleApplyCoupon = () => {
+    setCouponError('');
+    if (!couponCode.trim()) {
+      setCouponError('Please enter a coupon code');
+      return;
+    }
+    if (couponCode.trim().toUpperCase() === 'DSH10') {
+      const discount = Math.round(subtotal * 0.10);
+      setCouponDiscount(discount);
+      setCouponApplied(true);
+      setCouponError('');
+    } else {
+      setCouponApplied(false);
+      setCouponDiscount(0);
+      setCouponError('Invalid coupon code');
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponCode('');
+    setCouponApplied(false);
+    setCouponDiscount(0);
+    setCouponError('');
+  };
 
   const handlePlaceOrder = async () => {
     const newErrors: Record<string, string> = {};
@@ -179,6 +209,8 @@ export default function CheckoutPage() {
           shippingState: formData.state.trim(),
           shippingPincode: formData.pincode.trim(),
           paymentMethod: paymentMethod === 'cod' ? 'COD' : paymentMethod === 'upi' ? 'UPI (Razorpay)' : 'UPI (WhatsApp)',
+          couponCode: appliedDiscount > 0 ? couponCode.toUpperCase() : undefined,
+          couponDiscount: appliedDiscount > 0 ? appliedDiscount : undefined,
         }),
       });
 
@@ -845,6 +877,53 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
+              {/* Coupon Code — only for prepaid */}
+              {paymentMethod !== 'cod' && (
+                <div className="border-t border-accent-200 pt-3 mb-3">
+                  <p className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1.5">
+                    <FiTag size={14} className="text-primary-600" />
+                    Have a coupon?
+                  </p>
+                  {couponApplied ? (
+                    <div className="flex items-center justify-between p-2.5 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <FiCheck size={16} className="text-green-600" />
+                        <span className="text-sm font-medium text-green-700">
+                          {couponCode.toUpperCase()} — 10% off (−₹{couponDiscount.toLocaleString('en-IN')})
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <FiX size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={couponCode}
+                        onChange={(e) => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
+                        placeholder="Enter code e.g. DSH10"
+                        className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors flex-shrink-0"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  )}
+                  {couponError && (
+                    <p className="text-red-500 text-xs mt-1.5">{couponError}</p>
+                  )}
+                </div>
+              )}
+
               {/* Totals */}
               <div className="space-y-2 border-t border-accent-200 pt-3">
                 <div className="w-full flex justify-between items-center text-sm text-gray-600">
@@ -862,6 +941,12 @@ export default function CheckoutPage() {
                   <div className="w-full flex justify-between items-center text-sm text-gray-600">
                     <span>COD Charge</span>
                     <span className="flex-shrink-0">₹{codCharge}</span>
+                  </div>
+                )}
+                {appliedDiscount > 0 && (
+                  <div className="w-full flex justify-between items-center text-sm text-green-600 font-medium">
+                    <span>Coupon ({couponCode.toUpperCase()})</span>
+                    <span className="flex-shrink-0">−₹{appliedDiscount.toLocaleString('en-IN')}</span>
                   </div>
                 )}
                 <div className="w-full flex justify-between items-center text-base font-bold border-t border-accent-200 pt-3">

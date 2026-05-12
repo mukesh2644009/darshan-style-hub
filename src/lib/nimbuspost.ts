@@ -308,6 +308,52 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
   const paymentType = input.paymentMode === 'COD' ? 'cod' : 'prepaid';
   const consigneeAddress = `${addressLine1}${addressLine2 ? `, ${addressLine2}` : ''}`;
   const weightKg = Number((input.deadWeightGrams / 1000).toFixed(3));
+  const packageWeight = Math.max(1, Math.round(input.deadWeightGrams));
+  const packageLength = Number(process.env.NIMBUSPOST_PACKAGE_LENGTH || 10);
+  const packageBreadth = Number(process.env.NIMBUSPOST_PACKAGE_BREADTH || 10);
+  const packageHeight = Number(process.env.NIMBUSPOST_PACKAGE_HEIGHT || 10);
+  const shippingCharges = Number(process.env.NIMBUSPOST_SHIPPING_CHARGES || 0);
+  const discount = Number(process.env.NIMBUSPOST_DEFAULT_DISCOUNT || 0);
+  const codCharges = Number(process.env.NIMBUSPOST_COD_CHARGES || 0);
+
+  const nimbusDocPayload = {
+    order_number: input.orderNumber,
+    shipping_charges: shippingCharges,
+    discount,
+    cod_charges: input.paymentMode === 'COD' ? codCharges : 0,
+    payment_type: paymentType,
+    order_amount: input.amount,
+    package_weight: packageWeight,
+    package_length: packageLength,
+    package_breadth: packageBreadth,
+    package_height: packageHeight,
+    consignee: {
+      name: input.customerName,
+      address: addressLine1,
+      address_2: addressLine2 || '',
+      city: input.city,
+      state: input.state,
+      pincode: input.pincode,
+      phone: normalizePhone(input.customerPhone),
+      email: input.customerEmail || '',
+    },
+    pickup: {
+      warehouse_name: pickupWarehouseName,
+      name: pickupContactName,
+      address: pickupAddress,
+      address_2: '',
+      city: pickupCity,
+      state: pickupState,
+      pincode: pickupPincode,
+      phone: pickupPhone,
+    },
+    order_items: input.items.map((item) => ({
+      name: item.name,
+      qty: String(item.quantity),
+      price: String(item.price),
+      sku: item.sku || '',
+    })),
+  };
 
   // Some Nimbus tenants validate legacy snake_case keys, while others accept
   // modern schema keys. Send both so shipment create is tenant-compatible.
@@ -393,6 +439,7 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
   };
 
   const payloadCandidates: Array<{ label: string; payload: Record<string, unknown> }> = [
+    { label: 'nimbus-doc', payload: nimbusDocPayload },
     { label: 'legacy', payload: legacyFields },
     { label: 'root-array', payload: { shipments: [legacyFields], orders: [legacyFields] } },
     { label: 'order-wrapper', payload: { order: legacyFields } },

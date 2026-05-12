@@ -315,6 +315,7 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
   const shippingCharges = Number(process.env.NIMBUSPOST_SHIPPING_CHARGES || 0);
   const discount = Number(process.env.NIMBUSPOST_DEFAULT_DISCOUNT || 0);
   const codCharges = Number(process.env.NIMBUSPOST_COD_CHARGES || 0);
+  const courierId = process.env.NIMBUSPOST_COURIER_ID ? Number(process.env.NIMBUSPOST_COURIER_ID) : null;
 
   const nimbusDocPayload = {
     order_number: input.orderNumber,
@@ -353,6 +354,7 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
       price: String(item.price),
       sku: item.sku || '',
     })),
+    ...(courierId ? { courier_id: courierId } : {}),
   };
 
   // Some Nimbus tenants validate legacy snake_case keys, while others accept
@@ -391,6 +393,7 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
       price: item.price,
       sku: item.sku || '',
     })),
+    ...(courierId ? { courier_id: courierId } : {}),
   };
 
   const modernFields = {

@@ -293,30 +293,20 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
   const apiKey = getRequiredEnv('NIMBUSPOST_API_KEY');
   const url = joinUrl(getBaseUrl(), getCreateShipmentPath());
   const { addressLine1, addressLine2 } = resolveAddressLine(input.address);
+  const pickupWarehouseName = process.env.NIMBUSPOST_PICKUP_WAREHOUSE_NAME || 'Primary Warehouse';
+  const pickupContactName = process.env.NIMBUSPOST_PICKUP_CONTACT_NAME || 'Darshan Style Hub';
+  const pickupAddress = process.env.NIMBUSPOST_PICKUP_ADDRESS || 'Sitapura, Jaipur';
+  const pickupCity = process.env.NIMBUSPOST_PICKUP_CITY || 'Jaipur';
+  const pickupState = process.env.NIMBUSPOST_PICKUP_STATE || 'Rajasthan';
+  const pickupPincode = process.env.NIMBUSPOST_PICKUP_PINCODE || '302022';
+  const pickupPhone = normalizePhone(process.env.NIMBUSPOST_PICKUP_PHONE || '9019076335');
+  const paymentType = input.paymentMode === 'COD' ? 'cod' : 'prepaid';
 
-  // Allow complete payload override for Nimbus account-specific contract differences.
-  const payload = process.env.NIMBUSPOST_CREATE_SHIPMENT_PAYLOAD_MODE === 'raw'
+  // Default to Nimbus' commonly required legacy field contract.
+  // Use mode=modern only if your account explicitly requires the new contract.
+  const mode = process.env.NIMBUSPOST_CREATE_SHIPMENT_PAYLOAD_MODE || 'legacy';
+  const payload = mode === 'modern'
     ? {
-        order_number: input.orderNumber,
-        payment_mode: input.paymentMode,
-        total_amount: input.amount,
-        customer_name: input.customerName,
-        customer_mobile: normalizePhone(input.customerPhone),
-        customer_email: input.customerEmail || '',
-        address_line_1: addressLine1,
-        address_line_2: addressLine2,
-        city: input.city,
-        state: input.state,
-        pincode: input.pincode,
-        dead_weight: Number((input.deadWeightGrams / 1000).toFixed(3)),
-        products: input.items.map((item) => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: item.price,
-          sku: item.sku || '',
-        })),
-      }
-    : {
         orderNumber: input.orderNumber,
         paymentMode: input.paymentMode,
         amount: input.amount,
@@ -336,6 +326,41 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
           deadWeightKg: Number((input.deadWeightGrams / 1000).toFixed(3)),
         },
         items: input.items,
+      }
+    : {
+        // Required fields reported by Nimbus validation:
+        consignee_name: input.customerName,
+        consignee_address: `${addressLine1}${addressLine2 ? `, ${addressLine2}` : ''}`,
+        consignee_city: input.city,
+        consignee_state: input.state,
+        consignee_pincode: input.pincode,
+        consignee_phone: normalizePhone(input.customerPhone),
+        order_number: input.orderNumber,
+        payment_type: paymentType,
+        order_total: input.amount,
+        pickup_warehouse_name: pickupWarehouseName,
+        pickup_contact_name: pickupContactName,
+        pickup_address: pickupAddress,
+        pickup_city: pickupCity,
+        pickup_state: pickupState,
+        pickup_pincode: pickupPincode,
+        pickup_phone: pickupPhone,
+        // Helpful optional/common fields:
+        consignee_email: input.customerEmail || '',
+        weight: Number((input.deadWeightGrams / 1000).toFixed(3)),
+        order_items: input.items.map((item) => ({
+          name: item.name,
+          qty: item.quantity,
+          quantity: item.quantity,
+          price: item.price,
+          sku: item.sku || '',
+        })),
+        products: input.items.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          sku: item.sku || '',
+        })),
       };
 
   const raw = await nimbusFetch<Record<string, unknown>>(url, {

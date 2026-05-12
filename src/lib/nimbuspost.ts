@@ -256,6 +256,30 @@ export async function cancelNimbusShipment(awb: string): Promise<unknown> {
 
 export async function testNimbusConnection(): Promise<{ ok: boolean; message: string; raw?: unknown }> {
   const apiKey = getRequiredEnv('NIMBUSPOST_API_KEY');
+
+  // If API-user credentials are configured, test login first.
+  // Some Nimbus tenants can return 403 on list endpoints despite valid credentials.
+  const email = process.env.NIMBUSPOST_EMAIL;
+  const password = process.env.NIMBUSPOST_PASSWORD;
+  if (email && password) {
+    try {
+      const token = await getNimbusLoginToken();
+      if (token) {
+        return {
+          ok: true,
+          message: 'NimbusPost API connection successful via API user login',
+          raw: { login: 'ok' },
+        };
+      }
+    } catch (error) {
+      return {
+        ok: false,
+        message: 'NimbusPost login-token authentication failed',
+        raw: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
   const paths = getTestConnectionPaths();
 
   let lastError: { message: string; raw?: unknown } = { message: 'NimbusPost connection failed' };

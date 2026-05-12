@@ -56,6 +56,8 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const orderId = typeof body.orderId === 'string' ? body.orderId : '';
+    const manualAwb = typeof body.awbNumber === 'string' ? body.awbNumber.trim() : '';
+    const manualCourier = typeof body.courierName === 'string' ? body.courierName.trim() : '';
     if (!orderId) {
       return NextResponse.json({ success: false, error: 'orderId is required' }, { status: 400 });
     }
@@ -66,6 +68,21 @@ export async function POST(request: Request) {
     });
     if (!order) {
       return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 });
+    }
+
+    // If admin provides AWB manually (from Nimbus app), save it directly
+    if (manualAwb) {
+      const updated = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          awbNumber: manualAwb,
+          courierName: manualCourier || undefined,
+          nimbusStatus: 'SHIPMENT_BOOKED',
+          shippingPartner: 'NIMBUSPOST',
+        },
+        select: { id: true, awbNumber: true, courierName: true, nimbusStatus: true },
+      });
+      return NextResponse.json({ success: true, order: updated, awbFound: true, message: `AWB saved: ${manualAwb}` });
     }
 
     const apiKey = process.env.NIMBUSPOST_API_KEY;
@@ -80,19 +97,36 @@ export async function POST(request: Request) {
     };
     if (token) authHeaders['Authorization'] = `Bearer ${token}`;
 
-    // Try fetching by order_number (our orderId) from Nimbus orders endpoint
-    const searchUrl = `${getBaseUrl()}/orders?search=${encodeURIComponent(orderId)}`;
-    const searchRes = await fetch(searchUrl, { headers: authHeaders });
-    const searchJson = await searchRes.json().catch(() => null) as Record<string, unknown> | null;
+    // Try multiple Nimbus endpoints to find the shipment
+    let rawData: Record<string, unknown> | null = null;
 
-    // Also try fetching shipment directly if we have shipmentId
-    let shipmentJson: Record<string, unknown> | null = null;
-    if (order.shipmentId) {
-      const shipRes = await fetch(`${getBaseUrl()}/shipments/${order.shipmentId}`, { headers: authHeaders });
-      shipmentJson = await shipRes.json().catch(() => null) as Record<string, unknown> | null;
+    // 1. Try by shipmentId
+    if (!rawData && order.shipmentId) {
+      const res = await fetch(`${getBaseUrl()}/shipments/${order.shipmentId}`, { headers: authHeaders });
+      const json = await res.json().catch(() => null) as Record<string, unknown> | null;
+      if (json && deepFindStringByKeys(json, ['awb_number', 'awb', 'awbNumber'])) rawData = json;
     }
 
-    const rawData = shipmentJson || searchJson;
+    // 2. Try by AWB if already stored
+    if (!rawData && order.awbNumber) {
+      const res = await fetch(`${getBaseUrl()}/tracking/${order.awbNumber}`, { headers: authHeaders });
+      const json = await res.json().catch(() => null) as Record<string, unknown> | null;
+      if (json) rawData = json;
+    }
+
+    // 3. Try searching by order number
+    if (!rawData) {
+      const res = await fetch(`${getBaseUrl()}/shipments?search=${encodeURIComponent(orderId)}&per_page=10`, { headers: authHeaders });
+      const json = await res.json().catch(() => null) as Record<string, unknown> | null;
+      if (json) rawData = json;
+    }
+
+    // 4. Try orders search
+    if (!rawData) {
+      const res = await fetch(`${getBaseUrl()}/orders?search=${encodeURIComponent(orderId)}`, { headers: authHeaders });
+      const json = await res.json().catch(() => null) as Record<string, unknown> | null;
+      if (json) rawData = json;
+    }
     if (!rawData) {
       return NextResponse.json({ success: false, error: 'No response from Nimbus' }, { status: 502 });
     }

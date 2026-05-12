@@ -106,10 +106,14 @@ export default function QuickOrderActions({
   const handleSyncShipment = async () => {
     setLoading('SYNC_SHIPMENT');
     try {
+      // Ask admin if they want to enter AWB manually (from Nimbus app)
+      const manualAwb = window.prompt('Enter AWB from Nimbus app (or leave blank to auto-sync):') || '';
+      const manualCourier = manualAwb ? (window.prompt('Enter courier name (e.g. XPRESSBEES_SURFACE):') || '') : '';
+
       const res = await fetch('/api/admin/shipping/nimbuspost/sync-shipment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ orderId, awbNumber: manualAwb, courierName: manualCourier }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string; awbFound?: boolean };
       if (!res.ok) {

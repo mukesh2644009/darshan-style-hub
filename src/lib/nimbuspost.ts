@@ -202,6 +202,29 @@ function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, '').replace(/^91/, '');
 }
 
+function isNimbusRequiredFieldsError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /is required/i.test(message);
+}
+
+function toNimbusFormUrlEncoded(payload: Record<string, unknown>): string {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(payload)) {
+    if (value == null) continue;
+
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      params.set(key, String(value));
+      continue;
+    }
+
+    // Nimbus tenants may parse nested JSON only when passed as string field in form body.
+    params.set(key, JSON.stringify(value));
+  }
+
+  return params.toString();
+}
+
 function resolveAddressLine(address: string): { addressLine1: string; addressLine2: string } {
   const cleaned = address.trim();
   if (cleaned.length <= 64) {
@@ -378,11 +401,36 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
         shipments: [legacyFields],
       };
 
-  const raw = await nimbusFetch<Record<string, unknown>>(url, {
-    method: 'POST',
-    headers: getNimbusAuthHeaders(apiKey),
-    body: JSON.stringify(payload),
-  }, { allowLoginFallback: true, apiKey });
+  let raw: Record<string, unknown>;
+  try {
+    raw = await nimbusFetch<Record<string, unknown>>(
+      url,
+      {
+        method: 'POST',
+        headers: getNimbusAuthHeaders(apiKey),
+        body: JSON.stringify(payload),
+      },
+      { allowLoginFallback: true, apiKey }
+    );
+  } catch (error) {
+    if (!isNimbusRequiredFieldsError(error)) {
+      throw error;
+    }
+
+    // Fallback for Nimbus tenants expecting form-urlencoded payloads.
+    raw = await nimbusFetch<Record<string, unknown>>(
+      url,
+      {
+        method: 'POST',
+        headers: {
+          ...getNimbusAuthHeaders(apiKey),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: toNimbusFormUrlEncoded(payload as Record<string, unknown>),
+      },
+      { allowLoginFallback: true, apiKey }
+    );
+  }
 
   return mapShipmentResponse(raw);
 }

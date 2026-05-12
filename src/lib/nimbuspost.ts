@@ -156,6 +156,10 @@ async function nimbusFetch<T>(
           (typeof retryBody.message === 'string' && retryBody.message) ||
           (typeof retryBody.error === 'string' && retryBody.error) ||
           JSON.stringify(retryBody);
+        if (isNonFatalNimbusError(retryMessage)) {
+          console.warn(`NimbusPost soft error in fallback (shipment may still be created): ${retryMessage}`);
+          return retryJson as T;
+        }
         throw new Error(`NimbusPost business error: ${retryMessage}`);
       }
     }

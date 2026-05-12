@@ -168,14 +168,72 @@ function resolveAddressLine(address: string): { addressLine1: string; addressLin
   };
 }
 
+function deepFindStringByKeys(
+  value: unknown,
+  keys: string[],
+  maxDepth: number = 6
+): string | undefined {
+  if (maxDepth < 0 || value == null) return undefined;
+
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const obj = value as Record<string, unknown>;
+
+    for (const key of keys) {
+      const candidate = obj[key];
+      if (typeof candidate === 'string' && candidate.trim()) return candidate;
+      if (typeof candidate === 'number') return String(candidate);
+    }
+
+    for (const nested of Object.values(obj)) {
+      const found = deepFindStringByKeys(nested, keys, maxDepth - 1);
+      if (found) return found;
+    }
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = deepFindStringByKeys(item, keys, maxDepth - 1);
+      if (found) return found;
+    }
+  }
+
+  return undefined;
+}
+
 function mapShipmentResponse(raw: Record<string, unknown>): NimbusCreateShipmentResult {
   const data = (raw.data && typeof raw.data === 'object' ? raw.data : raw) as Record<string, unknown>;
+  const awbNumber = deepFindStringByKeys(data, [
+    'awb_number',
+    'awb',
+    'awbNumber',
+    'tracking_number',
+    'trackingNo',
+    'waybill',
+  ]);
+  const shipmentId = deepFindStringByKeys(data, [
+    'shipment_id',
+    'shipmentId',
+    'shipment',
+    'order_id',
+    'orderId',
+    'id',
+  ]);
+  const courierName = deepFindStringByKeys(data, [
+    'courier_name',
+    'courier',
+    'partner_name',
+    'partner',
+    'courierName',
+  ]);
+  const trackingUrl = deepFindStringByKeys(data, ['tracking_url', 'trackingUrl', 'track_url', 'tracking_link']);
+  const labelUrl = deepFindStringByKeys(data, ['label_url', 'labelUrl', 'label', 'label_link', 'shipping_label']);
+
   return {
-    shipmentId: (data.shipment_id || data.shipmentId || data.order_id || data.orderId) as string | undefined,
-    awbNumber: (data.awb_number || data.awb || data.awbNumber || data.tracking_number) as string | undefined,
-    courierName: (data.courier_name || data.courier || data.partner_name) as string | undefined,
-    trackingUrl: (data.tracking_url || data.trackingUrl) as string | undefined,
-    labelUrl: (data.label_url || data.labelUrl || data.label) as string | undefined,
+    shipmentId,
+    awbNumber,
+    courierName,
+    trackingUrl,
+    labelUrl,
     raw,
   };
 }

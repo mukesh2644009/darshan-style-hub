@@ -224,6 +224,7 @@ export default function CheckoutPage() {
           setOrderTotal(data.total || total);
           setOrderPaymentMethod(paymentMethod === 'cod' ? 'COD' : 'WHATSAPP');
           setOrderPlaced(true);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
 
           // Facebook Pixel - purchase
           fbPurchase(
@@ -305,6 +306,7 @@ export default function CheckoutPage() {
             setOrderTotal(amount);
             setOrderPaymentMethod('UPI');
             setOrderPlaced(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
 
             // Facebook Pixel - purchase
             fbPurchase(
@@ -822,11 +824,19 @@ export default function CheckoutPage() {
                 </label>
 
                 {paymentMethod === 'cod' && (
-                  <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
-                    <FiInfo className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                    <p className="text-sm">
-                      <strong>₹50 extra charge</strong> will be added for Cash on Delivery. Choose online payment to avoid this charge.
-                    </p>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+                      <FiInfo className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm">
+                        <strong>₹50 extra charge</strong> will be added for Cash on Delivery. Choose online payment to avoid this charge.
+                      </p>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800">
+                      <FiTag className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <p className="text-sm">
+                        <strong>Coupon codes</strong> are available only for prepaid orders (UPI / Card). Switch to online payment to use coupon <strong>DSH10</strong> for 10% off!
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

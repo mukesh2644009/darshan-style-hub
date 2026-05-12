@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { isValidReturnReason } from '@/lib/return-reasons';
-import { sendAdminReturnNotification } from '@/lib/email';
+import { sendAdminReturnNotification, sendCustomerReturnNotification } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -166,6 +166,19 @@ export async function POST(request: Request) {
       details,
       pickupFee,
     }).catch(() => {});
+
+    // Notify customer (fire-and-forget)
+    const customerEmail = user.email && !user.email.endsWith('@darshan.local') ? user.email : null;
+    if (customerEmail) {
+      sendCustomerReturnNotification({
+        to: customerEmail,
+        customerName: user.name || order.shippingName,
+        orderId: order.id,
+        requestType: requestType as 'RETURN' | 'EXCHANGE',
+        reason,
+        pickupFee,
+      }).catch(() => {});
+    }
 
     return NextResponse.json(
       {

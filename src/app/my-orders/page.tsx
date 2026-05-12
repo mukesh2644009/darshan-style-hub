@@ -390,7 +390,7 @@ export default function MyOrdersPage() {
           order={returnModalOrder}
           requestType={returnModalType}
           onClose={() => setReturnModalOrder(null)}
-          onSuccess={fetchOrders}
+          onSuccess={() => { fetchOrders(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         />
       )}
 

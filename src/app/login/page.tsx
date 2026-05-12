@@ -40,11 +40,11 @@ export default function LoginPage() {
       if (redirectUrl.startsWith('/admin') && isAdmin) router.push(redirectUrl);
       else if (!redirectUrl.startsWith('/admin')) router.push(redirectUrl);
       else if (isAdmin) router.push('/admin');
-      else router.push('/my-orders');
+      else router.push('/');
     } else if (isAdmin) {
       router.push('/admin');
     } else {
-      router.push('/my-orders');
+      router.push('/');
     }
   }, [isAuthenticated, isAdmin, router, redirectUrl]);
 

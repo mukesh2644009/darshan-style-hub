@@ -842,6 +842,82 @@ export async function sendAdminReturnNotification(props: ReturnNotificationProps
   }
 }
 
+// ─── Customer: Return/Exchange confirmation ─────────────────────────────────
+interface CustomerReturnEmailProps {
+  to: string;
+  customerName: string;
+  orderId: string;
+  requestType: 'RETURN' | 'EXCHANGE';
+  reason: string;
+  pickupFee: number;
+}
+
+export async function sendCustomerReturnNotification(props: CustomerReturnEmailProps) {
+  const service = getEmailService();
+  if (!service) return { success: false };
+
+  const { to, customerName, orderId, requestType, reason, pickupFee } = props;
+  const typeLabel = requestType === 'EXCHANGE' ? 'Exchange' : 'Return';
+  const emoji = requestType === 'EXCHANGE' ? '🔄' : '↩️';
+  const feeNote = requestType === 'RETURN'
+    ? `A pickup fee of <strong>₹${pickupFee}</strong> will be deducted from your refund.`
+    : 'Exchange shipping is <strong>free</strong>!';
+
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f8f4f0;margin:0;padding:0;">
+  <table style="width:100%;"><tr><td align="center" style="padding:40px 0;">
+  <table style="width:560px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);">
+    <tr><td style="background:linear-gradient(135deg,#2563eb,#3b82f6);padding:32px;text-align:center;">
+      <p style="font-size:40px;margin:0 0 8px;">${emoji}</p>
+      <h1 style="color:#fff;margin:0;font-size:22px;">${typeLabel} Request Received</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+      <p style="color:#4b5563;font-size:15px;margin:0 0 20px;">Hi ${customerName},</p>
+      <p style="color:#4b5563;font-size:15px;margin:0 0 24px;">
+        Your <strong>${typeLabel.toLowerCase()}</strong> request for Order <strong>#${orderId.slice(0,8).toUpperCase()}</strong> has been submitted successfully. Our team will review it shortly.
+      </p>
+      <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;margin-bottom:20px;">
+        <tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Order ID</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">#${orderId.slice(0,8).toUpperCase()}</td></tr>
+        <tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Request Type</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">${typeLabel}</td></tr>
+        <tr><td style="padding:10px 14px;color:#6b7280;font-size:14px;">Reason</td>
+            <td style="padding:10px 14px;color:#111;font-weight:600;">${reason}</td></tr>
+      </table>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px;margin-bottom:20px;">
+        <p style="margin:0;color:#1e40af;font-size:14px;">${feeNote}</p>
+      </div>
+      <p style="color:#6b7280;font-size:14px;margin:0;">We'll notify you once your request is approved. For any questions, reach us on WhatsApp at <strong>+91 90190 76335</strong>.</p>
+    </td></tr>
+    <tr><td style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
+      <p style="color:#9ca3af;margin:0;font-size:12px;">${SHOP_NAME} | ${SHOP_WEBSITE}</p>
+    </td></tr>
+  </table></td></tr></table>
+</body></html>`;
+
+  const subject = `${emoji} ${typeLabel} Request Received — Order #${orderId.slice(0,8).toUpperCase()}`;
+
+  try {
+    if (service === 'resend') {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const { error } = await resend.emails.send({ from: `${SHOP_NAME} <info@darshanstylehub.com>`, to: [to], subject, html });
+      if (error) {
+        console.error('Resend customer return email error, falling through to Gmail:', error);
+      } else {
+        return { success: true, via: 'resend' };
+      }
+    }
+    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+      const transporter = createGmailTransporter();
+      await transporter.sendMail({ from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`, to, subject, html });
+      return { success: true, via: 'gmail' };
+    }
+  } catch (e) {
+    console.error('Customer return notification email failed:', e);
+  }
+  return { success: false };
+}
+
 // ─── Admin: Order cancelled notification ─────────────────────────────────────
 interface CancelNotificationProps {
   orderId: string;

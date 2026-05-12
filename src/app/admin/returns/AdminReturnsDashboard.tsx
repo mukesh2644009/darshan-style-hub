@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FiLoader, FiRefreshCw, FiExternalLink, FiCheck, FiX, FiDollarSign, FiPackage } from 'react-icons/fi';
 import { RETURN_REASONS } from '@/lib/return-reasons';
@@ -56,6 +57,7 @@ function statusBadge(status: string) {
 }
 
 export default function AdminReturnsDashboard({ initialReturns }: Props) {
+  const router = useRouter();
   const [rows, setRows] = useState<ReturnRow[]>(initialReturns);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +70,7 @@ export default function AdminReturnsDashboard({ initialReturns }: Props) {
     if (data.success) {
       setRows(data.returns);
     }
+    router.refresh();
   };
 
   const patchStatus = async (id: string, status: string, adminNotes?: string) => {

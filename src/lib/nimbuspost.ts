@@ -399,15 +399,19 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
     modernFields,
   ];
 
-  const mode = process.env.NIMBUSPOST_CREATE_SHIPMENT_PAYLOAD_MODE;
-  const candidates =
+  const mode = (process.env.NIMBUSPOST_CREATE_SHIPMENT_PAYLOAD_MODE || '').toLowerCase();
+  const preferred =
     mode === 'legacy'
-      ? [legacyFields]
+      ? legacyFields
       : mode === 'modern'
-        ? [modernFields]
+        ? modernFields
         : mode === 'camel'
-          ? [camelCaseFields]
-          : payloadCandidates;
+          ? camelCaseFields
+          : null;
+
+  const candidates = preferred
+    ? [preferred, ...payloadCandidates.filter((candidate) => candidate !== preferred)]
+    : payloadCandidates;
 
   let lastError: unknown = null;
   let raw: Record<string, unknown> | null = null;

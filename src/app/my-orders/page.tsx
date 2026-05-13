@@ -207,9 +207,13 @@ export default function MyOrdersPage() {
               const cfg = STATUS_CONFIG[order.status] ?? STATUS_CONFIG['PENDING'];
               const StatusIcon = cfg.icon;
               const isReplacement = order.orderType === 'REPLACEMENT';
-              const canCancel = !isReplacement && ['PENDING', 'CONFIRMED'].includes(order.status);
+              const isFailedPayment =
+                order.paymentMethod !== 'COD' &&
+                (order.paymentStatus === 'FAILED' || order.paymentStatus === 'PENDING');
+              const canCancel = !isReplacement && !isFailedPayment && ['PENDING', 'CONFIRMED'].includes(order.status);
               const daysSinceUpdate = (Date.now() - new Date(order.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
-              const withinReturnWindow = daysSinceUpdate <= 7;
+              // Return window: at least 1 day after delivery (item in hand), and within 7 days
+              const withinReturnWindow = daysSinceUpdate >= 1 && daysSinceUpdate <= 7;
               const returnFlowStatuses = ['RETURN_REQUESTED','RETURN_APPROVED','RETURNED','EXCHANGE_REQUESTED','EXCHANGE_APPROVED','EXCHANGED'];
               const inReturnFlow = returnFlowStatuses.includes(order.status);
               const canReturn = !isReplacement && order.status === 'DELIVERED' && !order.returnRequest && !inReturnFlow && withinReturnWindow;
@@ -226,7 +230,7 @@ export default function MyOrdersPage() {
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-mono font-semibold text-gray-900 text-sm">#{order.id.slice(0, 8).toUpperCase()}</p>
+                          <p className="font-mono font-semibold text-gray-900 text-sm">DSH{order.id.slice(0, 8).toUpperCase()}</p>
                           {isReplacement && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 text-[10px] font-bold uppercase tracking-wide">
                               <FiRefreshCw className="w-3 h-3" /> Replacement · FREE
@@ -240,7 +244,7 @@ export default function MyOrdersPage() {
                           {isReplacement && order.parentOrderId && (
                             <>
                               <span className="mx-1">·</span>
-                              for #{order.parentOrderId.slice(0, 8).toUpperCase()}
+                              for DSH{order.parentOrderId.slice(0, 8).toUpperCase()}
                             </>
                           )}
                         </p>
@@ -251,6 +255,14 @@ export default function MyOrdersPage() {
                       {cfg.label}
                     </span>
                   </div>
+
+                  {/* Transaction cancelled banner */}
+                  {isFailedPayment && (
+                    <div className="px-5 py-3 bg-red-50 border-b border-red-100 flex items-center gap-2">
+                      <FiXCircle className="w-4 h-4 text-red-500 shrink-0" />
+                      <p className="text-xs font-semibold text-red-600 uppercase tracking-wide">Transaction Cancelled — Payment not received</p>
+                    </div>
+                  )}
 
                   {/* Items */}
                   <div className="px-5 py-4 space-y-3">
@@ -296,14 +308,14 @@ export default function MyOrdersPage() {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
-                      {order.shippingPartner === 'NIMBUSPOST' && order.awbNumber && (
+                      {order.shippingPartner === 'NIMBUSPOST' && order.awbNumber && !['CANCELLED'].includes(order.status) && (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-700 text-xs font-semibold">
                           <FiTruck className="w-3.5 h-3.5" />
                           AWB: {order.awbNumber}
                         </span>
                       )}
 
-                      {order.trackingUrl && (
+                      {order.trackingUrl && !['CANCELLED'].includes(order.status) && (
                         <a
                           href={order.trackingUrl}
                           target="_blank"
@@ -315,14 +327,14 @@ export default function MyOrdersPage() {
                         </a>
                       )}
 
-                      {/* Receipt — hide for returned/exchanged orders */}
-                      {!['RETURNED', 'EXCHANGED'].includes(order.status) && (
+                      {/* Invoice — hide for returned/exchanged orders and failed payments */}
+                      {!['RETURNED', 'EXCHANGED'].includes(order.status) && !isFailedPayment && (
                         <button
                           onClick={() => handleDownloadReceipt(order)}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors text-xs font-medium"
                         >
                           <FiDownload className="w-3.5 h-3.5" />
-                          Receipt
+                          Invoice
                         </button>
                       )}
 
@@ -361,7 +373,7 @@ export default function MyOrdersPage() {
                     </div>
                   </div>
 
-                  {order.shippingPartner === 'NIMBUSPOST' && (order.courierName || order.nimbusStatus) && (
+                  {order.shippingPartner === 'NIMBUSPOST' && (order.courierName || order.nimbusStatus) && !['CANCELLED'].includes(order.status) && (
                     <div className="px-5 py-2 border-t border-gray-100 bg-sky-50/50 flex flex-wrap items-center gap-x-4 gap-y-1">
                       {order.courierName && (
                         <p className="text-xs text-sky-700">
@@ -390,7 +402,7 @@ export default function MyOrdersPage() {
                         {order.status === 'EXCHANGED'          && (
                           <p className="text-xs text-gray-500 mt-0.5">
                             Exchange fulfilled! {replacementForThis ? (
-                              <>Track your replacement on order <span className="font-mono font-semibold text-gray-700">#{replacementForThis.id.slice(0, 8).toUpperCase()}</span> below.</>
+                              <>Track your replacement on order <span className="font-mono font-semibold text-gray-700">DSH{replacementForThis.id.slice(0, 8).toUpperCase()}</span> below.</>
                             ) : 'Your new item is on its way.'}
                           </p>
                         )}
@@ -398,10 +410,14 @@ export default function MyOrdersPage() {
                     </div>
                   )}
 
-                  {/* Return window expired notice */}
+                  {/* Return window expired or not yet open notice */}
                   {order.status === 'DELIVERED' && !order.returnRequest && !inReturnFlow && !withinReturnWindow && (
                     <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 flex items-center gap-2">
-                      <span className="text-xs text-gray-400">Return & exchange window closed (7-day policy)</span>
+                      <span className="text-xs text-gray-400">
+                        {daysSinceUpdate < 1
+                          ? 'Return & exchange will be available once your delivery is confirmed (within 24 hrs)'
+                          : 'Return & exchange window closed (7-day policy)'}
+                      </span>
                     </div>
                   )}
 
@@ -453,7 +469,7 @@ export default function MyOrdersPage() {
               Cancel this order?
             </h2>
             <p className="text-sm text-gray-500 text-center mb-6">
-              Order <span className="font-mono font-semibold text-gray-700">#{cancelOrderId.slice(0, 8).toUpperCase()}</span> will be cancelled. This cannot be undone.
+              Order <span className="font-mono font-semibold text-gray-700">DSH{cancelOrderId.slice(0, 8).toUpperCase()}</span> will be cancelled. This cannot be undone.
             </p>
             <div className="flex gap-3">
               <button

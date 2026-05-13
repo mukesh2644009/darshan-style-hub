@@ -112,14 +112,17 @@ export default async function OrdersPage() {
                   const sm = STATUS_META[order.status] ?? STATUS_META['PENDING'];
                   const pm = PAYMENT_META[order.paymentStatus] ?? PAYMENT_META['PENDING'];
                   const isReturnFlow = ['RETURN_REQUESTED','EXCHANGE_REQUESTED'].includes(order.status);
+                  const isFailedPayment = order.paymentMethod !== 'COD' &&
+                    (order.paymentStatus === 'FAILED' || order.paymentStatus === 'PENDING');
 
                   return (
-                    <tr key={order.id} className={`hover:bg-gray-50/80 transition-colors ${isReturnFlow ? 'bg-orange-50/30' : ''}`}>
+                    <tr key={order.id} className={`hover:bg-gray-50/80 transition-colors ${isReturnFlow ? 'bg-orange-50/30' : ''} ${isFailedPayment ? 'bg-red-50/40' : ''}`}>
                       {/* Order ID */}
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-2">
                           {isReturnFlow && <FiAlertCircle className="w-3.5 h-3.5 text-orange-500 shrink-0" />}
-                          <span className="font-mono text-sm font-bold text-gray-800">#{order.id.slice(0, 8).toUpperCase()}</span>
+                          {isFailedPayment && <FiAlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
+                          <span className={`font-mono text-sm font-bold ${isFailedPayment ? 'text-red-700' : 'text-gray-800'}`}>DSH{order.id.slice(0, 8).toUpperCase()}</span>
                         </div>
                         <p className="text-xs text-gray-400 mt-0.5">{order.paymentMethod}</p>
                       </td>
@@ -154,6 +157,11 @@ export default async function OrdersPage() {
 
                       {/* Status */}
                       <td className="px-5 py-4 whitespace-nowrap">
+                        {isFailedPayment && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 mb-1 block w-fit">
+                            ✕ Transaction Cancelled
+                          </span>
+                        )}
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${sm.bg} ${sm.text}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
                           {sm.label}

@@ -48,7 +48,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
     }
   };
 
-  const whatsappMessage = `Hi! Regarding your order #${order.id.slice(0, 8).toUpperCase()} at Darshan Style Hub:\n\nOrder Total: ₹${order.total.toLocaleString('en-IN')}\nStatus: ${order.status}\n\nHow can we help you?`;
+  const whatsappMessage = `Hi! Regarding your order DSH${order.id.slice(0, 8).toUpperCase()} at Darshan Style Hub:\n\nOrder Total: ₹${order.total.toLocaleString('en-IN')}\nStatus: ${order.status}\n\nHow can we help you?`;
   const whatsappLink = `https://wa.me/${order.shippingPhone?.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMessage)}`;
 
   return (
@@ -65,7 +65,7 @@ export default async function OrderDetailPage({ params }: { params: { id: string
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              Order #{order.id.slice(0, 8).toUpperCase()}
+              Order DSH{order.id.slice(0, 8).toUpperCase()}
             </h1>
             <p className="text-gray-600 mt-1">
               Placed on {new Date(order.createdAt).toLocaleDateString('en-IN', {

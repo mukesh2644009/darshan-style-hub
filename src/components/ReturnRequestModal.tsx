@@ -123,7 +123,7 @@ export default function ReturnRequestModal({ order, requestType, onClose, onSucc
               {isExchange ? 'Request an exchange' : 'Request a return'}
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              Order <span className="font-mono font-medium text-gray-600">#{order.id.slice(0, 8).toUpperCase()}</span>
+              Order <span className="font-mono font-medium text-gray-600">DSH{order.id.slice(0, 8).toUpperCase()}</span>
               &nbsp;·&nbsp;within 7-day window
             </p>
           </div>

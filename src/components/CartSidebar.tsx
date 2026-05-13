@@ -77,19 +77,29 @@ export default function CartSidebar() {
                       className="flex gap-4 bg-accent-50 rounded-xl p-3 overflow-hidden"
                     >
                       {/* Product Image */}
-                      <div className="relative w-24 h-28 rounded-lg overflow-hidden flex-shrink-0">
+                      <Link
+                        href={`/products/${item.product.slug || item.product.id}`}
+                        onClick={closeCart}
+                        className="relative w-24 h-28 rounded-lg overflow-hidden flex-shrink-0 block"
+                      >
                         <Image
                           src={normalizeProductImageUrl(item.product.images?.[0]) || '/products/logo.jpeg'}
                           alt={item.product.name}
                           fill
                           unoptimized
-                          className="object-cover"
+                          className="object-cover hover:scale-105 transition-transform duration-300"
                         />
-                      </div>
+                      </Link>
 
                       {/* Product Details */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium text-gray-900 truncate">{item.product.name}</h3>
+                        <Link
+                          href={`/products/${item.product.slug || item.product.id}`}
+                          onClick={closeCart}
+                          className="font-medium text-gray-900 truncate hover:text-primary-600 transition-colors block"
+                        >
+                          {item.product.name}
+                        </Link>
                         <p className="text-sm text-gray-500">
                           {item.selectedSize} • {item.selectedColor}
                         </p>
@@ -160,12 +170,13 @@ export default function CartSidebar() {
                 >
                   Proceed to Checkout
                 </Link>
-                <button
+                <Link
+                  href="/products"
                   onClick={closeCart}
-                  className="w-full mt-2 text-gray-600 py-2 text-center hover:text-primary-600 transition-colors"
+                  className="block w-full mt-2 text-gray-600 py-2 text-center hover:text-primary-600 transition-colors"
                 >
                   Continue Shopping
-                </button>
+                </Link>
               </div>
             )}
           </motion.div>

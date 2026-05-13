@@ -109,7 +109,7 @@ export default function AdminReturnsDashboard({ initialReturns }: Props) {
         return;
       }
       await refresh();
-      alert(`Replacement order #${data.replacementOrderId.slice(0, 8).toUpperCase()} created — ship it like a normal order.`);
+      alert(`Replacement order DSH${data.replacementOrderId.slice(0, 8).toUpperCase()} created — ship it like a normal order.`);
     } catch {
       setError('Request failed');
     } finally {
@@ -215,7 +215,7 @@ export default function AdminReturnsDashboard({ initialReturns }: Props) {
                           href={`/admin/orders/${row.order.id}`}
                           className="font-mono text-primary-600 hover:underline inline-flex items-center gap-1"
                         >
-                          #{row.order.id.slice(0, 8).toUpperCase()}
+                          DSH{row.order.id.slice(0, 8).toUpperCase()}
                           <FiExternalLink className="w-3 h-3" />
                         </Link>
                         <p className="text-gray-600 mt-1">
@@ -250,7 +250,7 @@ export default function AdminReturnsDashboard({ initialReturns }: Props) {
                             className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:underline font-medium"
                           >
                             <FiPackage className="w-3 h-3" />
-                            Replacement #{row.replacementOrderId.slice(0, 8).toUpperCase()}
+                            Replacement DSH{row.replacementOrderId.slice(0, 8).toUpperCase()}
                           </Link>
                         )}
                       </td>

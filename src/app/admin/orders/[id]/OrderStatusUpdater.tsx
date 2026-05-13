@@ -167,6 +167,11 @@ export default function OrderStatusUpdater({ orderId, currentStatus, currentPaym
             </button>
           ))}
         </div>
+        {status === 'DELIVERED' && currentStatus !== 'DELIVERED' && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1">
+            ⚠️ Only mark as <strong>Delivered</strong> after the courier confirms the customer has physically received the package. This will unlock the return &amp; exchange window for the customer.
+          </p>
+        )}
       </div>
 
       {/* Payment Status */}

@@ -388,7 +388,7 @@ export default function CheckoutPage() {
   };
 
   if (orderPlaced) {
-    const orderIdShort = orderId ? `#${orderId.slice(0, 8).toUpperCase()}` : '';
+    const orderIdShort = orderId ? `DSH${orderId.slice(0, 8).toUpperCase()}` : '';
 
     const orderWhatsAppMsg = [
       `🛍️ *Order Confirmed — Darshan Style Hub*`,
@@ -445,7 +445,7 @@ export default function CheckoutPage() {
               onClick={handleDownloadReceipt}
               className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 mb-3"
             >
-              <FiDownload /> Download Receipt
+              <FiDownload /> Download Invoice
             </button>
             <a
               href={selfWhatsAppUrl}
@@ -511,7 +511,7 @@ export default function CheckoutPage() {
               onClick={handleDownloadReceipt}
               className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 mb-3"
             >
-              <FiDownload /> Download Receipt
+              <FiDownload /> Download Invoice
             </button>
             <Link href="/products" className="w-full py-3 border-2 border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors text-center inline-block">
               Continue Shopping
@@ -548,7 +548,7 @@ export default function CheckoutPage() {
             onClick={handleDownloadReceipt}
             className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 mb-3"
           >
-            <FiDownload /> Download Receipt
+            <FiDownload /> Download Invoice
           </button>
           <a
             href={selfWhatsAppUrl}

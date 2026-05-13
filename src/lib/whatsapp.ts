@@ -31,7 +31,7 @@ function formatOrderMessage(order: OrderNotification): string {
 
   return `🛍️ *NEW ORDER RECEIVED!*
 
-*Order ID:* #${order.orderId.slice(0, 8).toUpperCase()}
+*Order ID:* DSH${order.orderId.slice(0, 8).toUpperCase()}
 
 *Customer:* ${order.customerName}
 *Phone:* ${order.customerPhone}
@@ -143,7 +143,7 @@ async function sendViaEmailFallback(order: OrderNotification, message: string): 
     await transporter.sendMail({
       from: `"Darshan Style Hub" <${gmailUser}>`,
       to: adminEmail,
-      subject: `🛍️ New Order #${order.orderId.slice(0, 8).toUpperCase()} from ${order.customerName}`,
+      subject: `🛍️ New Order DSH${order.orderId.slice(0, 8).toUpperCase()} from ${order.customerName}`,
       html: `
         <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
           <div style="background: #25D366; color: white; padding: 15px 20px; border-radius: 12px 12px 0 0;">

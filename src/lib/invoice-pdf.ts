@@ -84,7 +84,7 @@ export async function generateOrderInvoicePDF(data: InvoiceData): Promise<Buffer
       doc.fontSize(10)
          .fillColor(grayColor)
          .font('Helvetica')
-         .text(`Order ID: #${data.orderId.slice(0, 8).toUpperCase()}`, margin, infoY, { width: contentWidth, align: 'right' })
+         .text(`Order ID: DSH${data.orderId.slice(0, 8).toUpperCase()}`, margin, infoY, { width: contentWidth, align: 'right' })
          .text(`Date: ${data.orderDate.toLocaleDateString('en-IN', {
            day: '2-digit',
            month: 'short',

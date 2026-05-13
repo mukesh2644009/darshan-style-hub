@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, TouchEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiHeart, FiShare2, FiMinus, FiPlus, FiStar, FiTruck, FiRefreshCw, FiShield, FiChevronRight, FiChevronLeft, FiCheck, FiX } from 'react-icons/fi';
+import { FiHeart, FiShare2, FiMinus, FiPlus, FiStar, FiTruck, FiRefreshCw, FiShield, FiChevronRight, FiChevronLeft, FiCheck, FiX, FiMapPin } from 'react-icons/fi';
 import { FaWhatsapp, FaMoneyBillWave } from 'react-icons/fa';
 import { Product } from '@/lib/products';
 import { useCartStore } from '@/store/cartStore';
@@ -136,6 +136,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const isWishlisted = isInWishlist(product.id);
   const [showSizeGuide, setShowSizeGuide] = useState(false);
   const [showFullName, setShowFullName] = useState(false);
+  const [pincode, setPincode] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState<string | null>(null);
+  const [pincodeError, setPincodeError] = useState('');
   
   // Swipe handling for mobile
   const touchStartX = useRef<number>(0);
@@ -242,6 +245,34 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       navigator.clipboard.writeText(window.location.href);
       alert('Link copied to clipboard!');
     }
+  };
+
+  const addBusinessDays = (date: Date, days: number): Date => {
+    const result = new Date(date);
+    let added = 0;
+    while (added < days) {
+      result.setDate(result.getDate() + 1);
+      const day = result.getDay();
+      if (day !== 0 && day !== 6) added++;
+    }
+    return result;
+  };
+
+  const checkPincodeDelivery = () => {
+    setPincodeError('');
+    setDeliveryDate(null);
+    if (!/^\d{6}$/.test(pincode.trim())) {
+      setPincodeError('Please enter a valid 6-digit pincode');
+      return;
+    }
+    // Estimate 3–5 business days depending on pincode zone
+    const firstDigit = parseInt(pincode[0]);
+    const businessDays = firstDigit <= 4 ? 3 : firstDigit <= 7 ? 4 : 5;
+    const estimated = addBusinessDays(new Date(), businessDays);
+    const formatted = estimated.toLocaleDateString('en-IN', {
+      weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Kolkata',
+    });
+    setDeliveryDate(formatted);
   };
 
   return (
@@ -456,6 +487,45 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 <span className="text-gray-500">
                   {product.inStock ? '✓ In Stock' : '✗ Out of Stock'}
                 </span>
+              </div>
+            </div>
+
+            {/* Delivery Details */}
+            <div className="mb-6 border border-gray-200 rounded-xl overflow-hidden">
+              <p className="text-xs font-bold text-gray-700 tracking-widest px-4 pt-3 pb-2 bg-gray-50 border-b border-gray-100 uppercase">
+                Delivery Details
+              </p>
+              <div className="px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-1 border border-gray-200 rounded-lg px-3 py-2 bg-white">
+                    <FiMapPin className="text-gray-400 shrink-0" size={15} />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={pincode}
+                      onChange={e => { setPincode(e.target.value.replace(/\D/g, '')); setDeliveryDate(null); setPincodeError(''); }}
+                      onKeyDown={e => e.key === 'Enter' && checkPincodeDelivery()}
+                      placeholder="Enter pincode"
+                      className="flex-1 text-sm text-gray-800 outline-none bg-transparent placeholder-gray-400 min-w-0"
+                    />
+                  </div>
+                  <button
+                    onClick={checkPincodeDelivery}
+                    className="text-xs font-bold text-primary-600 hover:text-primary-700 px-2 py-2 shrink-0 transition-colors"
+                  >
+                    CHECK
+                  </button>
+                </div>
+                {pincodeError && (
+                  <p className="text-xs text-red-500 mt-1.5">{pincodeError}</p>
+                )}
+                {deliveryDate && (
+                  <p className="text-sm text-gray-700 mt-2 flex items-center gap-1.5">
+                    <span>🚚</span>
+                    Get this Product by <strong>{deliveryDate}</strong>
+                  </p>
+                )}
               </div>
             </div>
 

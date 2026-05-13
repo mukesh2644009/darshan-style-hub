@@ -59,7 +59,7 @@ export function generateReceipt(data: ReceiptData) {
   doc.text('ORDER RECEIPT', pageWidth - 15, 22, { align: 'right' });
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text(`#${data.orderId.slice(0, 8).toUpperCase()}`, pageWidth - 15, 30, { align: 'right' });
+  doc.text(`DSH${data.orderId.slice(0, 8).toUpperCase()}`, pageWidth - 15, 30, { align: 'right' });
 
   y = 50;
 
@@ -199,5 +199,5 @@ export function generateReceipt(data: ReceiptData) {
 export function downloadReceipt(data: ReceiptData) {
   const doc = generateReceipt(data);
   const orderShort = data.orderId.slice(0, 8).toUpperCase();
-  doc.save(`Darshan-Style-Hub-Receipt-${orderShort}.pdf`);
+  doc.save(`Darshan-Style-Hub-Invoice-${orderShort}.pdf`);
 }

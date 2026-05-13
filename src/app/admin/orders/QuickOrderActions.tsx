@@ -174,9 +174,9 @@ export default function QuickOrderActions({
     <div className="flex items-center gap-2" ref={dropRef}>
       {/* AWB chip — always visible when present */}
       {awbNumber && (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 whitespace-nowrap">
-          <FiPackage className="w-3 h-3" />
-          {awbNumber.slice(-6)}
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-200 whitespace-nowrap" title={`AWB: ${awbNumber}`}>
+          <FiTruck className="w-3 h-3" />
+          AWB: {awbNumber}
         </span>
       )}
 

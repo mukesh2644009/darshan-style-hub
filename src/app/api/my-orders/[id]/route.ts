@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { sendAdminCancelNotification } from '@/lib/email';
+import { restoreInventory } from '@/lib/inventory';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,12 +108,27 @@ export async function DELETE(
       );
     }
 
+    // Fetch items before cancelling to restore inventory
+    const orderWithItems = await prisma.order.findUnique({
+      where: { id: params.id },
+      include: { items: { select: { productId: true, size: true, quantity: true } } },
+    });
+
     // Update order status to cancelled
     const cancelled = await prisma.order.update({
       where: { id: params.id },
       data: { status: 'CANCELLED' },
       include: { items: { include: { product: { select: { name: true } } } } },
     });
+
+    // Restore inventory
+    if (orderWithItems) {
+      restoreInventory(orderWithItems.items.map(i => ({
+        productId: i.productId,
+        size: i.size ?? null,
+        quantity: i.quantity,
+      }))).catch(() => {});
+    }
 
     // Notify admin (fire-and-forget)
     sendAdminCancelNotification({

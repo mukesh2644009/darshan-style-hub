@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin, getCurrentUser } from '@/lib/auth';
+import { decrementInventory } from '@/lib/inventory';
 
 export const dynamic = 'force-dynamic';
 
@@ -165,6 +166,14 @@ export async function POST(request: Request) {
       }
     }
     const total = subtotal + shipping + codCharge - discount;
+
+    // Decrement inventory — blocks if any size is out of stock
+    const inventoryError = await decrementInventory(
+      orderItems.map(i => ({ productId: i.productId, size: i.size ?? null, quantity: i.quantity }))
+    );
+    if (inventoryError) {
+      return NextResponse.json({ error: inventoryError }, { status: 400 });
+    }
 
     // Create order
     const order = await prisma.order.create({

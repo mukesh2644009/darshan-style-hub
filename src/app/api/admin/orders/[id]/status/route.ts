@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
 import { sendOrderShippedEmail } from '@/lib/email';
+import { restoreInventory } from '@/lib/inventory';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,11 @@ export async function PATCH(
     // Prevent modifying cancelled orders
     const existing = await prisma.order.findUnique({
       where: { id: params.id },
-      select: { status: true, shippingName: true, total: true, user: { select: { email: true, name: true } } },
+      select: {
+        status: true, shippingName: true, total: true,
+        user: { select: { email: true, name: true } },
+        items: { select: { productId: true, size: true, quantity: true } },
+      },
     });
     if (existing?.status === 'CANCELLED') {
       return NextResponse.json(
@@ -64,6 +69,15 @@ export async function PATCH(
       where: { id: params.id },
       data: updateData,
     });
+
+    // Restore inventory when admin cancels an order
+    if (status === 'CANCELLED' && existing?.items?.length) {
+      restoreInventory(existing.items.map(i => ({
+        productId: i.productId,
+        size: i.size ?? null,
+        quantity: i.quantity,
+      }))).catch(() => {});
+    }
 
     // Send shipped email to customer
     if (status === 'SHIPPED' && existing?.user?.email) {

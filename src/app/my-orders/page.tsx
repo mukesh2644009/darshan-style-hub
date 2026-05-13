@@ -9,7 +9,6 @@ import {
   FiCheckCircle, FiClock, FiXCircle, FiMapPin, FiRefreshCw,
 } from 'react-icons/fi';
 import { useAuthStore } from '@/store/authStore';
-import { downloadReceipt } from '@/lib/generate-receipt';
 import ReturnRequestModal from '@/components/ReturnRequestModal';
 import { RETURN_REASONS } from '@/lib/return-reasons';
 
@@ -88,6 +87,7 @@ export default function MyOrdersPage() {
   const [returnModalType, setReturnModalType] = useState<'RETURN' | 'EXCHANGE'>('RETURN');
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(null);
 
   useEffect(() => { checkAuth(); }, [checkAuth]);
 
@@ -125,25 +125,25 @@ export default function MyOrdersPage() {
     }
   };
 
-  const handleDownloadReceipt = (order: Order) => {
-    const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const shipping = subtotal >= 999 ? 0 : 99;
-    const codCharge = order.paymentMethod === 'COD' ? 50 : 0;
-    downloadReceipt({
-      orderId: order.id,
-      orderDate: new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }),
-      customerName: order.shippingName,
-      customerEmail: order.shippingEmail,
-      customerPhone: order.shippingPhone,
-      shippingAddress: order.shippingAddress,
-      shippingCity: order.shippingCity,
-      shippingState: order.shippingState,
-      shippingPincode: order.shippingPincode,
-      paymentMethod: order.paymentMethod || 'N/A',
-      paymentStatus: order.paymentMethod === 'COD' ? 'Confirmed (Pay on Delivery)' : (order.paymentStatus || 'Pending'),
-      items: order.items.map(item => ({ name: item.product.name, size: item.size, color: item.color, quantity: item.quantity, price: item.price })),
-      subtotal, shipping, codCharge, total: order.total,
-    });
+  const handleDownloadReceipt = async (order: Order) => {
+    setDownloadingInvoice(order.id);
+    try {
+      const res = await fetch(`/api/my-orders/invoice?orderId=${order.id}`);
+      if (!res.ok) throw new Error('Failed to generate invoice');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `DSH-Invoice-${order.id.slice(0, 8).toUpperCase()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Could not download invoice. Please try again.');
+    } finally {
+      setDownloadingInvoice(null);
+    }
   };
 
   const returnReasonLabel = (code: string) => RETURN_REASONS.find(r => r.value === code)?.label ?? code;
@@ -250,10 +250,17 @@ export default function MyOrdersPage() {
                         </p>
                       </div>
                     </div>
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 ${cfg.bg} ${cfg.text}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                      {cfg.label}
-                    </span>
+                    {isFailedPayment ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-red-50 text-red-600">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                        Transaction Cancelled
+                      </span>
+                    ) : (
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 ${cfg.bg} ${cfg.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                        {cfg.label}
+                      </span>
+                    )}
                   </div>
 
                   {/* Transaction cancelled banner */}
@@ -331,9 +338,13 @@ export default function MyOrdersPage() {
                       {!['RETURNED', 'EXCHANGED'].includes(order.status) && !isFailedPayment && (
                         <button
                           onClick={() => handleDownloadReceipt(order)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors text-xs font-medium"
+                          disabled={downloadingInvoice === order.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors text-xs font-medium disabled:opacity-60"
                         >
-                          <FiDownload className="w-3.5 h-3.5" />
+                          {downloadingInvoice === order.id
+                            ? <FiLoader className="w-3.5 h-3.5 animate-spin" />
+                            : <FiDownload className="w-3.5 h-3.5" />
+                          }
                           Invoice
                         </button>
                       )}

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { FiEye, FiShoppingBag, FiPackage, FiTruck, FiCheckCircle, FiClock, FiRotateCcw, FiAlertCircle } from 'react-icons/fi';
 import QuickOrderActions from './QuickOrderActions';
 import DeleteOrderButton from './DeleteOrderButton';
+import OrderItemsPopover from './OrderItemsPopover';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -12,7 +13,7 @@ async function getOrders() {
     orderBy: { createdAt: 'desc' },
     include: {
       user: true,
-      items: { include: { product: true } },
+      items: { include: { product: { include: { images: true } } } },
     },
   });
 }
@@ -135,12 +136,17 @@ export default async function OrdersPage() {
 
                       {/* Items */}
                       <td className="px-5 py-4 max-w-[180px]">
-                        {order.items.slice(0, 2).map((item, i) => (
-                          <p key={i} className="text-xs text-gray-600 truncate leading-relaxed">{item.product?.name} ×{item.quantity}</p>
-                        ))}
-                        {order.items.length > 2 && (
-                          <p className="text-xs text-gray-400">+{order.items.length - 2} more</p>
-                        )}
+                        <OrderItemsPopover items={order.items.map(item => ({
+                          id: item.id,
+                          quantity: item.quantity,
+                          price: item.price,
+                          size: item.size,
+                          color: item.color,
+                          product: item.product ? {
+                            name: item.product.name,
+                            images: item.product.images.map(img => ({ url: img.url })),
+                          } : null,
+                        }))} />
                       </td>
 
                       {/* Total */}
@@ -157,15 +163,17 @@ export default async function OrdersPage() {
 
                       {/* Status */}
                       <td className="px-5 py-4 whitespace-nowrap">
-                        {isFailedPayment && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 mb-1 block w-fit">
-                            ✕ Transaction Cancelled
+                        {isFailedPayment ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                            Transaction Cancelled
+                          </span>
+                        ) : (
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${sm.bg} ${sm.text}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
+                            {sm.label}
                           </span>
                         )}
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${sm.bg} ${sm.text}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
-                          {sm.label}
-                        </span>
                       </td>
 
                       {/* Date */}
@@ -197,6 +205,7 @@ export default async function OrdersPage() {
                             awbNumber={order.awbNumber}
                             trackingUrl={order.trackingUrl}
                             labelUrl={order.labelUrl}
+                            isFailedPayment={isFailedPayment}
                           />
                           <DeleteOrderButton orderId={order.id} orderRef={order.id.slice(0, 8).toUpperCase()} />
                         </div>

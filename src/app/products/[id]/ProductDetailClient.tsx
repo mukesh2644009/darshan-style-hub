@@ -302,7 +302,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-6">
         <div className="grid lg:grid-cols-2 gap-6 lg:gap-10">
           {/* Images */}
-          <div className="space-y-4">
+          <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
             {/* Main Image with Swipe */}
             <div 
               className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-white touch-pan-y"
@@ -634,7 +634,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
         </div>
 
         {/* Description & Key Features */}
-        <DescriptionSection product={product} />
+        <div className="mt-10">
+          <DescriptionSection product={product} />
+        </div>
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (

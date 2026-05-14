@@ -7,7 +7,6 @@ export const revalidate = 0;
 
 async function getLoyaltyUsers() {
   const users = await (prisma as any).user.findMany({
-    where: { role: { not: 'ADMIN' } },
     orderBy: [{ loyaltyPoints: 'desc' }, { createdAt: 'desc' }],
     select: {
       id: true,

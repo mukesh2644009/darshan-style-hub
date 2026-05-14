@@ -52,7 +52,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival, sizes, images } = body;
+    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival, sizes, images, rating, reviews } = body;
 
     // Validate required fields
     if (!sku || !name || !description || price === undefined) {
@@ -83,6 +83,8 @@ export async function PATCH(
         subcategory,
         featured: Boolean(featured),
         newArrival: Boolean(newArrival),
+        ...(rating   !== undefined && { rating:  parseFloat(rating.toString())  }),
+        ...(reviews  !== undefined && { reviews: parseInt(reviews.toString(), 10) }),
       },
       include: {
         images: true,

@@ -12,6 +12,9 @@ interface Category {
   subcategories: string[];
 }
 
+// Only these categories are shown in the filter sidebar
+const ALLOWED_CATEGORIES = ['Suits', 'Kurti', 'Co Ord Sets', 'Tops'];
+
 export default function ProductsPage() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
@@ -281,7 +284,9 @@ export default function ProductsPage() {
                   >
                     All Categories
                   </button>
-                  {categories.map((cat) => (
+                  {categories
+                    .filter((cat) => ALLOWED_CATEGORIES.includes(cat.name))
+                    .map((cat) => (
                     <button
                       key={cat.name}
                       onClick={() => {
@@ -538,7 +543,9 @@ export default function ProductsPage() {
                   >
                     All Categories
                   </button>
-                  {categories.map((cat) => (
+                  {categories
+                    .filter((cat) => ALLOWED_CATEGORIES.includes(cat.name))
+                    .map((cat) => (
                     <button
                       key={cat.name}
                       onClick={() => {

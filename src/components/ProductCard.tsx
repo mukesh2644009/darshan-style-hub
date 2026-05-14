@@ -68,93 +68,134 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <>
-      {/* Size Picker — bottom sheet modal, rendered above everything */}
+      {/* Size Picker — right-side drawer */}
       <AnimatePresence>
         {showSizePicker && (
           <>
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
               className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-[2px]"
               onClick={closePicker}
             />
+
+            {/* Right drawer */}
             <motion.div
-              initial={{ y: '100%' }}
-              animate={{ y: 0 }}
-              exit={{ y: '100%' }}
-              transition={{ type: 'spring', damping: 30, stiffness: 320 }}
-              className="fixed bottom-0 left-0 right-0 z-[201] bg-white rounded-t-2xl shadow-2xl px-5 pt-4 pb-8"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 32, stiffness: 300 }}
+              className="fixed top-0 right-0 bottom-0 z-[201] w-full max-w-sm bg-white shadow-2xl flex flex-col"
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
             >
-              {/* Handle bar */}
-              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4" />
-
-              {/* Product name + price + close */}
-              <div className="flex items-start justify-between gap-3 mb-5">
-                <div className="min-w-0">
-                  <p className="font-semibold text-gray-900 leading-snug line-clamp-2">{product.name}</p>
-                  <p className="text-primary-600 font-bold mt-1">₹{product.price.toLocaleString()}</p>
-                </div>
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <p className="font-display text-lg font-bold text-gray-900">Add to Cart</p>
                 <button
                   onClick={closePicker}
-                  className="p-2 rounded-full hover:bg-gray-100 text-gray-400 shrink-0 -mt-1"
+                  className="p-2 rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
                 >
-                  <FiX size={18} />
+                  <FiX size={20} />
                 </button>
               </div>
 
-              {/* Sizes */}
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Select Size</p>
-              <div className="flex flex-wrap gap-2 mb-5">
-                {availableSizes.map((s) => {
-                  const sizeStr = typeof s === 'string' ? s : (s as { size: string }).size;
-                  return (
-                    <button
-                      key={sizeStr}
-                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedSize(sizeStr); }}
-                      className={`px-4 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
-                        selectedSize === sizeStr
-                          ? 'bg-primary-600 border-primary-600 text-white'
-                          : 'border-gray-200 text-gray-700 hover:border-primary-400'
-                      }`}
-                    >
-                      {sizeStr}
-                    </button>
-                  );
-                })}
+              {/* Scrollable body */}
+              <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6">
+                {/* Product summary row */}
+                <div className="flex gap-4 items-start">
+                  <div className="relative w-20 h-24 rounded-xl overflow-hidden bg-accent-100 shrink-0">
+                    <Image
+                      src={primaryImage}
+                      alt={product.name}
+                      fill
+                      sizes="80px"
+                      unoptimized={primaryImage.startsWith('/products/')}
+                      className="object-cover object-top"
+                    />
+                  </div>
+                  <div className="min-w-0 pt-1">
+                    <p className="font-semibold text-gray-900 leading-snug line-clamp-3 text-sm">
+                      {product.name}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-primary-600 font-bold">₹{product.price.toLocaleString()}</span>
+                      {product.originalPrice && (
+                        <span className="text-sm text-gray-400 line-through">
+                          ₹{product.originalPrice.toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Size selection */}
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">
+                    Select Size
+                    {!selectedSize && (
+                      <span className="text-primary-500 normal-case font-normal ml-2">— required</span>
+                    )}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {availableSizes.map((s) => {
+                      const sizeStr = typeof s === 'string' ? s : (s as { size: string }).size;
+                      return (
+                        <button
+                          key={sizeStr}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedSize(sizeStr); }}
+                          className={`px-5 py-2.5 rounded-xl border-2 text-sm font-medium transition-all ${
+                            selectedSize === sizeStr
+                              ? 'bg-primary-600 border-primary-600 text-white shadow-md scale-105'
+                              : 'border-gray-200 text-gray-700 hover:border-primary-400 hover:bg-primary-50'
+                          }`}
+                        >
+                          {sizeStr}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Color selection (only if multiple) */}
+                {product.colors.length > 1 && (
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Color</p>
+                    <div className="flex flex-wrap gap-3">
+                      {product.colors.map((c) => (
+                        <button
+                          key={c.name}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedColor(c.name); }}
+                          title={c.name}
+                          className={`w-9 h-9 rounded-full border-2 transition-all ${
+                            selectedColor === c.name
+                              ? 'border-primary-600 scale-110 shadow-md ring-2 ring-primary-200'
+                              : 'border-gray-200 hover:border-gray-400'
+                          }`}
+                          style={{ backgroundColor: c.hex || '#ccc' }}
+                        />
+                      ))}
+                    </div>
+                    {selectedColor && (
+                      <p className="text-xs text-gray-500 mt-2 capitalize">{selectedColor}</p>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {/* Colors (only if multiple) */}
-              {product.colors.length > 1 && (
-                <>
-                  <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Color</p>
-                  <div className="flex flex-wrap gap-3 mb-5">
-                    {product.colors.map((c) => (
-                      <button
-                        key={c.name}
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedColor(c.name); }}
-                        title={c.name}
-                        className={`w-8 h-8 rounded-full border-2 transition-all ${
-                          selectedColor === c.name
-                            ? 'border-primary-600 scale-110 shadow-md'
-                            : 'border-gray-200'
-                        }`}
-                        style={{ backgroundColor: c.hex || '#ccc' }}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-
-              <button
-                onClick={handleConfirmAdd}
-                disabled={!selectedSize}
-                className="w-full py-3.5 rounded-2xl bg-primary-600 text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-40 hover:bg-primary-700 transition-colors"
-              >
-                <FiCheck size={16} />
-                Add to Cart
-              </button>
+              {/* Sticky footer CTA */}
+              <div className="px-5 py-4 border-t border-gray-100 bg-white">
+                <button
+                  onClick={handleConfirmAdd}
+                  disabled={!selectedSize}
+                  className="w-full py-4 rounded-2xl bg-primary-600 text-white font-bold text-base flex items-center justify-center gap-2.5 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-primary-700 active:scale-[0.98] transition-all"
+                >
+                  <FiShoppingBag size={18} />
+                  {selectedSize ? `Add to Cart — ₹${product.price.toLocaleString()}` : 'Select a size first'}
+                </button>
+              </div>
             </motion.div>
           </>
         )}

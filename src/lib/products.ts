@@ -18,6 +18,8 @@ export interface Product {
   newArrival: boolean;
   rating: number;
   reviews: number;
+  /** Total units in stock across all sizes (0 = out of stock) */
+  stock: number;
 }
 
 export interface Category {
@@ -44,6 +46,7 @@ function transformProduct(dbProduct: any): Product {
     newArrival: dbProduct.newArrival,
     rating: dbProduct.rating,
     reviews: dbProduct.reviews,
+    stock: dbProduct.sizes.reduce((sum: number, s: any) => sum + (s.quantity ?? 0), 0),
   };
 }
 

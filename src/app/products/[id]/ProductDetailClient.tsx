@@ -12,6 +12,11 @@ import ProductCard from '@/components/ProductCard';
 import { createWhatsAppOrderLink, createWhatsAppShareLink } from '@/components/WhatsAppButton';
 import { gaViewItem, gaAddToCart, gaWhatsAppClick } from '@/lib/google-analytics';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
+import { useRecentlyViewedStore } from '@/store/recentlyViewedStore';
+import SaleCountdown from '@/components/SaleCountdown';
+import RecentlyViewed from '@/components/RecentlyViewed';
+import Breadcrumb from '@/components/Breadcrumb';
+import PaymentBadges from '@/components/PaymentBadges';
 
 function stripEmojis(text: string): string {
   // eslint-disable-next-line no-control-regex
@@ -128,6 +133,7 @@ interface ProductDetailClientProps {
 export default function ProductDetailClient({ product, relatedProducts }: ProductDetailClientProps) {
   const { addItem, openCart } = useCartStore();
   const { toggleItem, isInWishlist } = useWishlistStore();
+  const addToRecentlyViewed = useRecentlyViewedStore((s) => s.addItem);
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
@@ -183,7 +189,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  // Track product view in Google Analytics
+  // Track product view in Google Analytics + recently viewed
   useEffect(() => {
     gaViewItem({
       id: product.id,
@@ -191,7 +197,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       category: product.category,
       price: product.price,
     });
-  }, [product.id, product.name, product.category, product.price]);
+    addToRecentlyViewed(product);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product.id]);
 
   const doAddToCart = () => {
     // Track add to cart in Google Analytics
@@ -276,21 +284,19 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   };
 
   return (
+    <>
     <div className="min-h-screen bg-accent-50 overflow-x-hidden">
-      {/* Breadcrumb - Hidden on mobile, visible on desktop */}
-      <div className="hidden sm:block bg-white border-b border-accent-200">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-4">
-          <nav className="flex items-center gap-2 text-sm text-gray-500">
-            <Link href="/" className="hover:text-primary-600">Home</Link>
-            <FiChevronRight size={14} />
-            <Link href="/products" className="hover:text-primary-600">Products</Link>
-            <FiChevronRight size={14} />
-            <Link href={`/products?category=${product.category}`} className="hover:text-primary-600">
-              {product.category}
-            </Link>
-            <FiChevronRight size={14} />
-            <span className="text-gray-900">{product.name}</span>
-          </nav>
+      {/* Breadcrumb — visible on all screen sizes */}
+      <div className="bg-white border-b border-accent-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <Breadcrumb
+            items={[
+              { label: 'Products', href: '/products' },
+              { label: product.category, href: `/products?category=${encodeURIComponent(product.category)}` },
+              ...(product.subcategory ? [{ label: product.subcategory, href: `/products?category=${encodeURIComponent(product.category)}&subcategory=${encodeURIComponent(product.subcategory)}` }] : []),
+              { label: product.name },
+            ]}
+          />
         </div>
       </div>
 
@@ -426,7 +432,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
               )}
             </div>
 
-            <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="flex flex-wrap items-baseline gap-2 sm:gap-3 mb-3">
               <span className="text-2xl sm:text-3xl font-bold text-gray-900">
                 ₹{product.price.toLocaleString()}
               </span>
@@ -440,6 +446,16 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                   </span>
                 </>
               )}
+            </div>
+
+            {/* Scarcity + Sale countdown */}
+            <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-6">
+              {product.stock > 0 && product.stock <= 5 && (
+                <span className="text-sm font-semibold text-orange-600 bg-orange-50 border border-orange-200 px-3 py-1 rounded-full">
+                  Only {product.stock} left in stock!
+                </span>
+              )}
+              {discount > 0 && <SaleCountdown variant="detail" />}
             </div>
 
             {/* Size Selection */}
@@ -567,6 +583,11 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                   Copy
                 </button>
               </div>
+            </div>
+
+            {/* Payment method badges */}
+            <div className="mb-4">
+              <PaymentBadges variant="pdp" />
             </div>
 
             {/* COD Badge - Prominent */}
@@ -723,5 +744,11 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       )}
 
     </div>
+
+    {/* Recently Viewed */}
+    <div className="bg-accent-50 border-t border-accent-200">
+      <RecentlyViewed />
+    </div>
+    </>
   );
 }

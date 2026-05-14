@@ -8,6 +8,7 @@ import { FiShoppingBag, FiSearch, FiMenu, FiX, FiUser, FiHeart, FiLogOut, FiSett
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
 import { useWishlistStore } from '@/store/wishlistStore';
+import SearchOverlay from '@/components/SearchOverlay';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -332,19 +333,8 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Search Bar */}
-        {isSearchOpen && (
-          <div className="py-4 border-t border-accent-200 animate-fadeIn">
-            <div className="relative max-w-xl mx-auto">
-              <input
-                type="text"
-                placeholder="Search suits, co ord sets, kurtis..."
-                className="w-full pl-12 pr-4 py-3 rounded-full border border-accent-300 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all"
-              />
-              <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-            </div>
-          </div>
-        )}
+        {/* Search Overlay — rendered outside nav so it covers full screen */}
+        <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
       </nav>
 
       {/* Mobile Menu */}

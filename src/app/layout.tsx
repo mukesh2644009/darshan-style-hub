@@ -8,6 +8,7 @@ import CartSidebar from '@/components/CartSidebar';
 import WhatsAppButton from '@/components/WhatsAppButton';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
 import InactivityLogout from '@/components/InactivityLogout';
+import CompareBar from '@/components/CompareBar';
 
 const outfit = Outfit({ 
   subsets: ['latin'],
@@ -96,6 +97,7 @@ export default function RootLayout({
           </main>
           <Footer />
           <WhatsAppButton />
+          <CompareBar />
           <InactivityLogout />
         </div>
       </body>

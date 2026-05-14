@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { FiArrowLeft, FiClock } from 'react-icons/fi';
 import { blogPosts, getPostBySlug } from '@/data/blogPosts';
+import Breadcrumb from '@/components/Breadcrumb';
 
 type Props = { params: { slug: string } };
 
@@ -32,7 +33,16 @@ export default function BlogPostPage({ params }: Props) {
   const paragraphs = post.content.split(/\n\n+/).filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-accent-50 py-12">
+    <div className="min-h-screen bg-accent-50">
+      <div className="bg-white border-b border-accent-100">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-3">
+          <Breadcrumb items={[
+            { label: 'Style Journal', href: '/blog' },
+            { label: post.title },
+          ]} />
+        </div>
+      </div>
+      <div className="py-12">
       <article className="max-w-3xl mx-auto px-4 sm:px-6">
         <Link href="/blog" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-8 text-sm">
           <FiArrowLeft />
@@ -79,6 +89,7 @@ export default function BlogPostPage({ params }: Props) {
           </Link>
         </div>
       </article>
+      </div>
     </div>
   );
 }

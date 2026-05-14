@@ -309,7 +309,31 @@ export async function POST(request: Request) {
       console.error('Notification service error:', notificationError);
     }
 
-    return NextResponse.json(order, { status: 201 });
+    // Award loyalty points for logged-in users (1 point per ₹10 spent)
+    const loyaltyPointsEarned = user ? Math.floor(total / 10) : 0;
+    if (user && loyaltyPointsEarned > 0) {
+      try {
+        await prisma.$transaction([
+          prisma.user.update({
+            where: { id: user.id },
+            data: { loyaltyPoints: { increment: loyaltyPointsEarned } },
+          }),
+          prisma.loyaltyTransaction.create({
+            data: {
+              userId: user.id,
+              points: loyaltyPointsEarned,
+              type: 'EARN_ORDER',
+              description: `Earned for order #${order.id.slice(-8).toUpperCase()}`,
+              orderId: order.id,
+            },
+          }),
+        ]);
+      } catch (loyaltyError) {
+        console.error('Loyalty points award failed (non-critical):', loyaltyError);
+      }
+    }
+
+    return NextResponse.json({ ...order, loyaltyPointsEarned }, { status: 201 });
   } catch (error) {
     console.error('Error creating order:', error);
     return NextResponse.json(

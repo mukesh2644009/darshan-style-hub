@@ -2,13 +2,15 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiHeart, FiShoppingBag, FiStar, FiX, FiCheck } from 'react-icons/fi';
+import { FiHeart, FiShoppingBag, FiStar, FiX, FiCheck, FiRefreshCw } from 'react-icons/fi';
 import { Product } from '@/lib/products';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
+import { useCompareStore } from '@/store/compareStore';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import SaleCountdown from '@/components/SaleCountdown';
 
 interface ProductCardProps {
   product: Product;
@@ -17,11 +19,14 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const { addItem, openCart } = useCartStore();
   const { toggleItem, isInWishlist } = useWishlistStore();
+  const { toggleItem: toggleCompare, isInCompare, isFull } = useCompareStore();
   const [isHovered, setIsHovered] = useState(false);
   const [showSizePicker, setShowSizePicker] = useState(false);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const isWishlisted = isInWishlist(product.id);
+  const isCompared = isInCompare(product.id);
+  const compareDisabled = !isCompared && isFull();
   const primaryImage =
     normalizeProductImageUrl(product.images?.[0]) || '/products/logo.jpeg';
 
@@ -189,19 +194,43 @@ export default function ProductCard({ product }: ProductCardProps) {
                   NEW
                 </span>
               )}
+              {/* Scarcity indicator */}
+              {product.stock > 0 && product.stock <= 5 && (
+                <span className="bg-orange-500 text-white text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:py-1 rounded-full whitespace-nowrap">
+                  Only {product.stock} left!
+                </span>
+              )}
+              {/* Sale countdown for discounted items */}
+              {discount > 0 && (
+                <SaleCountdown variant="card" />
+              )}
             </div>
 
-            {/* Wishlist Button */}
-            <button
-              onClick={handleWishlist}
-              className={`absolute top-3 right-3 p-2 rounded-full transition-all duration-300 ${
-                isWishlisted
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white/80 text-gray-700 hover:bg-white'
-              }`}
-            >
-              <FiHeart size={18} fill={isWishlisted ? 'currentColor' : 'none'} />
-            </button>
+            {/* Wishlist + Compare Buttons */}
+            <div className="absolute top-3 right-3 flex flex-col gap-1.5">
+              <button
+                onClick={handleWishlist}
+                className={`p-2 rounded-full transition-all duration-300 ${
+                  isWishlisted
+                    ? 'bg-primary-600 text-white'
+                    : 'bg-white/80 text-gray-700 hover:bg-white'
+                }`}
+              >
+                <FiHeart size={18} fill={isWishlisted ? 'currentColor' : 'none'} />
+              </button>
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCompare(product); }}
+                disabled={compareDisabled}
+                title={compareDisabled ? 'Max 3 items to compare' : isCompared ? 'Remove from compare' : 'Compare'}
+                className={`p-2 rounded-full transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed ${
+                  isCompared
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white/80 text-gray-700 hover:bg-white'
+                }`}
+              >
+                <FiRefreshCw size={15} />
+              </button>
+            </div>
 
             {/* Quick Add Button */}
             <div

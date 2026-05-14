@@ -15,6 +15,7 @@ import { FiDownload } from 'react-icons/fi';
 import { gaBeginCheckout, gaPurchase } from '@/lib/google-analytics';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 import QuickSignupModal from '@/components/QuickSignupModal';
+import PaymentBadges from '@/components/PaymentBadges';
 
 const INDIAN_STATES = [
   'Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh',
@@ -963,7 +964,16 @@ export default function CheckoutPage() {
                   <span>Total</span>
                   <span className="flex-shrink-0 text-primary-700">₹{total.toLocaleString('en-IN')}</span>
                 </div>
+                {Math.floor(total / 10) > 0 && (
+                  <div className="w-full flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2 mt-1">
+                    <span>🎁</span>
+                    <span>You&apos;ll earn <strong>{Math.floor(total / 10)} loyalty points</strong> on this order!</span>
+                  </div>
+                )}
               </div>
+
+              {/* Payment method badges */}
+              <PaymentBadges variant="checkout" />
 
               {errors.form && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm flex items-center gap-2">

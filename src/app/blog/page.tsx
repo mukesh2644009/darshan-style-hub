@@ -2,10 +2,17 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { FiArrowRight, FiClock } from 'react-icons/fi';
 import { blogPosts } from '@/data/blogPosts';
+import Breadcrumb from '@/components/Breadcrumb';
 
 export default function BlogIndexPage() {
   return (
-    <div className="min-h-screen bg-accent-50 py-12">
+    <div className="min-h-screen bg-accent-50">
+      <div className="bg-white border-b border-accent-100">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <Breadcrumb items={[{ label: 'Style Journal' }]} />
+        </div>
+      </div>
+      <div className="py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h1 className="font-display text-4xl sm:text-5xl font-bold text-gray-900 mb-3">Style Journal</h1>
@@ -66,6 +73,7 @@ export default function BlogIndexPage() {
             View lookbook →
           </Link>
         </div>
+      </div>
       </div>
     </div>
   );

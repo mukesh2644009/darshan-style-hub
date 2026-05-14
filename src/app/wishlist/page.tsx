@@ -6,6 +6,7 @@ import { FiHeart, FiTrash2, FiShoppingBag } from 'react-icons/fi';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 import { useCartStore } from '@/store/cartStore';
+import Breadcrumb from '@/components/Breadcrumb';
 
 export default function WishlistPage() {
   const { items, removeItem, clearWishlist } = useWishlistStore();
@@ -24,8 +25,13 @@ export default function WishlistPage() {
   };
 
   return (
-    <div className="min-h-screen bg-accent-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-accent-50">
+      <div className="bg-white border-b border-accent-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <Breadcrumb items={[{ label: 'Wishlist' }]} />
+        </div>
+      </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="font-display text-3xl font-bold text-gray-900">My Wishlist</h1>

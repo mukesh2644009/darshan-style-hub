@@ -2,8 +2,9 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { FiFilter, FiX, FiChevronDown } from 'react-icons/fi';
+import { FiFilter, FiX, FiChevronDown, FiSearch } from 'react-icons/fi';
 import ProductCard from '@/components/ProductCard';
+import Breadcrumb from '@/components/Breadcrumb';
 import { Product } from '@/lib/products';
 
 interface Category {
@@ -14,13 +15,17 @@ interface Category {
 export default function ProductsPage() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
+  const searchParam = searchParams.get('search') || '';
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState<string>(searchParam);
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam || 'All');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string>('All');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string>('featured');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
@@ -61,22 +66,37 @@ export default function ProductsPage() {
   const filteredProducts = useMemo(() => {
     let filtered = [...products];
 
-    // Filter by category
+    // Text search
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q) ||
+          p.subcategory.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q)
+      );
+    }
+
     if (selectedCategory !== 'All') {
       filtered = filtered.filter((p) => p.category === selectedCategory);
     }
-
-    // Filter by subcategory
     if (selectedSubcategory !== 'All') {
       filtered = filtered.filter((p) => p.subcategory === selectedSubcategory);
     }
+    filtered = filtered.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
 
-    // Filter by price
-    filtered = filtered.filter(
-      (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
-    );
+    if (selectedSizes.length > 0) {
+      filtered = filtered.filter((p) =>
+        selectedSizes.some((s) => p.sizes.includes(s))
+      );
+    }
+    if (selectedColors.length > 0) {
+      filtered = filtered.filter((p) =>
+        selectedColors.some((c) => p.colors.some((pc) => pc.name === c))
+      );
+    }
 
-    // Sort
     switch (sortBy) {
       case 'price-low':
         filtered.sort((a, b) => a.price - b.price);
@@ -99,13 +119,56 @@ export default function ProductsPage() {
     }
 
     return filtered;
-  }, [products, selectedCategory, selectedSubcategory, priceRange, sortBy]);
+  }, [products, searchQuery, selectedCategory, selectedSubcategory, priceRange, selectedSizes, selectedColors, sortBy]);
 
   const subcategories = useMemo(() => {
     if (selectedCategory === 'All') return [];
     const category = categories.find((c) => c.name === selectedCategory);
     return category?.subcategories || [];
   }, [selectedCategory, categories]);
+
+  const allSizes = useMemo(() => {
+    const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '3XL', '4XL'];
+    const set = new Set<string>();
+    products.forEach((p) => p.sizes.forEach((s) => set.add(s)));
+    const sizes = Array.from(set);
+    sizes.sort((a, b) => {
+      const ai = sizeOrder.indexOf(a);
+      const bi = sizeOrder.indexOf(b);
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return a.localeCompare(b);
+    });
+    return sizes;
+  }, [products]);
+
+  const allColors = useMemo(() => {
+    const map = new Map<string, string>();
+    products.forEach((p) => p.colors.forEach((c) => map.set(c.name, c.hex)));
+    return Array.from(map.entries()).map(([name, hex]) => ({ name, hex }));
+  }, [products]);
+
+  const activeFilterCount =
+    (selectedCategory !== 'All' ? 1 : 0) +
+    (selectedSubcategory !== 'All' ? 1 : 0) +
+    (priceRange[1] < 50000 ? 1 : 0) +
+    selectedSizes.length +
+    selectedColors.length;
+
+  const toggleSize = (s: string) =>
+    setSelectedSizes((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
+
+  const toggleColor = (c: string) =>
+    setSelectedColors((prev) => prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]);
+
+  const clearAllFilters = () => {
+    setSelectedCategory('All');
+    setSelectedSubcategory('All');
+    setPriceRange([0, 50000]);
+    setSelectedSizes([]);
+    setSelectedColors([]);
+  };
 
   if (loading) {
     return (
@@ -118,17 +181,72 @@ export default function ProductsPage() {
     );
   }
 
+  const pageTitle = searchQuery.trim()
+    ? `Results for "${searchQuery}"`
+    : selectedCategory !== 'All'
+    ? selectedCategory
+    : 'All Products';
+
+  // Build breadcrumb items dynamically
+  const breadcrumbItems = [
+    { label: 'Products', href: '/products' },
+    ...(selectedCategory !== 'All'
+      ? [{ label: selectedCategory, href: `/products?category=${encodeURIComponent(selectedCategory)}` }]
+      : []),
+    ...(selectedSubcategory !== 'All' && selectedCategory !== 'All'
+      ? [{ label: selectedSubcategory }]
+      : []),
+    ...(searchQuery.trim() ? [{ label: `"${searchQuery}"` }] : []),
+  ];
+
   return (
     <div className="min-h-screen bg-accent-50">
+      {/* Breadcrumb strip */}
+      <div className="bg-white border-b border-accent-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <Breadcrumb items={breadcrumbItems} />
+        </div>
+      </div>
+
       {/* Header */}
       <div className="bg-white border-b border-accent-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <h1 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
-            {selectedCategory === 'All' ? 'All Products' : selectedCategory}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <h1 className="font-display text-2xl sm:text-4xl font-bold text-gray-900 mb-2">
+            {pageTitle}
           </h1>
-          <p className="text-gray-600">
-            Discover our curated collection of premium ethnic wear
-          </p>
+          {searchQuery.trim() ? (
+            <div className="flex items-center gap-3">
+              <p className="text-gray-600 text-sm">{filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found</p>
+              <button
+                onClick={() => setSearchQuery('')}
+                className="text-xs text-primary-600 underline hover:text-primary-700"
+              >
+                Clear search
+              </button>
+            </div>
+          ) : (
+            <p className="text-gray-600">Discover our curated collection of premium ethnic wear</p>
+          )}
+
+          {/* Inline search bar on the page */}
+          <div className="relative mt-4 max-w-md">
+            <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search products…"
+              className="w-full pl-9 pr-9 py-2.5 rounded-full border border-accent-300 bg-accent-50 focus:bg-white focus:border-primary-500 focus:ring-2 focus:ring-primary-100 outline-none text-sm transition-all"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <FiX size={14} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -137,7 +255,14 @@ export default function ProductsPage() {
           {/* Filters Sidebar - Desktop */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="bg-white rounded-2xl p-6 shadow-sm sticky top-32">
-              <h2 className="font-display text-xl font-bold mb-6">Filters</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-display text-xl font-bold">Filters</h2>
+                {activeFilterCount > 0 && (
+                  <span className="bg-primary-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </div>
 
               {/* Categories */}
               <div className="mb-6">
@@ -227,13 +352,58 @@ export default function ProductsPage() {
                 </div>
               </div>
 
+              {/* Size Filter */}
+              {allSizes.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-medium text-gray-900 mb-3">Size</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {allSizes.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => toggleSize(s)}
+                        className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
+                          selectedSizes.includes(s)
+                            ? 'bg-primary-600 border-primary-600 text-white'
+                            : 'border-gray-200 text-gray-700 hover:border-primary-400'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Color Filter */}
+              {allColors.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-medium text-gray-900 mb-3">Color</h3>
+                  <div className="flex flex-wrap gap-2.5">
+                    {allColors.map((c) => (
+                      <button
+                        key={c.name}
+                        onClick={() => toggleColor(c.name)}
+                        title={c.name}
+                        className={`w-8 h-8 rounded-full border-2 transition-all ${
+                          selectedColors.includes(c.name)
+                            ? 'border-primary-600 scale-110 shadow-md ring-2 ring-primary-300'
+                            : 'border-gray-200 hover:border-gray-400'
+                        }`}
+                        style={{ backgroundColor: c.hex || '#ccc' }}
+                      />
+                    ))}
+                  </div>
+                  {selectedColors.length > 0 && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      {selectedColors.join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Clear Filters */}
               <button
-                onClick={() => {
-                  setSelectedCategory('All');
-                  setSelectedSubcategory('All');
-                  setPriceRange([0, 50000]);
-                }}
+                onClick={clearAllFilters}
                 className="w-full py-2 text-primary-600 font-medium hover:text-primary-700 transition-colors"
               >
                 Clear All Filters
@@ -243,6 +413,34 @@ export default function ProductsPage() {
 
           {/* Main Content */}
           <div className="flex-1">
+            {/* Active filter chips */}
+            {activeFilterCount > 0 && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {selectedSizes.map((s) => (
+                  <button key={s} onClick={() => toggleSize(s)}
+                    className="flex items-center gap-1 bg-primary-100 text-primary-700 text-xs font-medium px-2.5 py-1 rounded-full hover:bg-primary-200 transition-colors">
+                    Size: {s} <FiX size={11} />
+                  </button>
+                ))}
+                {selectedColors.map((c) => (
+                  <button key={c} onClick={() => toggleColor(c)}
+                    className="flex items-center gap-1 bg-primary-100 text-primary-700 text-xs font-medium px-2.5 py-1 rounded-full hover:bg-primary-200 transition-colors">
+                    Color: {c} <FiX size={11} />
+                  </button>
+                ))}
+                {priceRange[1] < 50000 && (
+                  <button onClick={() => setPriceRange([0, 50000])}
+                    className="flex items-center gap-1 bg-primary-100 text-primary-700 text-xs font-medium px-2.5 py-1 rounded-full hover:bg-primary-200 transition-colors">
+                    Max ₹{priceRange[1].toLocaleString()} <FiX size={11} />
+                  </button>
+                )}
+                <button onClick={clearAllFilters}
+                  className="text-xs text-gray-500 underline px-1 hover:text-gray-700">
+                  Clear all
+                </button>
+              </div>
+            )}
+
             {/* Toolbar */}
             <div className="flex items-center justify-between mb-6">
               <p className="text-gray-600">
@@ -376,13 +574,57 @@ export default function ProductsPage() {
                   <span>₹{priceRange[1].toLocaleString()}</span>
                 </div>
               </div>
+
+              {/* Mobile Size Filter */}
+              {allSizes.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-medium text-gray-900 mb-3">Size</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {allSizes.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => toggleSize(s)}
+                        className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
+                          selectedSizes.includes(s)
+                            ? 'bg-primary-600 border-primary-600 text-white'
+                            : 'border-gray-200 text-gray-700 hover:border-primary-400'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mobile Color Filter */}
+              {allColors.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-medium text-gray-900 mb-3">Color</h3>
+                  <div className="flex flex-wrap gap-2.5">
+                    {allColors.map((c) => (
+                      <button
+                        key={c.name}
+                        onClick={() => toggleColor(c.name)}
+                        title={c.name}
+                        className={`w-9 h-9 rounded-full border-2 transition-all ${
+                          selectedColors.includes(c.name)
+                            ? 'border-primary-600 scale-110 shadow-md ring-2 ring-primary-300'
+                            : 'border-gray-200'
+                        }`}
+                        style={{ backgroundColor: c.hex || '#ccc' }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t border-accent-200">
               <button
                 onClick={() => setIsFilterOpen(false)}
                 className="w-full btn-primary"
               >
-                Apply Filters
+                Apply Filters {activeFilterCount > 0 && `(${activeFilterCount})`}
               </button>
             </div>
           </div>

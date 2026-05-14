@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FiArrowLeft, FiUser, FiLoader, FiCheck, FiEdit2, FiMapPin } from 'react-icons/fi';
 import { useAuthStore } from '@/store/authStore';
+import LoyaltyWidget from '@/components/LoyaltyWidget';
 
 interface ProfileForm {
   name: string;
@@ -277,6 +278,11 @@ export default function ProfilePage() {
           <Link href="/my-orders" className="text-sm text-primary-600 hover:underline">
             View my orders →
           </Link>
+        </div>
+
+        {/* Loyalty Rewards */}
+        <div className="mt-8">
+          <LoyaltyWidget />
         </div>
       </div>
     </div>

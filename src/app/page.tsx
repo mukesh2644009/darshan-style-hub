@@ -5,6 +5,10 @@ import { FaMoneyBillWave } from 'react-icons/fa';
 import ProductCard from '@/components/ProductCard';
 import HeroCarousel from '@/components/HeroCarousel';
 import AnimatedSection from '@/components/AnimatedSection';
+import RecentlyViewed from '@/components/RecentlyViewed';
+import SocialProof from '@/components/SocialProof';
+import Testimonials from '@/components/Testimonials';
+import InstagramFeed from '@/components/InstagramFeed';
 import { getFeaturedProducts, getProducts, type Product } from '@/lib/products';
 
 export const dynamic = 'force-dynamic';
@@ -189,60 +193,17 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-16 bg-accent-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedSection className="text-center mb-12">
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              What Our Customers Say
-            </h2>
-            <p className="text-gray-600">Real reviews from real customers</p>
-          </AnimatedSection>
+      {/* Social proof — "As Seen In", trust numbers, Instagram */}
+      <SocialProof />
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                name: 'Priya Sharma',
-                location: 'Mumbai',
-                review: 'Absolutely love the quality of my co ord set — fabric feels premium and the embroidery is exquisite. Will definitely order again!',
-                rating: 5,
-              },
-              {
-                name: 'Sneha Patel',
-                location: 'Delhi',
-                review: 'Ordered an Anarkali suit for my sister\'s wedding. The fitting was perfect and the fabric quality is amazing!',
-                rating: 5,
-              },
-              {
-                name: 'Anita Desai',
-                location: 'Bangalore',
-                review: 'Great collection of suits and amazing customer service. They helped me choose the perfect outfit for the occasion.',
-                rating: 5,
-              },
-            ].map((testimonial, index) => (
-              <div key={index} className="bg-[#FFF8E6] p-6 rounded-2xl shadow-sm">
-                <div className="flex items-center gap-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <span key={i} className="text-yellow-400">★</span>
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-4">{testimonial.review}</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                    <span className="text-primary-600 font-medium">
-                      {testimonial.name.charAt(0)}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{testimonial.name}</p>
-                    <p className="text-sm text-gray-500">{testimonial.location}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Recently Viewed — client component, renders only when localStorage has items */}
+      <RecentlyViewed />
+
+      {/* Rich testimonials — auto-scrolling marquee with 12 reviews + rating summary */}
+      <Testimonials />
+
+      {/* Instagram feed grid + UGC "Tag us" CTA */}
+      <InstagramFeed />
     </div>
   );
 }

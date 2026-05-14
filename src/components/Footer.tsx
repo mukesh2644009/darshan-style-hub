@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { FiInstagram, FiFacebook, FiTwitter, FiYoutube, FiMail, FiPhone, FiMapPin } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { buildDefaultStoreWhatsAppUrl } from '@/lib/whatsapp-customer';
+import PaymentBadges from '@/components/PaymentBadges';
 
 export default function Footer() {
   const footerWhatsAppHref = buildDefaultStoreWhatsAppUrl();
@@ -191,9 +192,16 @@ export default function Footer() {
         </div>
       </div>
 
-      {/* Bottom Bar */}
+      {/* Payment Badges */}
       <div className="border-t border-accent-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <PaymentBadges variant="footer" />
+        </div>
+      </div>
+
+      {/* Bottom Bar */}
+      <div className="border-t border-accent-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-accent-400 text-sm">
               © {new Date().getFullYear()} Darshan Style Hub™, Jaipur. All rights reserved.

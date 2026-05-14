@@ -10,10 +10,17 @@ out
 build
 dist
 
-# Environment variables
+# Environment variables — never commit any .env file
 .env
+.env.*
 .env.local
+.env.development
+.env.development.local
+.env.production
 .env.production.local
+.env.staging
+.env.test
+.env.test.local
 
 # Database (local SQLite)
 prisma/dev.db

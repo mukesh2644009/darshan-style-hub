@@ -1,6 +1,7 @@
 import { FiSettings, FiHome, FiPhone, FiMail, FiMapPin } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import NimbusConnectionTestCard from './NimbusConnectionTestCard';
+import ChangePasswordCard from './ChangePasswordCard';
 
 export default function SettingsPage() {
   return (
@@ -11,6 +12,8 @@ export default function SettingsPage() {
       </div>
 
       <div className="grid gap-6">
+        {/* Security — always first */}
+        <ChangePasswordCard />
         {/* Store Information */}
         <div className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">

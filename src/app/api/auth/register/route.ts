@@ -73,7 +73,7 @@ export async function POST(request: Request) {
 
     // Create session token
     const token = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
 
     await prisma.session.create({
       data: {

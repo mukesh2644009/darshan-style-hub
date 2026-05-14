@@ -1,12 +1,13 @@
 import { prisma } from '@/lib/prisma';
-import { FiUsers, FiMail, FiPhone, FiShoppingBag } from 'react-icons/fi';
+import Link from 'next/link';
+import { FiUsers, FiMail, FiPhone, FiShoppingBag, FiAward } from 'react-icons/fi';
 import DeleteCustomerButton from './DeleteCustomerButton';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-async function getCustomers() {
-  return prisma.user.findMany({
+async function getCustomers(): Promise<any[]> {
+  return (prisma as any).user.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
       orders: true,
@@ -71,6 +72,9 @@ export default async function CustomersPage() {
                     Total Spent
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <span className="flex items-center gap-1"><FiAward className="w-3.5 h-3.5 text-amber-500" />Points</span>
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Address
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -83,8 +87,8 @@ export default async function CustomersPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {customers.map((customer) => {
-                  const totalSpent = customer.orders.reduce((sum, order) => sum + order.total, 0);
-                  const defaultAddress = customer.addresses.find(a => a.isDefault) || customer.addresses[0];
+                  const totalSpent = customer.orders.reduce((sum: number, order: any) => sum + order.total, 0);
+                  const defaultAddress = customer.addresses.find((a: any) => a.isDefault) || customer.addresses[0];
                   
                   return (
                     <tr key={customer.id} className="hover:bg-gray-50">
@@ -126,6 +130,18 @@ export default async function CustomersPage() {
                         <span className="font-bold text-gray-900">
                           ₹{totalSpent.toLocaleString('en-IN')}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {(customer as any).loyaltyPoints > 0 ? (
+                          <Link href="/admin/loyalty" className="group flex items-center gap-1.5">
+                            <span className="font-bold text-amber-600 group-hover:underline">
+                              {(customer as any).loyaltyPoints.toLocaleString('en-IN')}
+                            </span>
+                            <span className="text-xs text-gray-400">pts</span>
+                          </Link>
+                        ) : (
+                          <span className="text-gray-400 text-sm">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         {defaultAddress ? (

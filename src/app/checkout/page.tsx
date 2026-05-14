@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiChevronLeft, FiTruck, FiAlertCircle, FiLoader, FiCheck, FiInfo, FiLock, FiTag, FiX } from 'react-icons/fi';
+import { FiChevronLeft, FiTruck, FiAlertCircle, FiLoader, FiCheck, FiInfo, FiLock, FiTag, FiX, FiMapPin } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -55,6 +55,11 @@ export default function CheckoutPage() {
   const [orderPaymentMethod, setOrderPaymentMethod] = useState('');
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [signupPrompted, setSignupPrompted] = useState(false);
+  const [loyaltyBalance, setLoyaltyBalance] = useState(0);
+  const [usePoints, setUsePoints] = useState(false);
+  const [loyaltyEarned, setLoyaltyEarned] = useState(0);
+  const [loyaltyRedeemed, setLoyaltyRedeemed] = useState(0);
+  const [pincodeStatus, setPincodeStatus] = useState<'idle' | 'loading' | 'found' | 'not_found'>('idle');
 
   useEffect(() => {
     checkAuth();
@@ -70,6 +75,56 @@ export default function CheckoutPage() {
     setShowSignupModal(true);
     setSignupPrompted(true);
   }, [isLoading, isAuthenticated, items.length, signupPrompted]);
+
+  // PIN code auto-fill — India Post API (free, no key required)
+  const lookupPincode = useCallback(async (pin: string) => {
+    setPincodeStatus('loading');
+    try {
+      const res  = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+      const data = await res.json();
+      const po   = data?.[0]?.PostOffice?.[0];
+      if (data?.[0]?.Status === 'Success' && po) {
+        const apiState = po.State as string;
+        // Match the API state name to our dropdown list (case-insensitive partial match)
+        const matched = INDIAN_STATES.find(
+          s => s.toLowerCase() === apiState.toLowerCase()
+        ) ?? INDIAN_STATES.find(
+          s => s.toLowerCase().includes(apiState.toLowerCase().split(' ')[0])
+        );
+        setFormData(prev => ({
+          ...prev,
+          city:  prev.city  || (po.District as string),
+          state: matched    || prev.state,
+        }));
+        setPincodeStatus('found');
+      } else {
+        setPincodeStatus('not_found');
+      }
+    } catch {
+      setPincodeStatus('not_found');
+    }
+  }, []);
+
+  useEffect(() => {
+    const pin = formData.pincode.trim();
+    if (pin.length === 6 && /^\d{6}$/.test(pin)) {
+      lookupPincode(pin);
+    } else if (pincodeStatus !== 'idle') {
+      setPincodeStatus('idle');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.pincode]);
+
+  // Fetch loyalty balance when user is authenticated
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    fetch('/api/loyalty')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) setLoyaltyBalance(data.points ?? 0);
+      })
+      .catch(() => {});
+  }, [isAuthenticated, user]);
 
   // Pre-fill form with logged-in user data and last saved address
   useEffect(() => {
@@ -143,7 +198,14 @@ export default function CheckoutPage() {
   const shipping = subtotal >= 999 ? 0 : 99;
   const codCharge = paymentMethod === 'cod' ? 50 : 0;
   const appliedDiscount = (paymentMethod !== 'cod' && couponApplied) ? couponDiscount : 0;
-  const total = subtotal + shipping + codCharge - appliedDiscount;
+
+  // Loyalty points: 10 points = ₹1. Can use all available points, up to subtotal value.
+  const maxPointsUsable = Math.min(loyaltyBalance, subtotal * 10);
+  const pointsToRedeem = (isAuthenticated && usePoints) ? Math.floor(maxPointsUsable / 10) * 10 : 0;
+  const pointsDiscount = Math.floor(pointsToRedeem / 10);
+
+  const total = Math.max(0, subtotal + shipping + codCharge - appliedDiscount - pointsDiscount);
+  const pointsWillEarn = Math.floor(total / 10);
 
   const handleApplyCoupon = () => {
     setCouponError('');
@@ -212,6 +274,7 @@ export default function CheckoutPage() {
           paymentMethod: paymentMethod === 'cod' ? 'COD' : paymentMethod === 'upi' ? 'UPI (Razorpay)' : 'UPI (WhatsApp)',
           couponCode: appliedDiscount > 0 ? couponCode.toUpperCase() : undefined,
           couponDiscount: appliedDiscount > 0 ? appliedDiscount : undefined,
+          pointsToRedeem: pointsToRedeem > 0 ? pointsToRedeem : undefined,
         }),
       });
 
@@ -224,6 +287,8 @@ export default function CheckoutPage() {
           setOrderId(data.id || '');
           setOrderTotal(data.total || total);
           setOrderPaymentMethod(paymentMethod === 'cod' ? 'COD' : 'WHATSAPP');
+          setLoyaltyEarned(data.loyaltyPointsEarned ?? 0);
+          setLoyaltyRedeemed(data.loyaltyPointsRedeemed ?? 0);
           setOrderPlaced(true);
           window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -306,6 +371,8 @@ export default function CheckoutPage() {
             setOrderId(orderDbId);
             setOrderTotal(amount);
             setOrderPaymentMethod('UPI');
+            setLoyaltyEarned(verifyData.loyaltyPointsEarned ?? pointsWillEarn);
+            setLoyaltyRedeemed(pointsToRedeem);
             setOrderPlaced(true);
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -439,6 +506,15 @@ export default function CheckoutPage() {
               <p className="text-3xl font-bold text-green-700">₹{orderTotal.toLocaleString('en-IN')}</p>
               <p className="text-xs text-green-600 mt-1">Paid via UPI</p>
             </div>
+            {loyaltyEarned > 0 && (
+              <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+                <span>🏅</span>
+                <span>
+                  {loyaltyRedeemed > 0 && <><strong>{loyaltyRedeemed} pts</strong> redeemed · </>}
+                  <strong>{loyaltyEarned} loyalty points</strong> added to your account!
+                </span>
+              </div>
+            )}
             <p className="text-sm text-gray-500 mb-6">
               Order confirmation has been sent to your email.
             </p>
@@ -540,11 +616,20 @@ export default function CheckoutPage() {
               Order ID: <span className="font-medium text-gray-900">{orderIdShort}</span>
             </p>
           )}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-6">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4">
             <p className="text-sm text-amber-800">
               <strong>Cash on Delivery</strong> — Please keep <strong>₹{orderTotal.toLocaleString('en-IN')}</strong> ready at the time of delivery.
             </p>
           </div>
+          {loyaltyEarned > 0 && (
+            <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4">
+              <span>🏅</span>
+              <span>
+                {loyaltyRedeemed > 0 && <><strong>{loyaltyRedeemed} pts</strong> redeemed · </>}
+                <strong>{loyaltyEarned} loyalty points</strong> added to your account!
+              </span>
+            </div>
+          )}
           <button
             onClick={handleDownloadReceipt}
             className="w-full py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2 mb-3"
@@ -711,8 +796,51 @@ export default function CheckoutPage() {
                   />
                   {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
                 </div>
+                {/* Pincode first — auto-fills city & state */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">City *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Pincode *
+                  </label>
+                  <div className="relative">
+                    <FiMapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={formData.pincode}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 6);
+                        setFormData({ ...formData, pincode: val, city: val.length < 6 ? '' : formData.city, state: val.length < 6 ? 'Rajasthan' : formData.state });
+                        if (val.length < 6) setPincodeStatus('idle');
+                      }}
+                      className={`input-field pl-9 pr-9 ${errors.pincode ? 'border-red-500' : pincodeStatus === 'found' ? 'border-green-400' : ''}`}
+                      placeholder="e.g. 302022"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      {pincodeStatus === 'loading'   && <FiLoader  className="w-4 h-4 text-gray-400 animate-spin" />}
+                      {pincodeStatus === 'found'     && <FiCheck   className="w-4 h-4 text-green-500" />}
+                      {pincodeStatus === 'not_found' && <FiX       className="w-4 h-4 text-red-400" />}
+                    </span>
+                  </div>
+                  {errors.pincode && <p className="text-red-500 text-xs mt-1">{errors.pincode}</p>}
+                  {pincodeStatus === 'not_found' && (
+                    <p className="text-amber-600 text-xs mt-1">Pincode not found — please fill city & state manually.</p>
+                  )}
+                  {pincodeStatus === 'found' && (
+                    <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
+                      <FiCheck className="w-3 h-3" /> City & state filled automatically
+                    </p>
+                  )}
+                </div>
+
+                {/* City — auto-filled from pincode, editable */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    City *
+                    {pincodeStatus === 'found' && (
+                      <span className="ml-1.5 text-xs font-normal text-green-600">(auto-filled)</span>
+                    )}
+                  </label>
                   <input
                     type="text"
                     value={formData.city}
@@ -722,8 +850,15 @@ export default function CheckoutPage() {
                   />
                   {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
                 </div>
+
+                {/* State — auto-filled from pincode, editable */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    State
+                    {pincodeStatus === 'found' && (
+                      <span className="ml-1.5 text-xs font-normal text-green-600">(auto-filled)</span>
+                    )}
+                  </label>
                   <select
                     value={formData.state}
                     onChange={(e) => setFormData({ ...formData, state: e.target.value })}
@@ -733,17 +868,6 @@ export default function CheckoutPage() {
                       <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pincode *</label>
-                  <input
-                    type="text"
-                    value={formData.pincode}
-                    onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                    className={`input-field ${errors.pincode ? 'border-red-500' : ''}`}
-                    placeholder="302001"
-                  />
-                  {errors.pincode && <p className="text-red-500 text-xs mt-1">{errors.pincode}</p>}
                 </div>
               </div>
             </div>
@@ -856,7 +980,11 @@ export default function CheckoutPage() {
                     key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}`}
                     className="flex gap-3"
                   >
-                    <div className="relative w-16 h-20 rounded-lg overflow-hidden flex-shrink-0">
+                    <Link
+                      href={`/products/${item.product.slug || item.product.id}`}
+                      className="relative w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 hover:opacity-90 transition-opacity"
+                      target="_blank"
+                    >
                       <Image
                         src={normalizeProductImageUrl(item.product.images?.[0]) || '/products/logo.jpeg'}
                         alt={item.product.name}
@@ -864,9 +992,15 @@ export default function CheckoutPage() {
                         unoptimized
                         className="object-cover"
                       />
-                    </div>
+                    </Link>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 text-sm truncate">{item.product.name}</h3>
+                      <Link
+                        href={`/products/${item.product.slug || item.product.id}`}
+                        target="_blank"
+                        className="font-medium text-gray-900 text-sm truncate block hover:text-primary-600 transition-colors"
+                      >
+                        {item.product.name}
+                      </Link>
                       <p className="text-xs text-gray-500">
                         {item.selectedSize} • {item.selectedColor} • Qty: {item.quantity}
                       </p>
@@ -882,7 +1016,13 @@ export default function CheckoutPage() {
               <div className="lg:hidden space-y-1.5 mb-4">
                 {items.map((item) => (
                   <div key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}`} className="w-full flex justify-between items-baseline gap-2 text-sm">
-                    <span className="text-gray-700 truncate min-w-0 flex-1">{item.product.name} ×{item.quantity}</span>
+                    <Link
+                      href={`/products/${item.product.slug || item.product.id}`}
+                      target="_blank"
+                      className="text-gray-700 truncate min-w-0 flex-1 hover:text-primary-600 transition-colors"
+                    >
+                      {item.product.name} ×{item.quantity}
+                    </Link>
                     <span className="font-medium text-gray-900 flex-shrink-0">₹{(item.product.price * item.quantity).toLocaleString('en-IN')}</span>
                   </div>
                 ))}
@@ -935,6 +1075,36 @@ export default function CheckoutPage() {
                 </div>
               )}
 
+              {/* Loyalty points redeem card — only for logged-in users with points */}
+              {isAuthenticated && loyaltyBalance >= 10 && (
+                <div className={`border rounded-xl p-3 transition-colors ${usePoints ? 'border-amber-400 bg-amber-50' : 'border-accent-200 bg-white'}`}>
+                  <label className="flex items-center gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={usePoints}
+                      onChange={e => setUsePoints(e.target.checked)}
+                      className="w-4 h-4 accent-amber-500 cursor-pointer"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                        <span>🏅</span>
+                        Use your loyalty points
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        You have <strong className="text-amber-600">{loyaltyBalance} pts</strong>
+                        {' '}— redeem <strong className="text-amber-600">{Math.floor(maxPointsUsable / 10) * 10} pts</strong>
+                        {' '}for <strong className="text-green-600">₹{pointsDiscount > 0 ? pointsDiscount : Math.floor(Math.floor(maxPointsUsable / 10) * 10 / 10)} off</strong>
+                      </p>
+                    </div>
+                    {usePoints && (
+                      <span className="text-xs font-bold text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full flex-shrink-0">
+                        Applied
+                      </span>
+                    )}
+                  </label>
+                </div>
+              )}
+
               {/* Totals */}
               <div className="space-y-2 border-t border-accent-200 pt-3">
                 <div className="w-full flex justify-between items-center text-sm text-gray-600">
@@ -960,14 +1130,20 @@ export default function CheckoutPage() {
                     <span className="flex-shrink-0">−₹{appliedDiscount.toLocaleString('en-IN')}</span>
                   </div>
                 )}
+                {pointsDiscount > 0 && (
+                  <div className="w-full flex justify-between items-center text-sm text-amber-600 font-medium">
+                    <span>🏅 Loyalty Points ({pointsToRedeem} pts)</span>
+                    <span className="flex-shrink-0">−₹{pointsDiscount.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
                 <div className="w-full flex justify-between items-center text-base font-bold border-t border-accent-200 pt-3">
                   <span>Total</span>
                   <span className="flex-shrink-0 text-primary-700">₹{total.toLocaleString('en-IN')}</span>
                 </div>
-                {Math.floor(total / 10) > 0 && (
+                {pointsWillEarn > 0 && (
                   <div className="w-full flex items-center gap-1.5 text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2 mt-1">
                     <span>🎁</span>
-                    <span>You&apos;ll earn <strong>{Math.floor(total / 10)} loyalty points</strong> on this order!</span>
+                    <span>You&apos;ll earn <strong>{pointsWillEarn} loyalty points</strong> on this order!</span>
                   </div>
                 )}
               </div>

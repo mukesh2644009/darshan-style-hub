@@ -53,6 +53,26 @@ export async function GET() {
       return response;
     }
 
+    // Sliding-window session extension:
+    //   Admin   → extend by 8 hours on every active request
+    //   Customer → extend by 30 days only when < 15 days remain (saves unnecessary writes)
+    const adminMs   = 8  * 60 * 60 * 1000;
+    const customerMs = 30 * 24 * 60 * 60 * 1000;
+    const isAdmin = user.role === 'ADMIN';
+    const now = Date.now();
+    const timeLeft = session.expiresAt.getTime() - now;
+    const shouldExtend = isAdmin
+      ? true                                  // always slide for admins
+      : timeLeft < 15 * 24 * 60 * 60 * 1000; // only refresh when < 15 days left for customers
+
+    if (shouldExtend) {
+      const newExpiry = new Date(now + (isAdmin ? adminMs : customerMs));
+      await prisma.session.update({
+        where: { id: session.id },
+        data: { expiresAt: newExpiry },
+      }).catch(() => {}); // non-critical — don't break the auth check if DB write fails
+    }
+
     const response = NextResponse.json({ success: true, user });
     // Prevent caching of auth status
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');

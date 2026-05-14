@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 
-const INACTIVE_MS = 20 * 60 * 1000;   // 20 minutes
+// Admin pages use a tighter timeout (30 min); store pages use 60 min
+// The real security gate is the server-side 8-hour sliding session for admins.
+const isAdminPage = typeof window !== 'undefined' && window.location.pathname.startsWith('/admin');
+const INACTIVE_MS   = (isAdminPage ? 30 : 60) * 60 * 1000;
 const WARN_BEFORE_MS = 60 * 1000;      // warn 1 minute before
 
 export default function InactivityLogout() {

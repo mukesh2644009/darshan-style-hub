@@ -122,10 +122,13 @@ export async function GET(request: Request) {
     } catch {}
   }
 
-  // Create session
+  // Create session (admin: 8 hours; customer: 30 days)
   await prisma.session.deleteMany({ where: { userId: user.id } });
   const sessionToken = crypto.randomUUID();
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const sessionMs = user.role === 'ADMIN'
+    ? 8 * 60 * 60 * 1000
+    : 30 * 24 * 60 * 60 * 1000;
+  const expiresAt = new Date(Date.now() + sessionMs);
   await prisma.session.create({
     data: { userId: user.id, token: sessionToken, expiresAt },
   });
@@ -144,6 +147,7 @@ export async function GET(request: Request) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     expires: expiresAt,
+    maxAge: Math.floor(sessionMs / 1000),
     path: '/',
   });
   return res;

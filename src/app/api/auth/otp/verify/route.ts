@@ -101,7 +101,7 @@ export async function POST(request: Request) {
     });
 
     const token = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await prisma.session.create({
       data: {
         userId: user.id,

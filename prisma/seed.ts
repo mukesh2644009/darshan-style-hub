@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -422,13 +423,14 @@ async function main() {
 
   console.log('✓ Created 14 products (4 Sarees + 3 Suits + 7 Co Ord Sets)');
 
-  // Create Admin user
+  // Create Admin user — password is hashed; change via /admin/settings after first login
+  const adminPasswordHash = await bcrypt.hash('admin123', 12);
   await prisma.user.create({
     data: {
       email: 'admin@darshan.com',
       name: 'Admin User',
       phone: '+91 98765 43210',
-      password: 'admin123',
+      password: adminPasswordHash,
       role: 'ADMIN',
       addresses: {
         create: {
@@ -445,7 +447,7 @@ async function main() {
     },
   });
 
-  console.log('✓ Created Admin user (admin@darshan.com / admin123)');
+  console.log('✓ Created Admin user (admin@darshan.com / admin123) — CHANGE THIS PASSWORD IMMEDIATELY via /admin/settings');
 
   // Create Demo Customer user
   await prisma.user.create({

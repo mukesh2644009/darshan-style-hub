@@ -98,7 +98,7 @@ export async function POST(request: Request) {
     // Create session
     await prisma.session.deleteMany({ where: { userId: user.id } });
     const token = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await prisma.session.create({ data: { userId: user.id, token, expiresAt } });
 
     cookies().set('auth_token', token, {

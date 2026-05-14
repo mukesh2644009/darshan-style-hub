@@ -71,8 +71,12 @@ export async function POST(request: Request) {
     });
 
     // Create new session token
+    // Admin sessions expire in 8 hours; customer sessions last 30 days
     const token = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const sessionMs = user.role === 'ADMIN'
+      ? 8 * 60 * 60 * 1000        // 8 hours
+      : 30 * 24 * 60 * 60 * 1000; // 30 days
+    const expiresAt = new Date(Date.now() + sessionMs);
 
     await prisma.session.create({
       data: {
@@ -82,12 +86,13 @@ export async function POST(request: Request) {
       },
     });
 
-    // Set secure cookie
+    // Set secure cookie (same duration as session)
     cookies().set('auth_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       expires: expiresAt,
+      maxAge: Math.floor(sessionMs / 1000),
       path: '/',
     });
 

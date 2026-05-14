@@ -71,6 +71,7 @@ export async function POST(request: Request) {
       paymentMethod = 'COD',
       couponCode,
       couponDiscount: clientCouponDiscount,
+      pointsToRedeem: clientPointsToRedeem = 0,
     } = body;
 
     // Guest checkout allowed — userId is optional
@@ -165,7 +166,27 @@ export async function POST(request: Request) {
         discount = Math.min(discount, Number(clientCouponDiscount));
       }
     }
-    const total = subtotal + shipping + codCharge - discount;
+
+    // Server-side loyalty points validation — 10 points = ₹1 discount
+    let pointsDiscount = 0;
+    let validatedPointsToRedeem = 0;
+    if (user && clientPointsToRedeem > 0) {
+      const dbUser = await (prisma as any).user.findUnique({
+        where: { id: user.id },
+        select: { loyaltyPoints: true },
+      });
+      const availablePoints = (dbUser as any)?.loyaltyPoints ?? 0;
+      // Clamp: can't redeem more than available, more than what client sent, or ₹ more than subtotal
+      const maxRedeemableByBalance = Math.floor(availablePoints / 10) * 10; // round to 10-point blocks
+      const clientRequested = Math.floor(Number(clientPointsToRedeem) / 10) * 10;
+      validatedPointsToRedeem = Math.min(clientRequested, maxRedeemableByBalance, availablePoints);
+      pointsDiscount = Math.floor(validatedPointsToRedeem / 10); // 10 points = ₹1
+      // Can't discount more than the subtotal
+      pointsDiscount = Math.min(pointsDiscount, subtotal);
+      validatedPointsToRedeem = pointsDiscount * 10;
+    }
+
+    const total = Math.max(0, subtotal + shipping + codCharge - discount - pointsDiscount);
 
     // Decrement inventory — blocks if any size is out of stock
     const inventoryError = await decrementInventory(
@@ -184,7 +205,7 @@ export async function POST(request: Request) {
         paymentMethod,
         subtotal,
         shipping,
-        discount,
+        discount: discount + pointsDiscount,
         total,
         shippingName: shippingName.trim(),
         shippingPhone: shippingPhone.trim(),
@@ -309,16 +330,39 @@ export async function POST(request: Request) {
       console.error('Notification service error:', notificationError);
     }
 
-    // Award loyalty points for logged-in users (1 point per ₹10 spent)
+    // Deduct redeemed loyalty points
+    if (user && validatedPointsToRedeem > 0) {
+      try {
+        await (prisma as any).$transaction([
+          (prisma as any).user.update({
+            where: { id: user.id },
+            data: { loyaltyPoints: { decrement: validatedPointsToRedeem } },
+          }),
+          (prisma as any).loyaltyTransaction.create({
+            data: {
+              userId: user.id,
+              points: -validatedPointsToRedeem,
+              type: 'REDEEM',
+              description: `Redeemed for order #${order.id.slice(-8).toUpperCase()} (₹${pointsDiscount} off)`,
+              orderId: order.id,
+            },
+          }),
+        ]);
+      } catch (redeemError) {
+        console.error('Points deduction failed (non-critical):', redeemError);
+      }
+    }
+
+    // Award loyalty points for logged-in users (1 point per ₹10 spent, on actual amount paid)
     const loyaltyPointsEarned = user ? Math.floor(total / 10) : 0;
     if (user && loyaltyPointsEarned > 0) {
       try {
-        await prisma.$transaction([
-          prisma.user.update({
+        await (prisma as any).$transaction([
+          (prisma as any).user.update({
             where: { id: user.id },
             data: { loyaltyPoints: { increment: loyaltyPointsEarned } },
           }),
-          prisma.loyaltyTransaction.create({
+          (prisma as any).loyaltyTransaction.create({
             data: {
               userId: user.id,
               points: loyaltyPointsEarned,
@@ -333,7 +377,12 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ ...order, loyaltyPointsEarned }, { status: 201 });
+    return NextResponse.json({
+      ...order,
+      loyaltyPointsEarned,
+      loyaltyPointsRedeemed: validatedPointsToRedeem,
+      loyaltyDiscount: pointsDiscount,
+    }, { status: 201 });
   } catch (error) {
     console.error('Error creating order:', error);
     return NextResponse.json(

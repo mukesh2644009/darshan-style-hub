@@ -72,21 +72,8 @@ export default function OrderStatusUpdater({ orderId, currentStatus, currentPaym
     EXCHANGED:          { icon: '🎁', label: 'Exchanged',          color: 'bg-teal-50 border-teal-200 text-teal-800',        note: 'Exchange fulfilled successfully.' },
   };
 
-  if (isCancelled) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
-          <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-            <span className="text-xl">❌</span>
-          </div>
-          <div>
-            <p className="font-semibold text-red-800">Order Cancelled</p>
-            <p className="text-sm text-red-600">This order has been cancelled and cannot be modified.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Note: cancelled orders are NOT locked — admin can reopen them if cancelled in error
+  // (e.g. Nimbuspost RTO webhook incorrectly marking a valid order as cancelled)
 
   if (isReturnFlow) {
     const info = returnStatusLabels[currentStatus];
@@ -145,6 +132,19 @@ export default function OrderStatusUpdater({ orderId, currentStatus, currentPaym
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-6 space-y-6">
+      {/* Warning banner if currently cancelled — can be reopened */}
+      {isCancelled && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+          <span className="text-lg shrink-0">⚠️</span>
+          <div>
+            <p className="font-semibold">This order is currently Cancelled</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              If it was cancelled by mistake (e.g. by a Nimbuspost RTO webhook), select the correct status below and save.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Order Status */}
       <div>
         <h2 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">

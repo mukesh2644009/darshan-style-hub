@@ -29,16 +29,26 @@ function getNestedString(
 function mapNimbusToOrderStatus(statusRaw?: string): string | null {
   if (!statusRaw) return null;
   const status = statusRaw.toUpperCase();
+
   if (
-    ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'SHIPMENT_CREATED'].includes(status) ||
+    ['PICKED_UP', 'IN_TRANSIT', 'OUT_FOR_DELIVERY', 'SHIPMENT_CREATED', 'BOOKED'].includes(status) ||
     status.includes('NDR') ||
     status.includes('UNDELIVERED')
   ) {
     return 'SHIPPED';
   }
+
   if (status === 'DELIVERED') return 'DELIVERED';
-  if (status.includes('RTO')) return 'CANCELLED';
-  if (status === 'CANCELLED') return 'CANCELLED';
+
+  // RTO = Return To Origin — shipment is coming back to sender.
+  // Map to RETURNED (not CANCELLED) so the order history is accurate.
+  // A customer's order being returned is NOT the same as it being cancelled.
+  if (status.includes('RTO')) return 'RETURNED';
+
+  // Only mark CANCELLED if Nimbuspost explicitly sends CANCELLED (shipment booking cancelled,
+  // not yet shipped). Guard against accidental bulk cancellations from test/duplicate webhooks.
+  if (status === 'CANCELLED' || status === 'SHIPMENT_CANCELLED') return 'CANCELLED';
+
   return null;
 }
 

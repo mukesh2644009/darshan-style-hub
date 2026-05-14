@@ -51,6 +51,16 @@ export default async function OrderDetailPage({ params }: { params: { id: string
   const whatsappMessage = `Hi! Regarding your order DSH${order.id.slice(0, 8).toUpperCase()} at Darshan Style Hub:\n\nOrder Total: ₹${order.total.toLocaleString('en-IN')}\nStatus: ${order.status}\n\nHow can we help you?`;
   const whatsappLink = `https://wa.me/${order.shippingPhone?.replace(/\D/g, '')}?text=${encodeURIComponent(whatsappMessage)}`;
 
+  // Detect mismatch between store status and Nimbuspost status
+  const nimbusStatusUpper = (order.nimbusStatus || '').toUpperCase();
+  const nimbusSaysCancelled = nimbusStatusUpper === 'CANCELLED' || nimbusStatusUpper === 'SHIPMENT_CANCELLED';
+  const nimbusSaysDelivered = nimbusStatusUpper === 'DELIVERED';
+  const nimbusSaysRTO = nimbusStatusUpper.includes('RTO');
+  const statusMismatch =
+    (nimbusSaysCancelled && order.status !== 'CANCELLED') ||
+    (nimbusSaysDelivered && order.status !== 'DELIVERED') ||
+    (nimbusSaysRTO && !['RETURNED', 'RETURN_APPROVED', 'CANCELLED'].includes(order.status));
+
   return (
     <div>
       {/* Header */}
@@ -83,6 +93,23 @@ export default async function OrderDetailPage({ params }: { params: { id: string
           </span>
         </div>
       </div>
+
+      {/* Nimbus ↔ Store status mismatch warning */}
+      {statusMismatch && order.nimbusStatus && (
+        <div className="mb-6 flex items-start gap-3 bg-red-50 border border-red-300 rounded-xl px-5 py-4">
+          <span className="text-2xl shrink-0">⚠️</span>
+          <div className="flex-1">
+            <p className="font-bold text-red-800">Status Mismatch — Action Required</p>
+            <p className="text-sm text-red-700 mt-1">
+              Nimbuspost shows this shipment as <strong>{order.nimbusStatus}</strong>, but this store
+              still shows the order as <strong>{order.status}</strong>.
+            </p>
+            <p className="text-sm text-red-600 mt-1">
+              Please update the order status below to match the actual shipment state.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-8">
         {/* Main Content */}
@@ -260,9 +287,14 @@ export default async function OrderDetailPage({ params }: { params: { id: string
                   </div>
                 )}
                 {order.nimbusStatus && (
-                  <div className="flex justify-between gap-4">
-                    <span className="text-gray-600">Nimbus Status</span>
-                    <span className="font-medium">{order.nimbusStatus}</span>
+                  <div className={`flex justify-between gap-4 rounded-lg px-2 py-1 -mx-2 ${statusMismatch ? 'bg-red-50' : ''}`}>
+                    <span className={statusMismatch ? 'text-red-700 font-semibold' : 'text-gray-600'}>
+                      Nimbus Status
+                    </span>
+                    <span className={`font-semibold ${statusMismatch ? 'text-red-700' : 'text-gray-800'}`}>
+                      {order.nimbusStatus}
+                      {statusMismatch && ' ⚠️'}
+                    </span>
                   </div>
                 )}
                 <div className="flex flex-wrap gap-2 pt-2">

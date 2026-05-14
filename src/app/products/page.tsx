@@ -102,23 +102,44 @@ export default function ProductsPage() {
 
     switch (sortBy) {
       case 'price-low':
-        filtered.sort((a, b) => a.price - b.price);
+        filtered.sort((a, b) => {
+          // Out-of-stock always last
+          if (a.inStock !== b.inStock) return a.inStock ? -1 : 1;
+          return a.price - b.price;
+        });
         break;
       case 'price-high':
-        filtered.sort((a, b) => b.price - a.price);
+        filtered.sort((a, b) => {
+          if (a.inStock !== b.inStock) return a.inStock ? -1 : 1;
+          return b.price - a.price;
+        });
         break;
       case 'rating':
-        filtered.sort((a, b) => b.rating - a.rating);
+        filtered.sort((a, b) => {
+          if (a.inStock !== b.inStock) return a.inStock ? -1 : 1;
+          return b.rating - a.rating;
+        });
         break;
       case 'newest':
-        filtered = filtered.filter((p) => p.newArrival).concat(
-          filtered.filter((p) => !p.newArrival)
-        );
+        filtered.sort((a, b) => {
+          if (a.inStock !== b.inStock) return a.inStock ? -1 : 1;
+          if (a.newArrival !== b.newArrival) return a.newArrival ? -1 : 1;
+          return 0;
+        });
         break;
-      default:
-        filtered = filtered.filter((p) => p.featured).concat(
-          filtered.filter((p) => !p.featured)
-        );
+      default: // 'featured'
+        filtered.sort((a, b) => {
+          // 1. Out-of-stock sinks to bottom
+          if (a.inStock !== b.inStock) return a.inStock ? -1 : 1;
+          // 2. Featured products come first
+          if (a.featured !== b.featured) return a.featured ? -1 : 1;
+          // 3. Among featured, highest rated first
+          if (a.featured && b.featured) return b.rating - a.rating;
+          // 4. New arrivals before regular products
+          if (a.newArrival !== b.newArrival) return a.newArrival ? -1 : 1;
+          // 5. Finally, sort by rating
+          return b.rating - a.rating;
+        });
     }
 
     return filtered;

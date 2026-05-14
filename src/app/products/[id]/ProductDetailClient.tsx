@@ -13,7 +13,6 @@ import { createWhatsAppOrderLink, createWhatsAppShareLink } from '@/components/W
 import { gaViewItem, gaAddToCart, gaWhatsAppClick } from '@/lib/google-analytics';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 import { useRecentlyViewedStore } from '@/store/recentlyViewedStore';
-import SaleCountdown from '@/components/SaleCountdown';
 import RecentlyViewed from '@/components/RecentlyViewed';
 import Breadcrumb from '@/components/Breadcrumb';
 import PaymentBadges from '@/components/PaymentBadges';
@@ -455,7 +454,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                   Only {product.stock} left in stock!
                 </span>
               )}
-              {discount > 0 && <SaleCountdown variant="detail" />}
             </div>
 
             {/* Size Selection */}

@@ -10,7 +10,6 @@ import { useWishlistStore } from '@/store/wishlistStore';
 import { useCompareStore } from '@/store/compareStore';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import SaleCountdown from '@/components/SaleCountdown';
 
 interface ProductCardProps {
   product: Product;
@@ -200,10 +199,6 @@ export default function ProductCard({ product }: ProductCardProps) {
                   Only {product.stock} left!
                 </span>
               )}
-              {/* Sale countdown for discounted items */}
-              {discount > 0 && (
-                <SaleCountdown variant="card" />
-              )}
             </div>
 
             {/* Wishlist + Compare Buttons */}
@@ -218,18 +213,31 @@ export default function ProductCard({ product }: ProductCardProps) {
               >
                 <FiHeart size={18} fill={isWishlisted ? 'currentColor' : 'none'} />
               </button>
-              <button
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCompare(product); }}
-                disabled={compareDisabled}
-                title={compareDisabled ? 'Max 3 items to compare' : isCompared ? 'Remove from compare' : 'Compare'}
-                className={`p-2 rounded-full transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed ${
-                  isCompared
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white/80 text-gray-700 hover:bg-white'
-                }`}
-              >
-                <FiRefreshCw size={15} />
-              </button>
+
+              {/* Compare button with visible hover label */}
+              <div className="relative group/compare flex items-center justify-end">
+                {/* Tooltip label — slides in from the right on hover */}
+                <span className="absolute right-full mr-2 whitespace-nowrap bg-gray-900/90 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full pointer-events-none
+                  opacity-0 translate-x-1 group-hover/compare:opacity-100 group-hover/compare:translate-x-0
+                  transition-all duration-200">
+                  {compareDisabled
+                    ? 'Max 3 items'
+                    : isCompared
+                    ? 'Remove compare'
+                    : 'Compare'}
+                </span>
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleCompare(product); }}
+                  disabled={compareDisabled}
+                  className={`p-2 rounded-full transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed ${
+                    isCompared
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white/80 text-gray-700 hover:bg-white'
+                  }`}
+                >
+                  <FiRefreshCw size={15} />
+                </button>
+              </div>
             </div>
 
             {/* Quick Add Button */}

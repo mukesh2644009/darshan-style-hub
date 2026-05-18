@@ -174,7 +174,7 @@ export default function BulkCategoryPage() {
           className="px-3 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-primary-500 bg-white"
         >
           <option value="All">All Categories</option>
-          {[...new Set(rows.map(r => r.category))].sort().map(c => (
+          {Array.from(new Set(rows.map(r => r.category))).sort().map(c => (
             <option key={c} value={c}>{c} ({rows.filter(r => r.category === c).length})</option>
           ))}
         </select>

@@ -7,6 +7,9 @@ import DeleteAllButton from './DeleteAllButton';
 import DeleteProductButton from './DeleteProductButton';
 import BackfillSlugsButton from './BackfillSlugsButton';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function getProducts() {
   return prisma.product.findMany({
     orderBy: { createdAt: 'desc' },

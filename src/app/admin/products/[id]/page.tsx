@@ -5,6 +5,9 @@ import Image from 'next/image';
 import { FiArrowLeft, FiPackage } from 'react-icons/fi';
 import ProductEditForm from './ProductEditForm';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function getProduct(id: string) {
   return prisma.product.findUnique({
     where: { id },

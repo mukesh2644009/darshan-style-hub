@@ -311,7 +311,7 @@ export default function Testimonials() {
         </p>
         <div className="flex gap-3 shrink-0">
           <a
-            href="https://g.page/r/write-review"
+            href="https://share.google/sj1MessxYKZV8cat2"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 text-sm font-semibold px-4 py-2.5 rounded-full shadow-sm hover:shadow-md hover:border-gray-300 transition-all"

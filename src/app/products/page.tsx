@@ -7,46 +7,29 @@ import ProductCard from '@/components/ProductCard';
 import Breadcrumb from '@/components/Breadcrumb';
 import { Product } from '@/lib/products';
 
-interface Category {
-  name: string;
-  subcategories: string[];
-}
-
-
 export default function ProductsPage() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
   const searchParam = searchParams.get('search') || '';
 
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState<string>(searchParam);
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryParam || 'All');
-  const [selectedSubcategory, setSelectedSubcategory] = useState<string>('All');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<string>('featured');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
-  // Fetch products and categories
+  // Fetch products only — categories are derived from actual product data
   useEffect(() => {
     async function fetchData() {
       try {
-        const [productsRes, categoriesRes] = await Promise.all([
-          fetch('/api/products'),
-          fetch('/api/categories'),
-        ]);
-        
+        const productsRes = await fetch('/api/products');
         const productsData = await productsRes.json();
-        const categoriesData = await categoriesRes.json();
-        
         if (productsData.success) {
           setProducts(productsData.products);
-        }
-        if (categoriesData.success) {
-          setCategories(categoriesData.categories);
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -81,9 +64,6 @@ export default function ProductsPage() {
 
     if (selectedCategory !== 'All') {
       filtered = filtered.filter((p) => p.category === selectedCategory);
-    }
-    if (selectedSubcategory !== 'All') {
-      filtered = filtered.filter((p) => p.subcategory === selectedSubcategory);
     }
     filtered = filtered.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
 
@@ -141,13 +121,14 @@ export default function ProductsPage() {
     }
 
     return filtered;
-  }, [products, searchQuery, selectedCategory, selectedSubcategory, priceRange, selectedSizes, selectedColors, sortBy]);
+  }, [products, searchQuery, selectedCategory, priceRange, selectedSizes, selectedColors, sortBy]);
 
-  const subcategories = useMemo(() => {
-    if (selectedCategory === 'All') return [];
-    const category = categories.find((c) => c.name === selectedCategory);
-    return category?.subcategories || [];
-  }, [selectedCategory, categories]);
+  // Build category list from actual products — only shows categories that have products
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    products.forEach((p) => set.add(p.category));
+    return Array.from(set).sort();
+  }, [products]);
 
   const allSizes = useMemo(() => {
     const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '3XL', '4XL'];
@@ -173,7 +154,6 @@ export default function ProductsPage() {
 
   const activeFilterCount =
     (selectedCategory !== 'All' ? 1 : 0) +
-    (selectedSubcategory !== 'All' ? 1 : 0) +
     (priceRange[1] < 50000 ? 1 : 0) +
     selectedSizes.length +
     selectedColors.length;
@@ -186,7 +166,6 @@ export default function ProductsPage() {
 
   const clearAllFilters = () => {
     setSelectedCategory('All');
-    setSelectedSubcategory('All');
     setPriceRange([0, 50000]);
     setSelectedSizes([]);
     setSelectedColors([]);
@@ -214,9 +193,6 @@ export default function ProductsPage() {
     { label: 'Products', href: '/products' },
     ...(selectedCategory !== 'All'
       ? [{ label: selectedCategory, href: `/products?category=${encodeURIComponent(selectedCategory)}` }]
-      : []),
-    ...(selectedSubcategory !== 'All' && selectedCategory !== 'All'
-      ? [{ label: selectedSubcategory }]
       : []),
     ...(searchQuery.trim() ? [{ label: `"${searchQuery}"` }] : []),
   ];
@@ -291,10 +267,7 @@ export default function ProductsPage() {
                 <h3 className="font-medium text-gray-900 mb-3">Category</h3>
                 <div className="space-y-2">
                   <button
-                    onClick={() => {
-                      setSelectedCategory('All');
-                      setSelectedSubcategory('All');
-                    }}
+                    onClick={() => setSelectedCategory('All')}
                     className={`block w-full text-left px-3 py-2 rounded-lg transition-colors ${
                       selectedCategory === 'All'
                         ? 'bg-primary-100 text-primary-700'
@@ -305,54 +278,19 @@ export default function ProductsPage() {
                   </button>
                   {categories.map((cat) => (
                     <button
-                      key={cat.name}
-                      onClick={() => {
-                        setSelectedCategory(cat.name);
-                        setSelectedSubcategory('All');
-                      }}
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
                       className={`block w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                        selectedCategory === cat.name
+                        selectedCategory === cat
                           ? 'bg-primary-100 text-primary-700'
                           : 'hover:bg-accent-100'
                       }`}
                     >
-                      {cat.name}
+                      {cat}
                     </button>
                   ))}
                 </div>
               </div>
-
-              {/* Subcategories */}
-              {subcategories.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="font-medium text-gray-900 mb-3">Subcategory</h3>
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => setSelectedSubcategory('All')}
-                      className={`block w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                        selectedSubcategory === 'All'
-                          ? 'bg-primary-100 text-primary-700'
-                          : 'hover:bg-accent-100'
-                      }`}
-                    >
-                      All
-                    </button>
-                    {subcategories.map((sub) => (
-                      <button
-                        key={sub}
-                        onClick={() => setSelectedSubcategory(sub)}
-                        className={`block w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                          selectedSubcategory === sub
-                            ? 'bg-primary-100 text-primary-700'
-                            : 'hover:bg-accent-100'
-                        }`}
-                      >
-                        {sub}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {/* Price Range */}
               <div className="mb-6">
@@ -512,7 +450,6 @@ export default function ProductsPage() {
                 <button
                   onClick={() => {
                     setSelectedCategory('All');
-                    setSelectedSubcategory('All');
                     setPriceRange([0, 50000]);
                   }}
                   className="btn-primary"
@@ -548,10 +485,7 @@ export default function ProductsPage() {
                 <h3 className="font-medium text-gray-900 mb-3">Category</h3>
                 <div className="space-y-2">
                   <button
-                    onClick={() => {
-                      setSelectedCategory('All');
-                      setSelectedSubcategory('All');
-                    }}
+                    onClick={() => setSelectedCategory('All')}
                     className={`block w-full text-left px-3 py-2 rounded-lg transition-colors ${
                       selectedCategory === 'All'
                         ? 'bg-primary-100 text-primary-700'
@@ -562,18 +496,15 @@ export default function ProductsPage() {
                   </button>
                   {categories.map((cat) => (
                     <button
-                      key={cat.name}
-                      onClick={() => {
-                        setSelectedCategory(cat.name);
-                        setSelectedSubcategory('All');
-                      }}
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
                       className={`block w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                        selectedCategory === cat.name
+                        selectedCategory === cat
                           ? 'bg-primary-100 text-primary-700'
                           : 'hover:bg-accent-100'
                       }`}
                     >
-                      {cat.name}
+                      {cat}
                     </button>
                   ))}
                 </div>

@@ -28,8 +28,8 @@ const shopCategoryCircles = [
     alt: 'Chic co ord sets',
   },
   {
-    label: 'Kurti',
-    href: '/products?category=Kurti',
+    label: 'Kurtis',
+    href: '/products?category=Kurtis',
     image: '/products/categories/kurti.png',
     alt: 'Stylish kurtis',
   },
@@ -76,6 +76,13 @@ export default async function Home() {
           className="relative z-[21] h-1 w-full bg-gradient-to-r from-amber-500 via-rose-400 to-amber-500"
           aria-hidden
         />
+
+        {/* Tagline strip */}
+        <div className="relative z-[21] bg-[#FFF8E6] py-2.5 text-center">
+          <p className="text-xs sm:text-sm font-medium tracking-[0.25em] text-amber-700 uppercase italic">
+            ✦ &nbsp;Art in Every Thread&nbsp; ✦
+          </p>
+        </div>
       </section>
 
       {/* Features - Compact */}

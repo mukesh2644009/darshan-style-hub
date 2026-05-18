@@ -71,7 +71,7 @@ async function main() {
 
   await prisma.category.create({
     data: {
-      name: 'Kurti',
+      name: 'Kurtis',
       subcategories: {
         create: [
           { name: 'Printed Kurti' },

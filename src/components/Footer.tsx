@@ -36,7 +36,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* About */}
           <div>
-            <h4 className="font-display text-2xl font-bold text-white mb-4">Darshan Style Hub™</h4>
+            <h4 className="font-display text-2xl font-bold text-white mb-1">Darshan Style Hub™</h4>
+            <p className="text-xs font-medium tracking-widest text-amber-400 uppercase italic mb-4">Art in Every Thread</p>
             <p className="text-accent-300 mb-3 leading-relaxed">
               Your trusted destination for premium suits and co ord sets in Jaipur. 
               Quality fabrics, timeless designs, and exceptional service — from Jaipur to all of India.

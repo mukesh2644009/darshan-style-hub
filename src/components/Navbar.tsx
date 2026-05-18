@@ -97,9 +97,14 @@ export default function Navbar() {
               className="h-10 w-auto object-contain mix-blend-multiply sm:h-12 md:h-14"
               priority
             />
-            <span className="font-display text-xl sm:text-2xl font-bold text-red-700 hidden sm:block truncate max-w-[9rem] sm:max-w-[11rem] md:max-w-[13rem] xl:max-w-none">
-              Darshan Style Hub™
-            </span>
+            <div className="hidden sm:flex flex-col">
+              <span className="font-display text-xl sm:text-2xl font-bold text-red-700 truncate max-w-[9rem] sm:max-w-[11rem] md:max-w-[13rem] xl:max-w-none leading-tight">
+                Darshan Style Hub™
+              </span>
+              <span className="text-[10px] sm:text-xs font-medium tracking-widest text-amber-600 uppercase italic leading-tight">
+                Art in Every Thread
+              </span>
+            </div>
           </Link>
           </div>
 

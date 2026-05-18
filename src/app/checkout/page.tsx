@@ -797,7 +797,7 @@ export default function CheckoutPage() {
                   {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
                 </div>
                 {/* Pincode first — auto-fills city & state */}
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Pincode *
                   </label>
@@ -834,7 +834,7 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* City — auto-filled from pincode, editable */}
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     City *
                     {pincodeStatus === 'found' && (
@@ -852,7 +852,7 @@ export default function CheckoutPage() {
                 </div>
 
                 {/* State — auto-filled from pincode, editable */}
-                <div>
+                <div className="min-w-0">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     State
                     {pincodeStatus === 'found' && (

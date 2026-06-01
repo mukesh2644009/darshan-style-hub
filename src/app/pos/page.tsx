@@ -33,6 +33,7 @@ export default function POSPage() {
   const [showCustomer, setShowCustomer] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
+  const [showCart, setShowCart] = useState(false); // mobile cart drawer
   const [customer, setCustomer] = useState({ name: '', phone: '', email: '', address: '' });
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI'>('CASH');
   const [lookingUp, setLookingUp] = useState(false);
@@ -177,7 +178,7 @@ export default function POSPage() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT: Product grid */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           {/* Search + category filter */}
           <div className="bg-white border-b border-gray-200 px-4 py-3 space-y-2 shrink-0">
             <div className="relative">
@@ -261,8 +262,8 @@ export default function POSPage() {
           </div>
         </div>
 
-        {/* RIGHT: Cart panel */}
-        <div className="w-80 xl:w-96 bg-white border-l border-gray-200 flex flex-col shrink-0">
+        {/* RIGHT: Cart panel — hidden on mobile, shown on md+ */}
+        <div className="hidden md:flex w-80 xl:w-96 bg-white border-l border-gray-200 flex-col shrink-0">
           <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
             <h2 className="font-bold text-gray-900 flex items-center gap-2">
               <FiShoppingCart className="text-rose-600" />
@@ -331,6 +332,84 @@ export default function POSPage() {
           )}
         </div>
       </div>
+
+      {/* ── Mobile: Floating cart button ── */}
+      {totalQty > 0 && (
+        <div className="md:hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-40">
+          <button onClick={() => setShowCart(true)}
+            className="flex items-center gap-3 px-5 py-3.5 bg-gray-900 text-white font-bold rounded-2xl shadow-2xl active:scale-95 transition-all">
+            <div className="relative">
+              <FiShoppingCart className="w-5 h-5" />
+              <span className="absolute -top-2 -right-2 w-5 h-5 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {totalQty}
+              </span>
+            </div>
+            <span>View Cart</span>
+            <span className="bg-white/20 px-2 py-0.5 rounded-lg text-sm">₹{subtotal.toLocaleString('en-IN')}</span>
+          </button>
+        </div>
+      )}
+
+      {/* ── Mobile: Cart bottom sheet ── */}
+      {showCart && (
+        <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end" onClick={() => setShowCart(false)}>
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                <FiShoppingCart className="text-rose-600" /> Cart ({totalQty})
+              </h2>
+              <div className="flex items-center gap-3">
+                {cart.length > 0 && (
+                  <button onClick={() => setCart([])} className="text-xs text-red-500">Clear all</button>
+                )}
+                <button onClick={() => setShowCart(false)} className="text-gray-400"><FiX className="w-5 h-5" /></button>
+              </div>
+            </div>
+            <div className="overflow-y-auto flex-1 p-4 space-y-2">
+              {cart.map(item => (
+                <div key={`${item.productId}-${item.size}`} className="bg-gray-50 rounded-xl p-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 leading-tight">{item.productName}</p>
+                      {item.size && <p className="text-xs text-gray-500">Size: <strong>{item.size}</strong></p>}
+                      <p className="text-xs text-gray-400">₹{item.price.toLocaleString('en-IN')} each</p>
+                    </div>
+                    <button onClick={() => removeFromCart(item.productId, item.size)} className="text-gray-300 hover:text-red-500 ml-2">
+                      <FiTrash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => changeQty(item.productId, item.productName, item.price, item.size, item.maxQty, -1)}
+                        className="w-11 h-11 rounded-xl bg-white border-2 border-gray-200 flex items-center justify-center hover:border-rose-400 hover:text-rose-600 active:scale-95 transition-all">
+                        <FiMinus className="w-5 h-5" />
+                      </button>
+                      <span className="w-8 text-center font-bold text-xl">{item.quantity}</span>
+                      <button onClick={() => changeQty(item.productId, item.productName, item.price, item.size, item.maxQty, +1)}
+                        disabled={item.quantity >= item.maxQty}
+                        className="w-11 h-11 rounded-xl bg-rose-600 flex items-center justify-center text-white hover:bg-rose-700 active:scale-95 transition-all disabled:opacity-40">
+                        <FiPlus className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <p className="font-bold text-gray-900">₹{(item.price * item.quantity).toLocaleString('en-IN')}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="p-4 border-t border-gray-100 space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-500">{totalQty} item{totalQty !== 1 ? 's' : ''}</span>
+                <span className="text-2xl font-bold text-gray-900">₹{subtotal.toLocaleString('en-IN')}</span>
+              </div>
+              <button onClick={() => { setShowCart(false); setShowCustomer(true); }}
+                className="w-full py-4 bg-rose-600 text-white font-bold rounded-2xl hover:bg-rose-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 text-base">
+                <FiUser className="w-5 h-5" /> Add Customer & Bill
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Product size panel (slides in from bottom) ── */}
       {activeProduct && (

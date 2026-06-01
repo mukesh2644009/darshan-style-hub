@@ -20,7 +20,7 @@ model User {
   name          String?
   phone         String?
   password      String    // bcrypt-hashed; for Google-only users we store a random unguessable hash
-  role          String    @default("CUSTOMER") // ADMIN or CUSTOMER
+  role          String    @default("CUSTOMER") // ADMIN | CUSTOMER | STAFF
 
   // Google OAuth fields (null for users that signed up with email or phone)
   googleId      String?   @unique
@@ -184,6 +184,10 @@ model Order {
   shipping        Float       @default(0)
   discount        Float       @default(0)
   total           Float
+
+  // Source of order — ONLINE (website) or POS (in-store by staff)
+  source          String      @default("ONLINE")
+  staffId         String?     // staff member who created POS order
 
   // Order classification — STANDARD (paid) or REPLACEMENT (₹0 exchange replacement)
   orderType       String      @default("STANDARD")

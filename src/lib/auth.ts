@@ -85,6 +85,18 @@ export async function requireAdmin() {
   return { user };
 }
 
+// Check if user is staff or admin (POS access)
+export async function requireStaff() {
+  const user = await getCurrentUser();
+  if (!user) {
+    return { error: 'Unauthorized', status: 401 };
+  }
+  if (user.role !== 'STAFF' && user.role !== 'ADMIN') {
+    return { error: 'Forbidden - Staff access required', status: 403 };
+  }
+  return { user };
+}
+
 // Rate limiting storage (in production, use Redis)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 

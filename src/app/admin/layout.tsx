@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   FiHome, FiShoppingBag, FiPackage, FiUsers, FiSettings,
   FiArrowLeft, FiMessageSquare, FiLoader, FiLogOut, FiRotateCcw,
-  FiChevronRight, FiMenu, FiX, FiAward, FiStar, FiTag,
+  FiChevronRight, FiMenu, FiX, FiAward, FiStar, FiTag, FiUserCheck,
 } from 'react-icons/fi';
 
 const navItems = [
@@ -17,6 +17,7 @@ const navItems = [
   { name: 'Fix Categories', href: '/admin/products/bulk-category', icon: FiTag     },
   { name: 'Reviews',   href: '/admin/reviews',   icon: FiStar                      },
   { name: 'Customers', href: '/admin/customers', icon: FiUsers                     },
+  { name: 'Staff / POS', href: '/admin/staff',   icon: FiUserCheck                 },
   { name: 'Loyalty',   href: '/admin/loyalty',   icon: FiAward                     },
   { name: 'Messages',  href: '/admin/messages',  icon: FiMessageSquare             },
   { name: 'Settings',  href: '/admin/settings',  icon: FiSettings                  },

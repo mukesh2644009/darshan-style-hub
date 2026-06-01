@@ -73,9 +73,9 @@ export async function POST(request: Request) {
     // Create new session token
     // Admin sessions expire in 8 hours; customer sessions last 30 days
     const token = crypto.randomUUID();
-    const sessionMs = user.role === 'ADMIN'
-      ? 8 * 60 * 60 * 1000        // 8 hours
-      : 30 * 24 * 60 * 60 * 1000; // 30 days
+    const sessionMs = (user.role === 'ADMIN' || user.role === 'STAFF')
+      ? 8 * 60 * 60 * 1000        // 8 hours for admin/staff
+      : 30 * 24 * 60 * 60 * 1000; // 30 days for customers
     const expiresAt = new Date(Date.now() + sessionMs);
 
     await prisma.session.create({

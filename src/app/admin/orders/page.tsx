@@ -10,6 +10,7 @@ export const revalidate = 0;
 
 async function getOrders() {
   return prisma.order.findMany({
+    where: { source: 'ONLINE' },   // exclude POS in-store orders
     orderBy: { createdAt: 'desc' },
     include: {
       user: true,
@@ -120,15 +121,10 @@ export default async function OrdersPage() {
                     <tr key={order.id} className={`hover:bg-gray-50/80 transition-colors ${isReturnFlow ? 'bg-orange-50/30' : ''} ${isFailedPayment ? 'bg-red-50/40' : ''}`}>
                       {/* Order ID */}
                       <td className="px-5 py-4">
-                        <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
                           {isReturnFlow && <FiAlertCircle className="w-3.5 h-3.5 text-orange-500 shrink-0" />}
                           {isFailedPayment && <FiAlertCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
                           <span className={`font-mono text-sm font-bold ${isFailedPayment ? 'text-red-700' : 'text-gray-800'}`}>DSH{order.id.slice(0, 8).toUpperCase()}</span>
-                          {(order as any).source === 'POS' && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-bold bg-violet-100 text-violet-700 border border-violet-200">
-                              🏪 POS
-                            </span>
-                          )}
                         </div>
                         <p className="text-xs text-gray-400 mt-0.5">{order.paymentMethod}</p>
                       </td>

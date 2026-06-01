@@ -2,13 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import { Outfit, Playfair_Display } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import CartSidebar from '@/components/CartSidebar';
-import WhatsAppButton from '@/components/WhatsAppButton';
+import StoreShell from '@/components/StoreShell';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
-import InactivityLogout from '@/components/InactivityLogout';
-import CompareBar from '@/components/CompareBar';
 
 const outfit = Outfit({ 
   subsets: ['latin'],
@@ -90,15 +85,9 @@ export default function RootLayout({
       <body className="font-body bg-[#FFF8E6] text-gray-900 antialiased overflow-x-hidden w-full">
         <GoogleAnalytics />
         <div className="w-full max-w-[100vw]">
-          <Navbar />
-          <CartSidebar />
-          <main className="min-h-screen w-full pt-[84px] sm:pt-[104px]">
+          <StoreShell>
             {children}
-          </main>
-          <Footer />
-          <WhatsAppButton />
-          <CompareBar />
-          <InactivityLogout />
+          </StoreShell>
         </div>
       </body>
     </html>

@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireStaff, getCurrentUser } from '@/lib/auth';
+import { requireStaff } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-// POST — create a POS order
+// POST — create a POS order and decrement stock
 export async function POST(request: Request) {
   try {
     const authResult = await requireStaff();
@@ -34,46 +34,79 @@ export async function POST(request: Request) {
     const subtotal = items.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0);
     const total = subtotal;
 
-    // Validate all products exist
-    const productIds = items.map((i: { productId: string }) => i.productId);
-    const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
-    if (products.length !== productIds.length) {
-      return NextResponse.json({ error: 'One or more products not found' }, { status: 400 });
-    }
+    // Run everything in a transaction: create order + decrement stock atomically
+    const order = await prisma.$transaction(async (tx) => {
+      // Validate stock availability and decrement for each item
+      for (const item of items as { productId: string; price: number; quantity: number; size?: string }[]) {
+        if (item.size) {
+          // Find the size record for this product
+          const sizeRecord = await tx.productSize.findFirst({
+            where: { productId: item.productId, size: item.size },
+          });
 
-    const order = await prisma.order.create({
-      data: {
-        source: 'POS',
-        staffId: staff.id,
-        status: 'CONFIRMED',
-        paymentMethod: paymentMethod === 'UPI' ? 'UPI (POS)' : 'Cash',
-        paymentStatus: 'PAID',
-        subtotal,
-        shipping: 0,
-        discount: 0,
-        total,
-        shippingName: customerName,
-        shippingPhone: customerPhone,
-        shippingAddress: customerAddress || 'In-store purchase',
-        shippingCity: 'Jaipur',
-        shippingState: 'Rajasthan',
-        shippingPincode: '302022',
-        items: {
-          create: items.map((item: { productId: string; price: number; quantity: number; size?: string }) => ({
-            productId: item.productId,
-            price: item.price,
-            quantity: item.quantity,
-            size: item.size || null,
-          })),
+          if (!sizeRecord) {
+            throw new Error(`Size ${item.size} not found for product ${item.productId}`);
+          }
+          if (sizeRecord.quantity < item.quantity) {
+            throw new Error(`Insufficient stock for size ${item.size}. Available: ${sizeRecord.quantity}, Requested: ${item.quantity}`);
+          }
+
+          // Decrement stock
+          await tx.productSize.update({
+            where: { id: sizeRecord.id },
+            data: { quantity: { decrement: item.quantity } },
+          });
+        }
+      }
+
+      // Update inStock flag: if all sizes are now 0, mark product as out of stock
+      const productIds = [...new Set((items as { productId: string }[]).map(i => i.productId))];
+      for (const productId of productIds) {
+        const sizes = await tx.productSize.findMany({ where: { productId } });
+        const totalRemaining = sizes.reduce((s, sz) => s + sz.quantity, 0);
+        if (totalRemaining === 0) {
+          await tx.product.update({ where: { id: productId }, data: { inStock: false } });
+        }
+      }
+
+      // Create the POS order record (for receipt only — filtered out of admin orders)
+      return tx.order.create({
+        data: {
+          source: 'POS',
+          staffId: staff.id,
+          status: 'CONFIRMED',
+          paymentMethod: paymentMethod === 'UPI' ? 'UPI (POS)' : 'Cash',
+          paymentStatus: 'PAID',
+          subtotal,
+          shipping: 0,
+          discount: 0,
+          total,
+          shippingName: customerName,
+          shippingPhone: customerPhone,
+          shippingAddress: customerAddress || 'In-store purchase',
+          shippingCity: 'Jaipur',
+          shippingState: 'Rajasthan',
+          shippingPincode: '302022',
+          items: {
+            create: (items as { productId: string; price: number; quantity: number; size?: string }[]).map(item => ({
+              productId: item.productId,
+              price: item.price,
+              quantity: item.quantity,
+              size: item.size || null,
+            })),
+          },
         },
-      },
-      include: { items: { include: { product: { include: { images: true } } } } },
+        include: { items: { include: { product: { include: { images: true } } } } },
+      });
     });
 
     return NextResponse.json({ success: true, order }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('POS order error:', error);
-    return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
+    const msg = error?.message?.includes('Insufficient stock') || error?.message?.includes('not found')
+      ? error.message
+      : 'Failed to create order';
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 }
 

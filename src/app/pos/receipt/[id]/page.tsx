@@ -29,6 +29,14 @@ export default function ReceiptPage() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Auto-open print dialog once receipt loads
+  useEffect(() => {
+    if (order) {
+      const timer = setTimeout(() => window.print(), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [order]);
+
   function handlePrint() {
     window.print();
   }

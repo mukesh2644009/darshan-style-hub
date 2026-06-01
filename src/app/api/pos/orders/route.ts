@@ -63,7 +63,7 @@ export async function POST(request: Request) {
     );
 
     // Mark products as out of stock if all sizes hit 0
-    const uniqueProductIds = [...new Set(typedItems.map(i => i.productId))];
+    const uniqueProductIds = Array.from(new Set(typedItems.map(i => i.productId)));
     await Promise.all(
       uniqueProductIds.map(async (productId) => {
         const sizes = await prisma.productSize.findMany({ where: { productId }, select: { quantity: true } });

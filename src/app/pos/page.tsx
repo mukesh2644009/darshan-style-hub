@@ -3,9 +3,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   FiSearch, FiPlus, FiMinus, FiTrash2, FiShoppingCart,
-  FiUser, FiLogOut, FiX, FiLoader, FiCheck,
+  FiUser, FiLogOut, FiX, FiLoader, FiCheck, FiClock,
 } from 'react-icons/fi';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 
@@ -31,9 +32,10 @@ export default function POSPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCustomer, setShowCustomer] = useState(false);
   const [placing, setPlacing] = useState(false);
-  const [activeProduct, setActiveProduct] = useState<Product | null>(null); // clicked product panel
+  const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const [customer, setCustomer] = useState({ name: '', phone: '', email: '', address: '' });
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI'>('CASH');
+  const [lookingUp, setLookingUp] = useState(false);
 
   // Auth check
   useEffect(() => {
@@ -113,6 +115,28 @@ export default function POSPage() {
     }
   }
 
+  // Auto-fill customer when phone number reaches 10 digits
+  async function handlePhoneChange(phone: string) {
+    setCustomer(p => ({ ...p, phone }));
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length === 10) {
+      setLookingUp(true);
+      try {
+        const res = await fetch(`/api/pos/customers?phone=${digits}`);
+        const data = await res.json();
+        if (data.found) {
+          setCustomer(p => ({
+            ...p,
+            name: data.customer.name || p.name,
+            address: data.customer.address || p.address,
+          }));
+        }
+      } finally {
+        setLookingUp(false);
+      }
+    }
+  }
+
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/pos/login');
@@ -139,10 +163,16 @@ export default function POSPage() {
             <p className="text-xs text-gray-400">Staff · POS Terminal</p>
           </div>
         </div>
-        <h1 className="text-base font-bold text-rose-700 hidden sm:block">Darshan Style Hub — POS</h1>
-        <button onClick={handleLogout} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-600 transition-colors">
-          <FiLogOut className="w-4 h-4" /> Logout
-        </button>
+        <div className="flex items-center gap-2">
+          <Link href="/pos/orders"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 text-gray-600 hover:bg-rose-50 hover:text-rose-700 text-sm font-semibold transition-colors">
+            <FiClock className="w-4 h-4" /> Orders
+          </Link>
+          <span className="text-sm font-bold text-rose-700 hidden sm:block">Darshan POS</span>
+          <button onClick={handleLogout} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-600 transition-colors ml-2">
+            <FiLogOut className="w-4 h-4" /> Logout
+          </button>
+        </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
@@ -406,9 +436,12 @@ export default function POSPage() {
                   placeholder="Customer name" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-rose-400" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Mobile <span className="text-red-500">*</span></label>
-                <input value={customer.phone} onChange={e => setCustomer(p => ({ ...p, phone: e.target.value }))}
-                  placeholder="10-digit mobile" type="tel" inputMode="numeric"
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mobile <span className="text-red-500">*</span>
+                  {lookingUp && <span className="ml-2 text-xs text-rose-500 animate-pulse">Looking up customer…</span>}
+                </label>
+                <input value={customer.phone} onChange={e => handlePhoneChange(e.target.value)}
+                  placeholder="10-digit mobile — auto-fills returning customer" type="tel" inputMode="numeric"
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-rose-400" />
               </div>
               <div>

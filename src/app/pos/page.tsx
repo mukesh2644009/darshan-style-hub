@@ -500,54 +500,63 @@ export default function POSPage() {
 
       {/* Customer details modal */}
       {showCustomer && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md shadow-xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="fixed inset-0 bg-black/50 z-50 flex flex-col justify-end sm:items-center sm:justify-center sm:p-4">
+          {/* Full-height scrollable sheet on mobile */}
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-md shadow-xl flex flex-col"
+            style={{ maxHeight: '95dvh' }}>
+            {/* Sticky header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
               <h3 className="font-bold text-gray-900 text-lg">Customer Details</h3>
-              <button onClick={() => setShowCustomer(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowCustomer(false)} className="text-gray-400 hover:text-gray-600 p-1">
                 <FiX className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-5 space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-                <input value={customer.name} onChange={e => setCustomer(p => ({ ...p, name: e.target.value }))}
-                  placeholder="Customer name" className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-rose-400" />
-              </div>
+
+            {/* Scrollable content */}
+            <div className="overflow-y-auto flex-1 p-5 space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Mobile <span className="text-red-500">*</span>
-                  {lookingUp && <span className="ml-2 text-xs text-rose-500 animate-pulse">Looking up customer…</span>}
+                  {lookingUp && <span className="ml-2 text-xs text-rose-500 animate-pulse">Looking up…</span>}
                 </label>
                 <input value={customer.phone} onChange={e => handlePhoneChange(e.target.value)}
-                  placeholder="10-digit mobile — auto-fills returning customer" type="tel" inputMode="numeric"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-rose-400" />
+                  placeholder="10-digit mobile" type="tel" inputMode="numeric" autoFocus
+                  className="w-full px-3 py-3 rounded-xl border border-gray-200 text-base focus:outline-none focus:border-rose-400" />
+                {customer.name && <p className="text-xs text-green-600 mt-1 font-medium">✓ Returning customer found</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+                <input value={customer.name} onChange={e => setCustomer(p => ({ ...p, name: e.target.value }))}
+                  placeholder="Customer name"
+                  className="w-full px-3 py-3 rounded-xl border border-gray-200 text-base focus:outline-none focus:border-rose-400" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-gray-400 font-normal">(optional)</span></label>
                 <input value={customer.email} onChange={e => setCustomer(p => ({ ...p, email: e.target.value }))}
                   placeholder="email@example.com" type="email"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-rose-400" />
+                  className="w-full px-3 py-3 rounded-xl border border-gray-200 text-base focus:outline-none focus:border-rose-400" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Address <span className="text-gray-400 font-normal">(optional)</span></label>
                 <input value={customer.address} onChange={e => setCustomer(p => ({ ...p, address: e.target.value }))}
                   placeholder="Home / office address"
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-rose-400" />
+                  className="w-full px-3 py-3 rounded-xl border border-gray-200 text-base focus:outline-none focus:border-rose-400" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
                 <div className="grid grid-cols-2 gap-2">
                   {(['CASH', 'UPI'] as const).map(m => (
                     <button key={m} onClick={() => setPaymentMethod(m)}
-                      className={`py-3 rounded-xl border-2 text-sm font-bold transition-all ${
-                        paymentMethod === m ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-gray-200 text-gray-700 hover:border-rose-300'
+                      className={`py-4 rounded-xl border-2 text-base font-bold transition-all ${
+                        paymentMethod === m ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-gray-200 text-gray-700'
                       }`}>
                       {m === 'CASH' ? '💵 Cash' : '📱 UPI'}
                     </button>
                   ))}
                 </div>
               </div>
+
+              {/* Order summary */}
               <div className="bg-gray-50 rounded-xl p-3 space-y-1">
                 {cart.map(i => (
                   <div key={`${i.productId}-${i.size}`} className="flex justify-between text-sm text-gray-700">
@@ -555,16 +564,20 @@ export default function POSPage() {
                     <span className="shrink-0 font-medium">₹{(i.price * i.quantity).toLocaleString('en-IN')}</span>
                   </div>
                 ))}
-                <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between font-bold text-gray-900">
+                <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between font-bold text-gray-900 text-base">
                   <span>Total</span>
                   <span>₹{subtotal.toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>
-            <div className="px-5 pb-5">
+
+            {/* Sticky Create Bill button — always visible above keyboard */}
+            <div className="px-5 py-4 border-t border-gray-100 bg-white shrink-0">
               <button onClick={handlePlaceOrder} disabled={!customer.name || !customer.phone || placing}
-                className="w-full py-4 bg-rose-600 text-white font-bold rounded-2xl hover:bg-rose-700 disabled:opacity-50 flex items-center justify-center gap-2 text-base transition-colors">
-                {placing ? <><FiLoader className="animate-spin w-5 h-5" /> Creating Bill…</> : <><FiCheck className="w-5 h-5" /> Create Bill — ₹{subtotal.toLocaleString('en-IN')}</>}
+                className="w-full py-4 bg-rose-600 text-white font-bold rounded-2xl hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-lg transition-colors active:scale-[0.98]">
+                {placing
+                  ? <><FiLoader className="animate-spin w-5 h-5" /> Creating Bill…</>
+                  : <><FiCheck className="w-5 h-5" /> Create Bill — ₹{subtotal.toLocaleString('en-IN')}</>}
               </button>
             </div>
           </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { FiMail, FiLock, FiLoader, FiAlertCircle, FiShield, FiPhone, FiUser } from 'react-icons/fi';
+import { FiMail, FiLock, FiLoader, FiAlertCircle, FiShield, FiPhone, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useAuthStore } from '@/store/authStore';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
 
@@ -19,6 +19,7 @@ export default function LoginPage() {
   // Email login
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Phone login
   const [phone, setPhone] = useState('');
@@ -232,13 +233,17 @@ export default function LoginPage() {
               <div className="relative">
                 <FiLock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
                   placeholder="••••••••"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  className="w-full pl-11 pr-11 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
+                <button type="button" onClick={() => setShowPassword(p => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+                  {showPassword ? <FiEyeOff className="w-4 h-4" /> : <FiEye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 

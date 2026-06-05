@@ -25,6 +25,9 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
+  verification: {
+    google: 'aAIzpAVGb9_p9G2OoyKoI2odZACHWO71ocFiMTqlktU',
+  },
   title: 'Darshan Style Hub™ | Designer Suits & Co Ord Sets in Jaipur',
   description: 'Darshan Style Hub™ - Your trusted destination in Jaipur for premium designer suits and co ord sets. Shop Anarkali suits, salwar suits, printed co ord sets, embroidered co ord sets and more.',
   keywords: ['suits', 'co ord sets', 'women ethnic wear', 'Anarkali suits', 'salwar kameez', 'co ord sets for women', 'designer co ord sets', 'Jaipur fashion', 'Darshan Style Hub'],

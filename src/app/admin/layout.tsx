@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import {
-  FiHome, FiShoppingBag, FiPackage, FiUsers, FiSettings,
+  FiHome, FiShoppingBag, FiPackage, FiUsers, FiSettings, FiTrendingUp,
   FiArrowLeft, FiMessageSquare, FiLoader, FiLogOut, FiRotateCcw,
   FiChevronRight, FiMenu, FiX, FiAward, FiStar, FiTag, FiUserCheck,
 } from 'react-icons/fi';
@@ -20,6 +20,7 @@ const navItems = [
   { name: 'Staff / POS', href: '/admin/staff',   icon: FiUserCheck                 },
   { name: 'Loyalty',   href: '/admin/loyalty',   icon: FiAward                     },
   { name: 'Messages',  href: '/admin/messages',  icon: FiMessageSquare             },
+  { name: 'SEO',        href: '/admin/seo',        icon: FiTrendingUp                },
   { name: 'Settings',  href: '/admin/settings',  icon: FiSettings                  },
 ];
 

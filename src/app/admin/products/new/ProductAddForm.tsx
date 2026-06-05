@@ -258,7 +258,7 @@ export default function ProductAddForm() {
         setMessage('Product created successfully!');
         setMessageType('success');
         setTimeout(() => {
-          router.push('/admin/products');
+          window.location.href = '/admin/products';
         }, 1500);
       } else {
         setMessage(data.error || 'Failed to create product');

@@ -69,7 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#FFF8E6] flex items-center justify-center">
         <div className="text-center">
           <FiLoader className="w-10 h-10 text-primary-600 animate-spin mx-auto mb-3" />
           <p className="text-gray-500 text-sm">Loading admin panel…</p>
@@ -80,7 +80,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#FFF8E6] flex items-center justify-center">
         <p className="text-gray-500 text-sm">Redirecting…</p>
       </div>
     );
@@ -122,7 +122,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
                 active
                   ? 'bg-primary-50 text-primary-700'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                  : 'text-gray-600 hover:bg-[#FFF8E6] hover:text-gray-900'
               }`}
             >
               <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-600'}`} />
@@ -137,7 +137,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="px-3 py-4 border-t border-gray-100 space-y-1">
         <Link
           href="/"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:bg-[#FFF8E6] hover:text-gray-700 transition-colors"
         >
           <FiArrowLeft className="w-4 h-4" />
           Back to Store
@@ -163,9 +163,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 lg:flex">
+    <div className="min-h-screen bg-[#FFF8E6] lg:flex">
       {/* Desktop sidebar (lg and up) */}
-      <aside className="hidden lg:flex w-64 shrink-0 bg-white border-r border-gray-100 flex-col min-h-screen sticky top-0">
+      <aside className="hidden lg:flex w-64 shrink-0 bg-[#FFFDF7] border-r border-amber-100 flex-col min-h-screen sticky top-0">
         {sidebarBody}
       </aside>
 
@@ -181,7 +181,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           onClick={() => setMobileNavOpen(false)}
         />
         <aside
-          className={`absolute top-0 left-0 h-full w-72 max-w-[85%] bg-white shadow-xl flex flex-col transform transition-transform duration-200 ${
+          className={`absolute top-0 left-0 h-full w-72 max-w-[85%] bg-[#FFFDF7] shadow-xl flex flex-col transform transition-transform duration-200 ${
             mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
@@ -192,7 +192,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main */}
       <main className="flex-1 min-w-0">
         {/* Top bar */}
-        <div className="bg-white border-b border-gray-100 px-4 sm:px-6 lg:px-8 py-3 lg:py-4 flex items-center justify-between gap-3 sticky top-0 z-30">
+        <div className="bg-[#FFFDF7] border-b border-amber-100 px-4 sm:px-6 lg:px-8 py-3 lg:py-4 flex items-center justify-between gap-3 sticky top-0 z-30">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <button
               type="button"

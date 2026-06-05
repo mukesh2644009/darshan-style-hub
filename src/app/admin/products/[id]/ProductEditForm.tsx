@@ -202,7 +202,8 @@ export default function ProductEditForm({ product }: Props) {
       if (response.ok) {
         setMessage('Product updated successfully!');
         setMessageType('success');
-        router.refresh();
+        // Hard reload to ensure latest images are shown (avoids stale Next.js cache)
+        setTimeout(() => window.location.reload(), 1200);
       } else {
         const data = await response.json();
         setMessage(data.error || 'Failed to update product');

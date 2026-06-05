@@ -9,23 +9,24 @@ export async function GET(request: Request) {
   const auth = await requireAdmin();
   if ('error' in auth) return NextResponse.json({ error: auth.error }, { status: auth.status });
 
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const key   = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const clientId     = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
 
-  if (!email || !key) {
+  if (!clientId || !clientSecret || !refreshToken) {
     return NextResponse.json(
-      { error: 'Google Search Console not configured. Add GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY to Vercel environment variables.' },
+      { error: 'Google Search Console not configured. Add GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET and GOOGLE_OAUTH_REFRESH_TOKEN to Vercel environment variables.' },
       { status: 500 }
     );
   }
 
   try {
     const { google } = await import('googleapis');
-    const jwtClient = new google.auth.JWT(email, undefined, key, [
-      'https://www.googleapis.com/auth/webmasters.readonly',
-    ]);
 
-    const searchConsole = google.searchconsole({ version: 'v1', auth: jwtClient });
+    const oauth2Client = new google.auth.OAuth2(clientId, clientSecret);
+    oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+    const searchConsole = google.searchconsole({ version: 'v1', auth: oauth2Client });
 
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '28');
@@ -36,7 +37,6 @@ export async function GET(request: Request) {
     const fmt = (d: Date) => d.toISOString().split('T')[0];
 
     const [pagesRes, queriesRes, summaryRes] = await Promise.all([
-      // Top pages by clicks
       searchConsole.searchanalytics.query({
         siteUrl: SITE_URL,
         requestBody: {
@@ -47,7 +47,6 @@ export async function GET(request: Request) {
           orderBy: [{ fieldName: 'clicks', sortOrder: 'DESCENDING' }],
         },
       }),
-      // Top queries
       searchConsole.searchanalytics.query({
         siteUrl: SITE_URL,
         requestBody: {
@@ -58,7 +57,6 @@ export async function GET(request: Request) {
           orderBy: [{ fieldName: 'impressions', sortOrder: 'DESCENDING' }],
         },
       }),
-      // Overall summary
       searchConsole.searchanalytics.query({
         siteUrl: SITE_URL,
         requestBody: {

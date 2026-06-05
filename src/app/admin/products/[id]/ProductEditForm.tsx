@@ -87,6 +87,32 @@ export default function ProductEditForm({ product }: Props) {
     setNewImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  const moveExistingImage = (index: number, dir: -1 | 1) => {
+    const newIdx = index + dir;
+    if (newIdx < 0 || newIdx >= existingImages.length) return;
+    setExistingImages(prev => {
+      const a = [...prev];
+      [a[index], a[newIdx]] = [a[newIdx], a[index]];
+      return a;
+    });
+  };
+
+  const moveNewImage = (index: number, dir: -1 | 1) => {
+    const newIdx = index + dir;
+    if (newIdx < 0 || newIdx >= newImageFiles.length) return;
+    setNewImageFiles(prev => { const a = [...prev]; [a[index], a[newIdx]] = [a[newIdx], a[index]]; return a; });
+    setNewImagePreviews(prev => { const a = [...prev]; [a[index], a[newIdx]] = [a[newIdx], a[index]]; return a; });
+  };
+
+  const replaceNewImage = (index: number, file: File) => {
+    setNewImageFiles(prev => prev.map((f, i) => i === index ? file : f));
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setNewImagePreviews(prev => prev.map((p, i) => i === index ? (e.target?.result as string) : p));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const removeExistingImage = (imageId: string) => {
     setExistingImages(prev => prev.filter(img => img.id !== imageId));
   };
@@ -295,11 +321,14 @@ export default function ProductEditForm({ product }: Props) {
 
         {/* Existing Images */}
         {existingImages.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Current Images</h3>
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-700">Current Images — use arrows to reorder</h3>
+              <span className="text-xs text-gray-400">First image = cover photo</span>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {existingImages.map((img) => (
-                <div key={img.id} className="relative group rounded-lg overflow-hidden border border-gray-200">
+              {existingImages.map((img, index) => (
+                <div key={img.id} className="relative group rounded-xl overflow-hidden border-2 border-gray-200 hover:border-primary-400 transition-all">
                   <Image
                     src={img.url}
                     alt="Product"
@@ -307,14 +336,29 @@ export default function ProductEditForm({ product }: Props) {
                     height={200}
                     className="w-full h-40 object-cover"
                   />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button
-                      type="button"
-                      onClick={() => removeExistingImage(img.id)}
-                      className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
+                  {index === 0 && (
+                    <div className="absolute top-2 left-2 bg-primary-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      COVER
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 flex items-center justify-between">
+                    <div className="flex gap-1">
+                      <button type="button" onClick={() => moveExistingImage(index, -1)} disabled={index === 0}
+                        className="w-7 h-7 rounded-lg bg-white/20 hover:bg-white/40 disabled:opacity-30 flex items-center justify-center text-white transition-all" title="Move left">
+                        ◀
+                      </button>
+                      <button type="button" onClick={() => moveExistingImage(index, 1)} disabled={index === existingImages.length - 1}
+                        className="w-7 h-7 rounded-lg bg-white/20 hover:bg-white/40 disabled:opacity-30 flex items-center justify-center text-white transition-all" title="Move right">
+                        ▶
+                      </button>
+                    </div>
+                    <button type="button" onClick={() => removeExistingImage(img.id)}
+                      className="w-7 h-7 rounded-lg bg-red-500/80 hover:bg-red-500 flex items-center justify-center text-white transition-all" title="Remove">
+                      <FiTrash2 className="w-3.5 h-3.5" />
                     </button>
+                  </div>
+                  <div className="absolute top-2 right-2 w-6 h-6 bg-black/50 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    {index + 1}
                   </div>
                 </div>
               ))}
@@ -354,11 +398,11 @@ export default function ProductEditForm({ product }: Props) {
         {newImagePreviews.length > 0 && (
           <div className="mt-4">
             <h3 className="text-sm font-medium text-gray-700 mb-3">
-              New images to upload ({newImagePreviews.length})
+              New images to upload ({newImagePreviews.length}) — reorder before saving
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {newImagePreviews.map((preview, index) => (
-                <div key={index} className="relative group rounded-lg overflow-hidden border-2 border-green-300">
+                <div key={index} className="relative group rounded-xl overflow-hidden border-2 border-green-300 hover:border-green-500 transition-all">
                   <Image
                     src={preview}
                     alt={`New ${index + 1}`}
@@ -367,17 +411,28 @@ export default function ProductEditForm({ product }: Props) {
                     className="w-full h-40 object-cover"
                     unoptimized
                   />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button
-                      type="button"
-                      onClick={() => removeNewImage(index)}
-                      className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
+                  <div className="absolute top-2 left-2 bg-green-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">NEW</div>
+                  <div className="absolute top-2 right-2 w-6 h-6 bg-black/50 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    {existingImages.length + index + 1}
                   </div>
-                  <div className="absolute top-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded">
-                    NEW
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 flex items-center justify-between">
+                    <div className="flex gap-1">
+                      <button type="button" onClick={() => moveNewImage(index, -1)} disabled={index === 0}
+                        className="w-7 h-7 rounded-lg bg-white/20 hover:bg-white/40 disabled:opacity-30 flex items-center justify-center text-white" title="Move left">◀</button>
+                      <button type="button" onClick={() => moveNewImage(index, 1)} disabled={index === newImagePreviews.length - 1}
+                        className="w-7 h-7 rounded-lg bg-white/20 hover:bg-white/40 disabled:opacity-30 flex items-center justify-center text-white" title="Move right">▶</button>
+                    </div>
+                    <div className="flex gap-1">
+                      <label className="w-7 h-7 rounded-lg bg-blue-500/80 hover:bg-blue-500 flex items-center justify-center text-white cursor-pointer" title="Replace">
+                        <FiUploadCloud className="w-3.5 h-3.5" />
+                        <input type="file" accept="image/*" className="hidden"
+                          onChange={e => e.target.files?.[0] && replaceNewImage(index, e.target.files[0])} />
+                      </label>
+                      <button type="button" onClick={() => removeNewImage(index)}
+                        className="w-7 h-7 rounded-lg bg-red-500/80 hover:bg-red-500 flex items-center justify-center text-white" title="Remove">
+                        <FiTrash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}

@@ -74,6 +74,22 @@ export default function ProductAddForm() {
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
+  const moveImage = (index: number, dir: -1 | 1) => {
+    const newIdx = index + dir;
+    if (newIdx < 0 || newIdx >= imageFiles.length) return;
+    setImageFiles(prev => { const a = [...prev]; [a[index], a[newIdx]] = [a[newIdx], a[index]]; return a; });
+    setImagePreviews(prev => { const a = [...prev]; [a[index], a[newIdx]] = [a[newIdx], a[index]]; return a; });
+  };
+
+  const replaceImage = (index: number, file: File) => {
+    setImageFiles(prev => prev.map((f, i) => i === index ? file : f));
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreviews(prev => prev.map((p, i) => i === index ? (e.target?.result as string) : p));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
@@ -350,12 +366,15 @@ export default function ProductAddForm() {
         {/* Image Previews */}
         {imagePreviews.length > 0 && (
           <div className="mt-4">
-            <h3 className="text-sm font-medium text-gray-700 mb-3">
-              {imagePreviews.length} image{imagePreviews.length > 1 ? 's' : ''} selected
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-gray-700">
+                {imagePreviews.length} image{imagePreviews.length > 1 ? 's' : ''} — drag arrows to reorder
+              </h3>
+              <span className="text-xs text-gray-400">First image = cover photo</span>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {imagePreviews.map((preview, index) => (
-                <div key={index} className="relative group rounded-lg overflow-hidden border border-gray-200">
+                <div key={index} className="relative group rounded-xl overflow-hidden border-2 border-gray-200 hover:border-primary-400 transition-all">
                   <Image
                     src={preview}
                     alt={`Preview ${index + 1}`}
@@ -364,17 +383,43 @@ export default function ProductAddForm() {
                     className="w-full h-40 object-cover"
                     unoptimized
                   />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="p-2 bg-red-600 text-white rounded-full hover:bg-red-700"
-                    >
-                      <FiTrash2 className="w-4 h-4" />
-                    </button>
+                  {/* Cover badge */}
+                  {index === 0 && (
+                    <div className="absolute top-2 left-2 bg-primary-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      COVER
+                    </div>
+                  )}
+                  {/* Controls — always visible */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 flex items-center justify-between">
+                    {/* Reorder arrows */}
+                    <div className="flex gap-1">
+                      <button type="button" onClick={() => moveImage(index, -1)} disabled={index === 0}
+                        className="w-7 h-7 rounded-lg bg-white/20 hover:bg-white/40 disabled:opacity-30 flex items-center justify-center text-white transition-all"
+                        title="Move left">
+                        ◀
+                      </button>
+                      <button type="button" onClick={() => moveImage(index, 1)} disabled={index === imagePreviews.length - 1}
+                        className="w-7 h-7 rounded-lg bg-white/20 hover:bg-white/40 disabled:opacity-30 flex items-center justify-center text-white transition-all"
+                        title="Move right">
+                        ▶
+                      </button>
+                    </div>
+                    {/* Replace + Delete */}
+                    <div className="flex gap-1">
+                      <label className="w-7 h-7 rounded-lg bg-blue-500/80 hover:bg-blue-500 flex items-center justify-center text-white cursor-pointer transition-all" title="Replace image">
+                        <FiUploadCloud className="w-3.5 h-3.5" />
+                        <input type="file" accept="image/*" className="hidden"
+                          onChange={e => e.target.files?.[0] && replaceImage(index, e.target.files[0])} />
+                      </label>
+                      <button type="button" onClick={() => removeImage(index)}
+                        className="w-7 h-7 rounded-lg bg-red-500/80 hover:bg-red-500 flex items-center justify-center text-white transition-all" title="Remove">
+                        <FiTrash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs px-2 py-1">
-                    {imageFiles[index]?.name}
+                  {/* Position number */}
+                  <div className="absolute top-2 right-2 w-6 h-6 bg-black/50 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    {index + 1}
                   </div>
                 </div>
               ))}

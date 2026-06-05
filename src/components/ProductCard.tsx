@@ -159,30 +159,6 @@ export default function ProductCard({ product }: ProductCardProps) {
                   </div>
                 </div>
 
-                {/* Color selection (only if multiple) */}
-                {product.colors.length > 1 && (
-                  <div>
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Color</p>
-                    <div className="flex flex-wrap gap-3">
-                      {product.colors.map((c) => (
-                        <button
-                          key={c.name}
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedColor(c.name); }}
-                          title={c.name}
-                          className={`w-9 h-9 rounded-full border-2 transition-all ${
-                            selectedColor === c.name
-                              ? 'border-primary-600 scale-110 shadow-md ring-2 ring-primary-200'
-                              : 'border-gray-200 hover:border-gray-400'
-                          }`}
-                          style={{ backgroundColor: c.hex || '#ccc' }}
-                        />
-                      ))}
-                    </div>
-                    {selectedColor && (
-                      <p className="text-xs text-gray-500 mt-2 capitalize">{selectedColor}</p>
-                    )}
-                  </div>
-                )}
               </div>
 
               {/* Sticky footer CTA */}
@@ -321,20 +297,6 @@ export default function ProductCard({ product }: ProductCardProps) {
               )}
             </div>
 
-            {/* Color Options */}
-            <div className="flex items-center gap-1.5 mt-3">
-              {product.colors.slice(0, 4).map((color) => (
-                <span
-                  key={color.name}
-                  className="w-4 h-4 rounded-full border border-gray-200"
-                  style={{ backgroundColor: color.hex }}
-                  title={color.name}
-                />
-              ))}
-              {product.colors.length > 4 && (
-                <span className="text-xs text-gray-500">+{product.colors.length - 4}</span>
-              )}
-            </div>
           </div>
         </motion.div>
       </Link>

@@ -109,7 +109,6 @@ function DescriptionSection({ product }: { product: Product }) {
               { label: 'Category', value: product.category },
               ...(product.subcategory ? [{ label: 'Type', value: product.subcategory }] : []),
               { label: 'Available Sizes', value: product.sizes.join(', ') },
-              { label: 'Available Colors', value: product.colors.map(c => c.name).join(', ') },
               { label: 'Availability', value: product.inStock ? 'In Stock' : 'Out of Stock' },
             ].map((item, idx) => (
               <div key={idx} className={`flex items-start justify-between px-4 py-2.5 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>

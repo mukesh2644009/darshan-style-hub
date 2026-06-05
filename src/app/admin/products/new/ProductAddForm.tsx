@@ -223,13 +223,6 @@ export default function ProductAddForm() {
       return;
     }
 
-    if (selectedColors.length === 0) {
-      setMessage('Please select at least one color');
-      setMessageType('error');
-      setLoading(false);
-      return;
-    }
-
     const sizesWithQuantity = selectedSizes.map(size => ({
       size,
       quantity: sizeQuantities[size] || 0
@@ -567,38 +560,6 @@ export default function ProductAddForm() {
         )}
       </div>
 
-      {/* Colors */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-4">Available Colors</h2>
-        <div className="flex flex-wrap gap-3">
-          {PRESET_COLORS.map(color => (
-            <button
-              key={color.name}
-              type="button"
-              onClick={() => toggleColor(color)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-colors ${
-                selectedColors.some(c => c.name === color.name)
-                  ? 'border-primary-600 bg-primary-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <div 
-                className="w-5 h-5 rounded-full border border-gray-300"
-                style={{ backgroundColor: color.hex }}
-              />
-              <span className="text-sm font-medium text-gray-700">{color.name}</span>
-              {selectedColors.some(c => c.name === color.name) && (
-                <FiCheck className="text-primary-600" />
-              )}
-            </button>
-          ))}
-        </div>
-        {selectedColors.length > 0 && (
-          <p className="text-sm text-gray-500 mt-3">
-            Selected: {selectedColors.map(c => c.name).join(', ')}
-          </p>
-        )}
-      </div>
 
       {/* Pricing */}
       <div className="bg-white rounded-xl shadow-sm p-6">

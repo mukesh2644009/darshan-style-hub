@@ -217,10 +217,11 @@ export default function ProductEditForm({ product }: Props) {
     }
   };
 
-  const categories = ['Suits', 'Kurtis', 'Co Ord Sets', 'Tops'];
+  const categories = ['Suits', 'Kurtis', 'Co Ord Sets', 'Summer Co-ord Sets', 'Tops'];
   const subcategories: Record<string, string[]> = {
     'Suits': ['Anarkali Suits', 'Salwar Suits', 'Palazzo Suits', 'Churidar Suits', 'Party Wear Suits', 'Designer Suits'],
     'Co Ord Sets': ['Printed Co Ord Sets', 'Embroidered Co Ord Sets', 'Party Wear Co Ord Sets', 'Casual Co Ord Sets', 'Cotton Co Ord Sets', 'Designer Co Ord Sets'],
+    'Summer Co-ord Sets': ['Co-ord Set with Shorts', 'Printed Summer Co-ord Sets', 'Cotton Summer Co-ord Sets', 'Casual Summer Co-ord Sets'],
     'Kurtis': ['Printed Kurti', 'Cotton Kurti', 'Party Wear Kurti', 'Casual Kurti', 'Embroidered Kurti'],
     'Tops': ['Crop Tops', 'Long Tops', 'Casual Tops', 'Party Tops', 'Printed Tops'],
   };

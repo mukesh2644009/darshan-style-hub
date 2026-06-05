@@ -44,25 +44,28 @@ async function uploadDirectlyToCloudinary(params: { files: File[]; category: str
   const folder = `${categorySlug}/${productFolder}`;
 
   // 1. Get a signed token from our server (tiny — no images sent)
-  const signRes = await fetch('/api/admin/cloudinary-sign', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ folder }),
-  });
+  let signRes: Response;
+  try {
+    signRes = await fetch('/api/admin/cloudinary-sign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ folder }),
+    });
+  } catch (e) {
+    throw new Error(`Network error reaching sign API: ${e instanceof Error ? e.message : String(e)}`);
+  }
 
   if (!signRes.ok) {
     const err = await signRes.json().catch(() => ({})) as { error?: string };
-    throw new Error(err.error || 'Failed to get upload credentials from server');
+    throw new Error(err.error || `Sign API failed (HTTP ${signRes.status})`);
   }
 
   const { timestamp, signature, apiKey, cloudName, folder: signedFolder } =
     await signRes.json() as { timestamp: number; signature: string; apiKey: string; cloudName: string; folder: string };
 
-  // 2. Upload each file directly to Cloudinary from the browser
-  const urls: string[] = [];
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
+  // 2. Upload all files in parallel directly to Cloudinary from the browser
+  const uploadFile = async (file: File): Promise<string> => {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('api_key', apiKey);
@@ -70,20 +73,27 @@ async function uploadDirectlyToCloudinary(params: { files: File[]; category: str
     fd.append('signature', signature);
     fd.append('folder', signedFolder);
 
-    const uploadRes = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      { method: 'POST', body: fd }
-    );
+    let uploadRes: Response;
+    try {
+      uploadRes = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        { method: 'POST', body: fd }
+      );
+    } catch (e) {
+      throw new Error(`Network error uploading to Cloudinary: ${e instanceof Error ? e.message : String(e)}`);
+    }
 
     if (!uploadRes.ok) {
       const errBody = await uploadRes.json().catch(() => ({})) as { error?: { message?: string } };
-      throw new Error(errBody?.error?.message || `Cloudinary upload failed for ${file.name}`);
+      throw new Error(errBody?.error?.message || `Cloudinary upload failed (HTTP ${uploadRes.status}) for ${file.name}`);
     }
 
     const result = await uploadRes.json() as { secure_url: string };
-    urls.push(result.secure_url);
-  }
+    return result.secure_url;
+  };
 
+  // Upload all files simultaneously
+  const urls = await Promise.all(files.map(uploadFile));
   return urls;
 }
 

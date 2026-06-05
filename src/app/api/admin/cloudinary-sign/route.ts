@@ -28,9 +28,9 @@ export async function POST(request: Request) {
     // Build the signature string — must match exactly what the browser will send
     const paramsToSign = `folder=${publicFolder}&timestamp=${timestamp}`;
 
-    const { createHmac } = await import('crypto');
-    const signature = createHmac('sha1', apiSecret)
-      .update(paramsToSign)
+    const { createHash } = await import('crypto');
+    const signature = createHash('sha1')
+      .update(paramsToSign + apiSecret)
       .digest('hex');
 
     return NextResponse.json({ timestamp, signature, apiKey, cloudName, folder: publicFolder });

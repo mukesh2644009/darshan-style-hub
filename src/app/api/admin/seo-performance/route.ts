@@ -44,7 +44,6 @@ export async function GET(request: Request) {
           endDate: fmt(endDate),
           dimensions: ['page'],
           rowLimit: 25,
-          orderBy: [{ fieldName: 'clicks', sortOrder: 'DESCENDING' }],
         },
       }),
       searchConsole.searchanalytics.query({
@@ -54,7 +53,6 @@ export async function GET(request: Request) {
           endDate: fmt(endDate),
           dimensions: ['query'],
           rowLimit: 15,
-          orderBy: [{ fieldName: 'impressions', sortOrder: 'DESCENDING' }],
         },
       }),
       searchConsole.searchanalytics.query({
@@ -64,7 +62,6 @@ export async function GET(request: Request) {
           endDate: fmt(endDate),
           dimensions: ['date'],
           rowLimit: days,
-          orderBy: [{ fieldName: 'date', sortOrder: 'ASCENDING' }],
         },
       }),
     ]);

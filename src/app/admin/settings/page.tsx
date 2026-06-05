@@ -89,7 +89,7 @@ export default function SettingsPage() {
               </label>
               <input
                 type="text"
-                defaultValue="B-312, Near (IIGJ), R.K. Derewala Building, Sitapura"
+                defaultValue="PN B-11, Shriram Vihar-B, Shrikishanpura, Sanganer"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
@@ -120,7 +120,7 @@ export default function SettingsPage() {
                 </label>
                 <input
                   type="text"
-                  defaultValue="302001"
+                  defaultValue="302017"
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                 />
               </div>

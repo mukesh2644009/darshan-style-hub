@@ -161,8 +161,8 @@ export default function Footer() {
                 <FiMapPin className="mt-1 flex-shrink-0 text-primary-400" />
                 <span className="text-accent-300">
                   B-312, Near (IIGJ), R.K. Derewala Building,<br />
-                  Sitapura Industrial Area, Sitapura,<br />
-                  Jaipur, Rajasthan 302022
+                  PN B-11, Shriram Vihar-B, Shrikishanpura,<br />
+                  Sanganer, Jaipur, Rajasthan 302017
                 </span>
               </li>
               <li className="flex items-center gap-3">

@@ -114,7 +114,7 @@ export default function ReceiptPage() {
           <h1 className="text-xl font-bold tracking-wide">DARSHAN STYLE HUB™</h1>
           <p className="text-rose-200 text-xs italic mt-0.5">Art in Every Thread</p>
           <p className="text-rose-100 text-xs mt-2">+91 90190 76335 · darshanstylehub.com</p>
-          <p className="text-rose-200 text-xs">Sitapura Industrial Area, Jaipur 302022</p>
+          <p className="text-rose-200 text-xs">Shrikishanpura, Sanganer, Jaipur 302017</p>
         </div>
 
         <div className="p-5 space-y-4 font-mono text-sm">

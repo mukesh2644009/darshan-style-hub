@@ -44,7 +44,7 @@ export default function WhatsAppShareButton({ product }: Props) {
     
     message += `\n\nView Product: ${productUrl}`;
     message += `\n\n*Darshan Style Hub*`;
-    message += `\nSitapura, Jaipur`;
+    message += `\nShrikishanpura, Sanganer, Jaipur 302017`;
     message += `\nContact: +91 90190 76335`;
     
     return message;

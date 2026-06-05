@@ -233,7 +233,7 @@ function getPasswordResetEmailTemplate(customerName: string, resetUrl: string): 
                 📞 +91 90190 76335
               </p>
               <p style="color: #9ca3af; margin: 0; font-size: 12px;">
-                ${SHOP_NAME} | Sitapura, Jaipur, Rajasthan 302022
+                ${SHOP_NAME} | Shrikishanpura, Sanganer, Jaipur, Rajasthan 302017
               </p>
             </td>
           </tr>
@@ -269,7 +269,7 @@ function getWelcomeEmailTemplate(customerName: string): string {
                 ${SHOP_NAME}
               </h1>
               <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 16px;">
-                Sitapura, Jaipur
+                Sanganer, Jaipur 302017
               </p>
             </td>
           </tr>
@@ -335,7 +335,7 @@ function getWelcomeEmailTemplate(customerName: string): string {
                 📞 +91 90190 76335
               </p>
               <p style="color: #9ca3af; margin: 0; font-size: 12px;">
-                ${SHOP_NAME} | Sitapura, Jaipur, Rajasthan 302022
+                ${SHOP_NAME} | Shrikishanpura, Sanganer, Jaipur, Rajasthan 302017
               </p>
               <p style="color: #9ca3af; margin: 10px 0 0; font-size: 12px;">
                 © ${new Date().getFullYear()} ${SHOP_NAME}. All rights reserved.

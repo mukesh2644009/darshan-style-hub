@@ -121,10 +121,9 @@ export default function ContactPage() {
                   <div>
                     <p className="text-sm text-gray-500">Ship From / Return Address</p>
                     <p className="font-medium text-gray-900">
-                      PARVATI DEVI<br />
-                      B-312, Near (IIGJ), R.K. Derewala Building,<br />
-                      Sitapura Industrial Area, Sitapura,<br />
-                      Jaipur, Rajasthan 302022
+                      PN B-11, Shriram Vihar-B,<br />
+                      Shrikishanpura, Sanganer,<br />
+                      Jaipur, Rajasthan 302017
                     </p>
                   </div>
                 </div>

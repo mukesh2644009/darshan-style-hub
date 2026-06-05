@@ -90,7 +90,7 @@ export async function POST(request: Request) {
         shippingAddress: customerAddress || 'In-store purchase',
         shippingCity: 'Jaipur',
         shippingState: 'Rajasthan',
-        shippingPincode: '302022',
+        shippingPincode: '302017',
         items: {
           create: typedItems.map(item => ({
             productId: item.productId,

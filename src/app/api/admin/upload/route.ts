@@ -38,11 +38,15 @@ export async function POST(request: Request) {
     }
 
     // Check Cloudinary config if on Vercel
-    if (IS_VERCEL && (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET)) {
-      return NextResponse.json(
-        { error: 'Cloudinary is not configured. Please add CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET to your Vercel environment variables.' },
-        { status: 500 }
-      );
+    if (IS_VERCEL) {
+      const missing = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']
+        .filter(k => !process.env[k]);
+      if (missing.length > 0) {
+        return NextResponse.json(
+          { error: `Cloudinary not configured. Missing env vars: ${missing.join(', ')}. Add them in Vercel → Settings → Environment Variables.` },
+          { status: 500 }
+        );
+      }
     }
 
     const formData = await request.formData();
@@ -105,6 +109,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Upload error:', error);
     const message = error instanceof Error ? error.message : 'Failed to upload images';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const detail = error instanceof Error ? error.stack : String(error);
+    return NextResponse.json({ error: message, detail }, { status: 500 });
   }
 }

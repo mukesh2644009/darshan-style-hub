@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { uploadAdminProductImages } from '@/lib/adminUploadClient';
 import { MAX_ADMIN_IMAGE_MB } from '@/lib/uploadLimits';
 import { FiSave, FiLoader, FiCheck, FiPlus, FiX, FiImage, FiUploadCloud, FiTrash2 } from 'react-icons/fi';
+
+const DRAFT_KEY = 'product-add-draft';
 
 const AVAILABLE_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'Free Size'];
 
@@ -33,7 +35,9 @@ export default function ProductAddForm() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'success' | 'error'>('success');
-  
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
+
   const [formData, setFormData] = useState({
     sku: '',
     name: '',
@@ -53,6 +57,39 @@ export default function ProductAddForm() {
   const [uploadedImagePaths, setUploadedImagePaths] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+
+  // Restore draft on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.formData) setFormData(draft.formData);
+        if (draft.sizeQuantities) setSizeQuantities(draft.sizeQuantities);
+        if (draft.selectedColors) setSelectedColors(draft.selectedColors);
+        setHasDraft(true);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  const saveDraft = useCallback(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ formData, sizeQuantities, selectedColors }));
+      setDraftSaved(true);
+      setTimeout(() => setDraftSaved(false), 2000);
+    } catch { /* ignore */ }
+  }, [formData, sizeQuantities, selectedColors]);
+
+  // Auto-save every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(saveDraft, 30000);
+    return () => clearInterval(interval);
+  }, [saveDraft]);
+
+  const clearDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setHasDraft(false);
+  };
 
   const handleImageSelect = (files: FileList | null) => {
     if (!files) return;
@@ -210,6 +247,7 @@ export default function ProductAddForm() {
       const data = await response.json();
 
       if (response.ok) {
+        clearDraft();
         setMessage('Product created successfully!');
         setMessageType('success');
         setTimeout(() => {
@@ -237,6 +275,32 @@ export default function ProductAddForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+
+      {/* Draft bar */}
+      <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+        <div className="flex items-center gap-2 text-sm text-amber-800">
+          {draftSaved ? (
+            <><FiCheck className="w-4 h-4 text-green-600" /><span className="text-green-700 font-medium">Draft saved!</span></>
+          ) : hasDraft ? (
+            <><FiSave className="w-4 h-4" /><span>Draft restored — your last progress is loaded</span></>
+          ) : (
+            <><FiSave className="w-4 h-4" /><span>Click &quot;Save Draft&quot; to keep your progress safe</span></>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button type="button" onClick={saveDraft}
+            className="px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 flex items-center gap-1.5">
+            <FiSave className="w-3.5 h-3.5" /> Save Draft
+          </button>
+          {hasDraft && (
+            <button type="button" onClick={clearDraft}
+              className="px-3 py-1.5 bg-white border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 flex items-center gap-1.5">
+              <FiX className="w-3.5 h-3.5" /> Clear Draft
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Basic Information */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4">Basic Information</h2>

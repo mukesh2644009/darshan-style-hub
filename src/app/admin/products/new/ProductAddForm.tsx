@@ -58,19 +58,28 @@ export default function ProductAddForm() {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
-  // Restore draft on mount
+  // Check for draft on mount — don't auto-restore, just notify
   useEffect(() => {
     try {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (saved) {
         const draft = JSON.parse(saved);
-        if (draft.formData) setFormData(draft.formData);
-        if (draft.sizeQuantities) setSizeQuantities(draft.sizeQuantities);
-        if (draft.selectedColors) setSelectedColors(draft.selectedColors);
-        setHasDraft(true);
+        if (draft.formData?.name) setHasDraft(true); // only show if there's actual data
       }
     } catch { /* ignore */ }
   }, []);
+
+  const restoreDraft = () => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (!saved) return;
+      const draft = JSON.parse(saved);
+      if (draft.formData) setFormData(draft.formData);
+      if (draft.sizeQuantities) setSizeQuantities(draft.sizeQuantities);
+      if (draft.selectedColors) setSelectedColors(draft.selectedColors);
+      setHasDraft(false);
+    } catch { /* ignore */ }
+  };
 
   const saveDraft = useCallback(() => {
     try {
@@ -284,29 +293,37 @@ export default function ProductAddForm() {
     <form onSubmit={handleSubmit} className="space-y-6">
 
       {/* Draft bar */}
-      <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-        <div className="flex items-center gap-2 text-sm text-amber-800">
-          {draftSaved ? (
-            <><FiCheck className="w-4 h-4 text-green-600" /><span className="text-green-700 font-medium">Draft saved!</span></>
-          ) : hasDraft ? (
-            <><FiSave className="w-4 h-4" /><span>Draft restored — your last progress is loaded</span></>
-          ) : (
-            <><FiSave className="w-4 h-4" /><span>Click &quot;Save Draft&quot; to keep your progress safe</span></>
-          )}
+      {hasDraft ? (
+        <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-amber-800">
+            <FiSave className="w-4 h-4" />
+            <span className="font-medium">You have a saved draft. Restore it?</span>
+          </div>
+          <div className="flex gap-2">
+            <button type="button" onClick={restoreDraft}
+              className="px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 flex items-center gap-1.5">
+              <FiCheck className="w-3.5 h-3.5" /> Restore
+            </button>
+            <button type="button" onClick={clearDraft}
+              className="px-3 py-1.5 bg-white border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 flex items-center gap-1.5">
+              <FiX className="w-3.5 h-3.5" /> Discard
+            </button>
+          </div>
         </div>
-        <div className="flex gap-2">
+      ) : (
+        <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-amber-800">
+            {draftSaved
+              ? <><FiCheck className="w-4 h-4 text-green-600" /><span className="text-green-700 font-medium">Draft saved!</span></>
+              : <><FiSave className="w-4 h-4" /><span>Click &quot;Save Draft&quot; to keep your progress safe</span></>
+            }
+          </div>
           <button type="button" onClick={saveDraft}
             className="px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-lg hover:bg-amber-700 flex items-center gap-1.5">
             <FiSave className="w-3.5 h-3.5" /> Save Draft
           </button>
-          {hasDraft && (
-            <button type="button" onClick={clearDraft}
-              className="px-3 py-1.5 bg-white border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 flex items-center gap-1.5">
-              <FiX className="w-3.5 h-3.5" /> Clear Draft
-            </button>
-          )}
         </div>
-      </div>
+      )}
 
       {/* Basic Information */}
       <div className="bg-white rounded-xl shadow-sm p-6">

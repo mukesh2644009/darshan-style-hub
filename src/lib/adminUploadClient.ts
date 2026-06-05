@@ -1,8 +1,34 @@
 /**
  * Upload product images.
+ * - Compresses images in the browser before uploading (faster uploads).
  * - Tries direct browser → Cloudinary upload first (works on Vercel, no size limit).
  * - Falls back to server route for local dev (when Cloudinary isn't configured).
  */
+
+/** Compress an image File to max 1200px wide and ~80% JPEG quality */
+async function compressImage(file: File): Promise<File> {
+  return new Promise((resolve) => {
+    const MAX_PX = 1200;
+    const QUALITY = 0.82;
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > MAX_PX) { height = Math.round(height * MAX_PX / width); width = MAX_PX; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => resolve(blob ? new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }) : file),
+        'image/jpeg', QUALITY
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
 
 async function uploadViaServer(params: { files: File[]; category: string; productFolder: string }): Promise<string[]> {
   const { files, category, productFolder } = params;
@@ -54,10 +80,11 @@ async function uploadViaCloudinary(params: { files: File[]; category: string; pr
     throw new Error('Cloudinary cloud name is missing. Check CLOUDINARY_CLOUD_NAME in Vercel environment variables.');
   }
 
-  // Step 2: upload all files in parallel directly to Cloudinary
+  // Step 2: compress + upload all files in parallel directly to Cloudinary
   const uploadFile = async (file: File): Promise<string> => {
+    const compressed = await compressImage(file);
     const fd = new FormData();
-    fd.append('file', file);
+    fd.append('file', compressed);
     fd.append('api_key', creds.apiKey);
     fd.append('timestamp', String(creds.timestamp));
     fd.append('signature', creds.signature);

@@ -248,6 +248,13 @@ export default function ProductAddForm() {
 
       if (response.ok) {
         clearDraft();
+        // Reset all form fields so navigating back shows a blank form
+        setFormData({ sku: '', name: '', description: '', price: 0, originalPrice: 0, category: 'Co Ord Sets', subcategory: '', featured: false, newArrival: true });
+        setSizeQuantities({});
+        setSelectedColors([]);
+        setImageFiles([]);
+        setImagePreviews([]);
+        setUploadedImagePaths([]);
         setMessage('Product created successfully!');
         setMessageType('success');
         setTimeout(() => {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import Image from 'next/image';
-import { FiStar, FiSave, FiLoader, FiCheck, FiAlertCircle, FiSearch } from 'react-icons/fi';
+import { FiStar, FiSave, FiLoader, FiCheck, FiAlertCircle, FiSearch, FiZap } from 'react-icons/fi';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 
 interface ProductRow {
@@ -53,6 +53,8 @@ export default function ReviewsPage() {
   const [search, setSearch]     = useState('');
   const [filter, setFilter]     = useState<'all' | 'no-reviews'>('no-reviews');
   const [savingAll, startSaveAll] = useTransition();
+  const [seeding, setSeeding]   = useState(false);
+  const [seedMsg, setSeedMsg]   = useState('');
 
   useEffect(() => {
     fetch('/api/products?limit=200')
@@ -143,6 +145,31 @@ export default function ReviewsPage() {
     });
   };
 
+  const seedReviews = async () => {
+    if (!confirm('Auto-fill realistic ratings for all products with 0 reviews?')) return;
+    setSeeding(true);
+    setSeedMsg('');
+    try {
+      const res = await fetch('/api/admin/products/seed-reviews', { method: 'POST', credentials: 'include' });
+      const data = await res.json() as { message: string; updated: number };
+      setSeedMsg(data.message);
+      // Reload products to reflect new values
+      const r = await fetch('/api/products?limit=200');
+      const d = await r.json() as { products: ProductRow[] };
+      setProducts((d.products || []).map(p => ({
+        ...p,
+        _rating: String(p.rating ?? 0),
+        _reviews: String(p.reviews ?? 0),
+        _dirty: false, _saved: false, _error: '',
+      })));
+    } catch {
+      setSeedMsg('Failed to seed reviews');
+    } finally {
+      setSeeding(false);
+      setTimeout(() => setSeedMsg(''), 4000);
+    }
+  };
+
   const filtered = products.filter(p => {
     const q = search.toLowerCase();
     const matchSearch = !q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q);
@@ -176,14 +203,32 @@ export default function ReviewsPage() {
               : 'All products have reviews'} · {products.length} total products
           </p>
         </div>
-        <button
-          onClick={saveAll}
-          disabled={dirtyCount === 0 || savingAll}
-          className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl font-semibold text-sm hover:bg-primary-700 transition-colors disabled:opacity-50"
-        >
-          {savingAll ? <FiLoader className="animate-spin w-4 h-4" /> : <FiSave className="w-4 h-4" />}
-          Save All {dirtyCount > 0 && `(${dirtyCount} changes)`}
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          {seedMsg && (
+            <span className="text-sm font-medium text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg">
+              {seedMsg}
+            </span>
+          )}
+          {noReviewCount > 0 && (
+            <button
+              onClick={seedReviews}
+              disabled={seeding}
+              className="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-xl font-semibold text-sm hover:bg-amber-600 transition-colors disabled:opacity-50"
+              title="Auto-fill realistic ratings for products with 0 reviews"
+            >
+              {seeding ? <FiLoader className="animate-spin w-4 h-4" /> : <FiZap className="w-4 h-4" />}
+              Auto-fill {noReviewCount} products
+            </button>
+          )}
+          <button
+            onClick={saveAll}
+            disabled={dirtyCount === 0 || savingAll}
+            className="flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white rounded-xl font-semibold text-sm hover:bg-primary-700 transition-colors disabled:opacity-50"
+          >
+            {savingAll ? <FiLoader className="animate-spin w-4 h-4" /> : <FiSave className="w-4 h-4" />}
+            Save All {dirtyCount > 0 && `(${dirtyCount} changes)`}
+          </button>
+        </div>
       </div>
 
       {/* Filters */}

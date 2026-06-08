@@ -72,7 +72,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const productSchema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: product.name,
+    name: product.name.slice(0, 150),
     description: product.description,
     image: product.images.map((img) => 
       `${SITE_URL}${img.startsWith('/') ? '' : '/'}${img}`

@@ -9,6 +9,8 @@ Disallow: /login
 Disallow: /register
 Disallow: /my-orders
 Disallow: /checkout
+Disallow: /pos/
+Disallow: /pos
 
 # Sitemap
 Sitemap: https://www.darshanstylehub.com/sitemap.xml

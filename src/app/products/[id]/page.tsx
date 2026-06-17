@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       images: [imageUrl],
       url: canonicalUrl,
       siteName: 'Darshan Style Hub™',
-      type: 'website',
+      type: 'article',
     },
     twitter: {
       card: 'summary_large_image',
@@ -68,16 +68,18 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const relatedProducts = await getRelatedProducts(product.id, product.category, 4);
   const canonicalUrl = `${SITE_URL}/products/${product.slug || params.id}`;
 
-  // Product schema for rich results in Google
-  const productSchema = {
+  const productImages = product.images.map((img) =>
+    img.startsWith('http') ? img : `${SITE_URL}${img.startsWith('/') ? '' : '/'}${img}`
+  );
+
+  const productSchema: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name.slice(0, 150),
-    description: product.description,
-    image: product.images.map((img) => 
-      `${SITE_URL}${img.startsWith('/') ? '' : '/'}${img}`
-    ),
+    description: product.description.slice(0, 5000),
+    image: productImages,
     sku: product.id,
+    mpn: product.id,
     brand: {
       '@type': 'Brand',
       name: 'Darshan Style Hub',
@@ -87,34 +89,61 @@ export default async function ProductDetailPage({ params }: PageProps) {
       url: canonicalUrl,
       priceCurrency: 'INR',
       price: product.price,
-      availability: product.inStock 
-        ? 'https://schema.org/InStock' 
+      availability: product.inStock
+        ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',
       priceValidUntil: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      seller: {
+        '@type': 'Organization',
+        name: 'Darshan Style Hub',
+      },
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingDestination: {
+          '@type': 'DefinedRegion',
+          addressCountry: 'IN',
+        },
+        shippingRate: {
+          '@type': 'MonetaryAmount',
+          value: '0',
+          currency: 'INR',
+        },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 2,
+            unitCode: 'DAY',
+          },
+          transitTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 3,
+            maxValue: 7,
+            unitCode: 'DAY',
+          },
+        },
+      },
+      hasMerchantReturnPolicy: {
+        '@type': 'MerchantReturnPolicy',
+        applicableCountry: 'IN',
+        returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+        merchantReturnDays: 7,
+        returnMethod: 'https://schema.org/ReturnByMail',
+        returnFees: 'https://schema.org/FreeReturn',
+      },
     },
-    aggregateRating: {
+  };
+
+  if (product.rating > 0 && product.reviews > 0) {
+    productSchema.aggregateRating = {
       '@type': 'AggregateRating',
-      ratingValue: product.rating > 0 ? product.rating : 4.5,
-      reviewCount: product.reviews > 0 ? product.reviews : 12,
+      ratingValue: product.rating,
+      reviewCount: product.reviews,
       bestRating: 5,
       worstRating: 1,
-    },
-    review: [
-      {
-        '@type': 'Review',
-        reviewRating: {
-          '@type': 'Rating',
-          ratingValue: product.rating > 0 ? Math.min(5, Math.round(product.rating)) : 5,
-          bestRating: 5,
-        },
-        author: {
-          '@type': 'Person',
-          name: 'Verified Buyer',
-        },
-        reviewBody: `Beautiful ${product.category} from Darshan Style Hub. Great quality and fast delivery.`,
-      },
-    ],
-  };
+    };
+  }
 
   return (
     <>

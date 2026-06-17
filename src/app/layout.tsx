@@ -87,6 +87,32 @@ export default function RootLayout({
       </head>
       <body className="font-body bg-[#FFF8E6] text-gray-900 antialiased overflow-x-hidden w-full">
         <GoogleAnalytics />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': ['Organization', 'OnlineStore'],
+            name: 'Darshan Style Hub',
+            url: 'https://www.darshanstylehub.com',
+            logo: 'https://www.darshanstylehub.com/products/logo.jpeg',
+            description: 'Designer suits and co ord sets for women in Jaipur. Premium ethnic wear with free shipping across India.',
+            address: {
+              '@type': 'PostalAddress',
+              addressLocality: 'Jaipur',
+              addressRegion: 'Rajasthan',
+              addressCountry: 'IN',
+            },
+            sameAs: [],
+            hasMerchantReturnPolicy: {
+              '@type': 'MerchantReturnPolicy',
+              applicableCountry: 'IN',
+              returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+              merchantReturnDays: 7,
+              returnMethod: 'https://schema.org/ReturnByMail',
+              returnFees: 'https://schema.org/FreeReturn',
+            },
+          }) }}
+        />
         <div className="w-full max-w-[100vw]">
           <StoreShell>
             {children}

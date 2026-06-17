@@ -39,6 +39,12 @@ const shopCategoryCircles = [
     image: '/products/categories/tops.png',
     alt: 'Trendy tops',
   },
+  {
+    label: 'Sarees',
+    href: '/products?category=Sarees',
+    image: '/products/categories/sarees.png',
+    alt: 'Beautiful sarees',
+  },
 ] as const;
 
 export default async function Home() {

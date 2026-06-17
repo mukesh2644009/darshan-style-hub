@@ -148,18 +148,6 @@ export default async function Home() {
                 sizes="(max-width: 640px) 95vw, (max-width: 1024px) 90vw, 1100px"
                 className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
-              <div className="absolute inset-0 flex flex-col justify-center pl-6 sm:pl-10 lg:pl-14">
-                <span className="inline-block w-fit bg-primary-600 text-white text-xs sm:text-sm font-semibold px-3 py-1 rounded-full mb-2 sm:mb-3">
-                  {featuredCategory.tagline}
-                </span>
-                <h3 className="font-display text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-1 sm:mb-2">
-                  {featuredCategory.label}
-                </h3>
-                <p className="text-white/80 text-sm sm:text-base">
-                  Explore our new saree collection →
-                </p>
-              </div>
             </Link>
           </AnimatedSection>
 

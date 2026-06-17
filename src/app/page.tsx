@@ -13,7 +13,16 @@ import { getFeaturedProducts, getProducts, type Product } from '@/lib/products';
 
 export const dynamic = 'force-dynamic';
 
-/** Category tiles — full artwork fits in circle (object-contain); files in /public/products/categories/ */
+/** Featured banner category */
+const featuredCategory = {
+  label: 'Sarees',
+  tagline: 'New Collection',
+  href: '/products?category=Sarees',
+  image: '/products/categories/sarees.png',
+  alt: 'Beautiful sarees collection',
+};
+
+/** Category cards below the banner */
 const shopCategoryCircles = [
   {
     label: 'Suits',
@@ -38,12 +47,6 @@ const shopCategoryCircles = [
     href: '/products?category=Tops',
     image: '/products/categories/tops.png',
     alt: 'Trendy tops',
-  },
-  {
-    label: 'Sarees',
-    href: '/products?category=Sarees',
-    image: '/products/categories/sarees.png',
-    alt: 'Beautiful sarees',
   },
 ] as const;
 
@@ -120,7 +123,7 @@ export default async function Home() {
       </section>
 
 
-      {/* Categories — rectangular cards */}
+      {/* Categories — Saree banner + 4 category cards */}
       <section className="py-12 sm:py-16 bg-[#FFF8E6]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <AnimatedSection className="text-center mb-8 sm:mb-10">
@@ -128,10 +131,39 @@ export default async function Home() {
               Shop by Category
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base">
-              Suits, co ord sets, kurtis & tops — pick a style and explore the collection
+              Sarees, suits, co ord sets, kurtis & tops — pick a style and explore
             </p>
           </AnimatedSection>
 
+          {/* Saree Banner */}
+          <AnimatedSection className="mb-8 sm:mb-10 max-w-5xl mx-auto">
+            <Link
+              href={featuredCategory.href}
+              className="group relative block w-full aspect-[21/9] sm:aspect-[3/1] rounded-2xl overflow-hidden border-2 border-gray-600 shadow-md ring-1 ring-gray-400/70 hover:border-gray-700 hover:ring-gray-500/80 hover:shadow-xl transition-all duration-300"
+            >
+              <Image
+                src={featuredCategory.image}
+                alt={featuredCategory.alt}
+                fill
+                sizes="(max-width: 640px) 95vw, (max-width: 1024px) 90vw, 1100px"
+                className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent" />
+              <div className="absolute inset-0 flex flex-col justify-center pl-6 sm:pl-10 lg:pl-14">
+                <span className="inline-block w-fit bg-primary-600 text-white text-xs sm:text-sm font-semibold px-3 py-1 rounded-full mb-2 sm:mb-3">
+                  {featuredCategory.tagline}
+                </span>
+                <h3 className="font-display text-2xl sm:text-4xl lg:text-5xl font-bold text-white mb-1 sm:mb-2">
+                  {featuredCategory.label}
+                </h3>
+                <p className="text-white/80 text-sm sm:text-base">
+                  Explore our new saree collection →
+                </p>
+              </div>
+            </Link>
+          </AnimatedSection>
+
+          {/* 4 Category Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10 max-w-5xl mx-auto">
             {shopCategoryCircles.map((item, index) => (
               <AnimatedSection key={item.href} delay={0.05 * (index + 1)} className="w-full">

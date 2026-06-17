@@ -123,12 +123,17 @@ export default function ProductsPage() {
     return filtered;
   }, [products, searchQuery, selectedCategory, priceRange, selectedSizes, selectedColors, sortBy]);
 
-  // Build category list from actual products — only shows categories that have products
+  // Build category list — if user arrived via a specific category link, only show that category
+  // Otherwise show all categories that have products
   const categories = useMemo(() => {
     const set = new Set<string>();
     products.forEach((p) => set.add(p.category));
-    return Array.from(set).sort();
-  }, [products]);
+    const all = Array.from(set).sort();
+    if (categoryParam && all.includes(categoryParam)) {
+      return [categoryParam];
+    }
+    return all;
+  }, [products, categoryParam]);
 
   const allSizes = useMemo(() => {
     const sizeOrder = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '3XL', '4XL'];
@@ -266,16 +271,18 @@ export default function ProductsPage() {
               <div className="mb-6">
                 <h3 className="font-medium text-gray-900 mb-3">Category</h3>
                 <div className="space-y-2">
-                  <button
-                    onClick={() => setSelectedCategory('All')}
-                    className={`block w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                      selectedCategory === 'All'
-                        ? 'bg-primary-100 text-primary-700'
-                        : 'hover:bg-accent-100'
-                    }`}
-                  >
-                    All Categories
-                  </button>
+                  {!categoryParam && (
+                    <button
+                      onClick={() => setSelectedCategory('All')}
+                      className={`block w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                        selectedCategory === 'All'
+                          ? 'bg-primary-100 text-primary-700'
+                          : 'hover:bg-accent-100'
+                      }`}
+                    >
+                      All Categories
+                    </button>
+                  )}
                   {categories.map((cat) => (
                     <button
                       key={cat}
@@ -484,16 +491,18 @@ export default function ProductsPage() {
               <div className="mb-6">
                 <h3 className="font-medium text-gray-900 mb-3">Category</h3>
                 <div className="space-y-2">
-                  <button
-                    onClick={() => setSelectedCategory('All')}
-                    className={`block w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                      selectedCategory === 'All'
-                        ? 'bg-primary-100 text-primary-700'
-                        : 'hover:bg-accent-100'
-                    }`}
-                  >
-                    All Categories
-                  </button>
+                  {!categoryParam && (
+                    <button
+                      onClick={() => setSelectedCategory('All')}
+                      className={`block w-full text-left px-3 py-2 rounded-lg transition-colors ${
+                        selectedCategory === 'All'
+                          ? 'bg-primary-100 text-primary-700'
+                          : 'hover:bg-accent-100'
+                      }`}
+                    >
+                      All Categories
+                    </button>
+                  )}
                   {categories.map((cat) => (
                     <button
                       key={cat}

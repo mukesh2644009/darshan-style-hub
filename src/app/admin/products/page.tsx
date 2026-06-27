@@ -250,7 +250,7 @@ export default async function ProductsPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Link
-                          href={`/admin/products/${product.id}`}
+                          href={`/admin/products/${product.sku || product.id}`}
                           className="inline-flex items-center gap-1 px-3 py-1.5 bg-primary-50 text-primary-600 hover:bg-primary-100 rounded-lg transition-colors text-sm font-medium"
                         >
                           <FiEdit className="w-4 h-4" />

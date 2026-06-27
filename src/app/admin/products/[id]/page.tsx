@@ -9,13 +9,15 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function getProduct(id: string) {
+  // Try by SKU first, then fall back to internal id
+  const bySku = await prisma.product.findFirst({
+    where: { sku: id },
+    include: { images: true, sizes: true, colors: true },
+  });
+  if (bySku) return bySku;
   return prisma.product.findUnique({
     where: { id },
-    include: {
-      images: true,
-      sizes: true,
-      colors: true,
-    },
+    include: { images: true, sizes: true, colors: true },
   });
 }
 

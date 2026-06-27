@@ -45,24 +45,28 @@ export default async function ProductsPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <p className="text-sm text-gray-500">Total Products</p>
-          <p className="text-2xl font-bold text-gray-900">{products.length}</p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <p className="text-sm text-gray-500">Suits</p>
-          <p className="text-2xl font-bold text-purple-600">
-            {products.filter(p => p.category === 'Suits').length}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <p className="text-sm text-gray-500">Co Ord Sets</p>
-          <p className="text-2xl font-bold text-orange-600">
-            {products.filter(p => p.category === 'Co Ord Sets').length}
-          </p>
-        </div>
-      </div>
+      {(() => {
+        const categoryCounts = products.reduce((acc, p) => {
+          acc[p.category] = (acc[p.category] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        const colors = ['text-purple-600', 'text-orange-600', 'text-green-600', 'text-blue-600', 'text-pink-600', 'text-yellow-600', 'text-red-600', 'text-indigo-600'];
+        const categoryEntries = Object.entries(categoryCounts);
+        return (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-8">
+            <div className="bg-white rounded-lg shadow-sm p-4 col-span-2 md:col-span-1">
+              <p className="text-sm text-gray-500">Total Products</p>
+              <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+            </div>
+            {categoryEntries.map(([cat, count], i) => (
+              <div key={cat} className="bg-white rounded-lg shadow-sm p-4">
+                <p className="text-sm text-gray-500 truncate">{cat}</p>
+                <p className={`text-2xl font-bold ${colors[i % colors.length]}`}>{count}</p>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* Products Grid */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -148,7 +152,11 @@ export default async function ProductsPage() {
                     <td className="px-6 py-4">
                       <span className={`px-2 py-1 rounded text-xs font-medium ${
                         product.category === 'Suits' ? 'bg-purple-100 text-purple-800' :
-                        'bg-orange-100 text-orange-800'
+                        product.category === 'Co Ord Sets' ? 'bg-orange-100 text-orange-800' :
+                        product.category === 'Kurtis' ? 'bg-green-100 text-green-800' :
+                        product.category === 'Tops' ? 'bg-blue-100 text-blue-800' :
+                        product.category === 'Sarees' ? 'bg-pink-100 text-pink-800' :
+                        'bg-gray-100 text-gray-800'
                       }`}>
                         {product.category}
                       </span>

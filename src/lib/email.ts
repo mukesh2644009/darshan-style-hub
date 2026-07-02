@@ -990,6 +990,86 @@ export async function sendAdminCancelNotification(props: CancelNotificationProps
   }
 }
 
+// ─── Customer: Order cancelled confirmation ───────────────────────────────────
+interface CustomerCancelEmailProps {
+  to: string;
+  customerName: string;
+  orderId: string;
+  total: number;
+  items: Array<{ name: string; quantity: number; price: number }>;
+  paymentMethod: string;
+}
+
+export async function sendCustomerCancelNotification(props: CustomerCancelEmailProps) {
+  const service = getEmailService();
+  if (!service || !props.to) return { success: false };
+
+  const { to, customerName, orderId, total, items, paymentMethod } = props;
+  const shortId = orderId.slice(0, 8).toUpperCase();
+  const isCod = paymentMethod === 'COD';
+
+  const itemsHtml = items.map(i => `<tr>
+    <td style="padding:8px 14px;border-bottom:1px solid #e5e7eb;color:#374151;">${i.name} × ${i.quantity}</td>
+    <td style="padding:8px 14px;border-bottom:1px solid #e5e7eb;color:#374151;text-align:right;">₹${(i.price * i.quantity).toLocaleString('en-IN')}</td>
+  </tr>`).join('');
+
+  const refundNote = isCod
+    ? `<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px;margin-top:16px;"><p style="color:#166534;font-size:14px;margin:0;">✅ No payment was made (COD) — no refund needed.</p></div>`
+    : `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px;margin-top:16px;"><p style="color:#1e40af;font-size:14px;margin:0;">💳 Your prepaid amount of <strong>₹${total.toLocaleString('en-IN')}</strong> will be refunded to your original payment method within 5–7 business days.</p></div>`;
+
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f8f4f0;margin:0;padding:0;">
+  <table style="width:100%;"><tr><td align="center" style="padding:40px 0;">
+  <table style="width:560px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);">
+    <tr><td style="background:linear-gradient(135deg,#dc2626,#ef4444);padding:32px;text-align:center;">
+      <p style="font-size:40px;margin:0 0 8px;">❌</p>
+      <h1 style="color:#fff;margin:0;font-size:22px;">Order Cancelled</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+      <p style="color:#374151;font-size:15px;margin:0 0 16px;">Hi ${customerName},</p>
+      <p style="color:#374151;font-size:15px;margin:0 0 20px;">Your order <strong>DSH${shortId}</strong> has been successfully cancelled as requested.</p>
+      <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;">
+        <tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Order ID</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">DSH${shortId}</td></tr>
+        <tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Total</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">₹${total.toLocaleString('en-IN')}</td></tr>
+        <tr><td style="padding:10px 14px;color:#6b7280;font-size:14px;">Payment</td>
+            <td style="padding:10px 14px;color:#111;font-weight:600;">${paymentMethod}</td></tr>
+      </table>
+      <table style="width:100%;border-collapse:collapse;margin-top:16px;">
+        <thead><tr>
+          <th style="padding:8px 14px;background:#f3f4f6;text-align:left;color:#6b7280;font-size:13px;">Item</th>
+          <th style="padding:8px 14px;background:#f3f4f6;text-align:right;color:#6b7280;font-size:13px;">Price</th>
+        </tr></thead>
+        <tbody>${itemsHtml}</tbody>
+      </table>
+      ${refundNote}
+      <p style="color:#6b7280;font-size:14px;margin:20px 0 0;">Changed your mind? <a href="${SHOP_WEBSITE}/products" style="color:#9f1239;font-weight:600;">Browse our collection →</a></p>
+      <p style="color:#6b7280;font-size:14px;margin:8px 0 0;">Need help? Call us at <a href="tel:+919019076335" style="color:#9f1239;">+91 90190 76335</a></p>
+    </td></tr>
+    <tr><td style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
+      <p style="color:#9ca3af;margin:0;font-size:12px;">${SHOP_NAME} · ${SHOP_WEBSITE}</p>
+    </td></tr>
+  </table></td></tr></table>
+</body></html>`;
+
+  const subject = `❌ Order Cancelled — DSH${shortId} | ${SHOP_NAME}`;
+
+  try {
+    if (service === 'resend') {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({ from: `${SHOP_NAME} <info@darshanstylehub.com>`, to: [to], subject, html });
+    } else {
+      const transporter = createGmailTransporter();
+      await transporter.sendMail({ from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`, to, subject, html });
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('Customer cancel notification email failed:', e);
+    return { success: false };
+  }
+}
+
 // Payment confirmation email - sent after successful online payment
 interface PaymentConfirmationProps {
   to: string;

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
-import { sendAdminCancelNotification } from '@/lib/email';
+import { sendAdminCancelNotification, sendCustomerCancelNotification } from '@/lib/email';
 import { restoreInventory } from '@/lib/inventory';
 
 export const dynamic = 'force-dynamic';
@@ -118,7 +118,10 @@ export async function DELETE(
     const cancelled = await prisma.order.update({
       where: { id: params.id },
       data: { status: 'CANCELLED' },
-      include: { items: { include: { product: { select: { name: true } } } } },
+      include: {
+        items: { include: { product: { select: { name: true } } } },
+        user: { select: { email: true } },
+      },
     });
 
     // Restore inventory
@@ -138,6 +141,21 @@ export async function DELETE(
       total: cancelled.total,
       items: cancelled.items.map(i => ({ name: i.product.name, quantity: i.quantity, price: i.price })),
     }).catch(() => {});
+
+    // Notify customer about their cancellation
+    const customerEmail = cancelled.user?.email && !cancelled.user.email.endsWith('@darshan.local')
+      ? cancelled.user.email
+      : null;
+    if (customerEmail) {
+      sendCustomerCancelNotification({
+        to: customerEmail,
+        customerName: cancelled.shippingName,
+        orderId: cancelled.id,
+        total: cancelled.total,
+        items: cancelled.items.map(i => ({ name: i.product.name, quantity: i.quantity, price: i.price })),
+        paymentMethod: cancelled.paymentMethod,
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ success: true, message: 'Order cancelled successfully' });
   } catch (error) {

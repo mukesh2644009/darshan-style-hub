@@ -317,10 +317,10 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
   const { addressLine1, addressLine2 } = resolveAddressLine(input.address);
   const pickupWarehouseName = process.env.NIMBUSPOST_PICKUP_WAREHOUSE_NAME || 'Primary Warehouse';
   const pickupContactName = process.env.NIMBUSPOST_PICKUP_CONTACT_NAME || 'Darshan Style Hub';
-  const pickupAddress = process.env.NIMBUSPOST_PICKUP_ADDRESS || 'Sitapura, Jaipur';
+  const pickupAddress = process.env.NIMBUSPOST_PICKUP_ADDRESS || 'DARSHAN STYLE HUB, Plot No. B-11, Shri Ram Vihar-B, Shri Kishanpura, Sanganer';
   const pickupCity = process.env.NIMBUSPOST_PICKUP_CITY || 'Jaipur';
   const pickupState = process.env.NIMBUSPOST_PICKUP_STATE || 'Rajasthan';
-  const pickupPincode = process.env.NIMBUSPOST_PICKUP_PINCODE || '302022';
+  const pickupPincode = process.env.NIMBUSPOST_PICKUP_PINCODE || '302017';
   const pickupPhone = normalizePhone(process.env.NIMBUSPOST_PICKUP_PHONE || '9019076335');
   const paymentType = input.paymentMode === 'COD' ? 'cod' : 'prepaid';
   const consigneeAddress = `${addressLine1}${addressLine2 ? `, ${addressLine2}` : ''}`;

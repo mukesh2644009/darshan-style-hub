@@ -319,8 +319,8 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              {/* Size Filter */}
-              {allSizes.length > 0 && (
+              {/* Size Filter — hidden for Sarees */}
+              {allSizes.length > 0 && selectedCategory !== 'Sarees' && (
                 <div className="mb-6">
                   <h3 className="font-medium text-gray-900 mb-3">Size</h3>
                   <div className="flex flex-wrap gap-2">
@@ -537,8 +537,8 @@ export default function ProductsPage() {
                 </div>
               </div>
 
-              {/* Mobile Size Filter */}
-              {allSizes.length > 0 && (
+              {/* Mobile Size Filter — hidden for Sarees */}
+              {allSizes.length > 0 && selectedCategory !== 'Sarees' && (
                 <div className="mb-6">
                   <h3 className="font-medium text-gray-900 mb-3">Size</h3>
                   <div className="flex flex-wrap gap-2">

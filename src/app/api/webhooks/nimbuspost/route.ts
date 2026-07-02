@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import crypto from 'crypto';
+import { sendOrderDeliveredEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -138,6 +139,41 @@ export async function POST(request: Request) {
         nimbusWebhookPayload: payload as Prisma.InputJsonValue,
       },
     });
+
+    // When NimbusPost confirms delivery, email the customer
+    if (mappedStatus === 'DELIVERED') {
+      try {
+        const order = await prisma.order.findFirst({
+          where: shipmentId ? { shipmentId } : { awbNumber: awbNumber! },
+          include: {
+            user: { select: { email: true, name: true } },
+            items: {
+              include: { product: { select: { name: true } } },
+            },
+          },
+        });
+        const customerEmail = order?.user?.email && !order.user.email.endsWith('@darshan.local')
+          ? order.user.email
+          : null;
+        if (order && customerEmail) {
+          sendOrderDeliveredEmail({
+            to: customerEmail,
+            customerName: order.shippingName || order.user?.name || 'Customer',
+            orderId: order.id,
+            total: order.total,
+            items: order.items.map(i => ({
+              name: i.product.name,
+              quantity: i.quantity,
+              price: i.price,
+              size: i.size,
+              color: i.color,
+            })),
+          }).catch(() => {});
+        }
+      } catch (emailErr) {
+        console.error('Delivered email error (non-critical):', emailErr);
+      }
+    }
 
     return NextResponse.json({ success: true, updated: updated.count });
   } catch (error) {

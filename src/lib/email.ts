@@ -1370,3 +1370,85 @@ export async function sendReplacementOrderEmail(props: ReplacementOrderProps) {
     return { success: false };
   }
 }
+
+// ─── Customer: Order Delivered notification ───────────────────────────────────
+interface OrderDeliveredProps {
+  to: string;
+  customerName: string;
+  orderId: string;
+  total: number;
+  items: Array<{ name: string; quantity: number; price: number; size?: string | null; color?: string | null }>;
+}
+
+export async function sendOrderDeliveredEmail(props: OrderDeliveredProps) {
+  const service = getEmailService();
+  if (!service || !props.to) return { success: false };
+
+  const { to, customerName, orderId, total, items } = props;
+  const shortId = orderId.slice(0, 8).toUpperCase();
+
+  const itemsHtml = items.map(i => {
+    const details = [i.size ? `Size: ${i.size}` : '', i.color ? `Color: ${i.color}` : ''].filter(Boolean).join(' · ');
+    return `<tr>
+      <td style="padding:8px 14px;border-bottom:1px solid #e5e7eb;color:#374151;">
+        ${i.name} × ${i.quantity}${details ? `<br><span style="font-size:12px;color:#6b7280;">${details}</span>` : ''}
+      </td>
+      <td style="padding:8px 14px;border-bottom:1px solid #e5e7eb;color:#374151;text-align:right;">₹${(i.price * i.quantity).toLocaleString('en-IN')}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f8f4f0;margin:0;padding:0;">
+  <table style="width:100%;"><tr><td align="center" style="padding:40px 0;">
+  <table style="width:560px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);">
+    <tr><td style="background:linear-gradient(135deg,#7c3aed,#a855f7);padding:32px;text-align:center;">
+      <p style="font-size:40px;margin:0 0 8px;">🎉</p>
+      <h1 style="color:#fff;margin:0;font-size:22px;">Your Order has been Delivered!</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+      <p style="color:#374151;font-size:15px;margin:0 0 16px;">Hi ${customerName},</p>
+      <p style="color:#374151;font-size:15px;margin:0 0 20px;">
+        Great news! Your order <strong>DSH${shortId}</strong> has been delivered. We hope you love your purchase! 🛍️
+      </p>
+      <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;margin-bottom:16px;">
+        <thead><tr>
+          <th style="padding:8px 14px;background:#f3f4f6;text-align:left;color:#6b7280;font-size:13px;">Item</th>
+          <th style="padding:8px 14px;background:#f3f4f6;text-align:right;color:#6b7280;font-size:13px;">Price</th>
+        </tr></thead>
+        <tbody>${itemsHtml}</tbody>
+      </table>
+      <div style="background:#fef3c7;border-radius:8px;padding:12px 16px;margin-bottom:20px;text-align:right;">
+        <span style="color:#92400e;font-size:13px;">Total Paid</span><br>
+        <strong style="color:#78350f;font-size:20px;">₹${total.toLocaleString('en-IN')}</strong>
+      </div>
+      <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 16px;margin-bottom:20px;">
+        <p style="margin:0;color:#1e40af;font-size:14px;">
+          📦 Not happy with your order? You can request a <strong>return or exchange within 7 days</strong> from today.
+          <a href="${SHOP_WEBSITE}/my-orders" style="color:#9f1239;font-weight:600;">Go to My Orders →</a>
+        </p>
+      </div>
+      <p style="color:#6b7280;font-size:14px;margin:0;">Need help? Call us at <a href="tel:+919019076335" style="color:#9f1239;">+91 90190 76335</a> or WhatsApp us anytime.</p>
+    </td></tr>
+    <tr><td style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
+      <a href="${SHOP_WEBSITE}/products" style="display:inline-block;background:#9f1239;color:#fff;text-decoration:none;padding:10px 24px;border-radius:8px;font-weight:600;font-size:14px;margin-bottom:12px;">Shop More →</a><br>
+      <p style="color:#9ca3af;margin:8px 0 0;font-size:12px;">${SHOP_NAME} · ${SHOP_WEBSITE}</p>
+    </td></tr>
+  </table></td></tr></table>
+</body></html>`;
+
+  const subject = `🎉 Delivered! Your Order DSH${shortId} has arrived — ${SHOP_NAME}`;
+
+  try {
+    if (service === 'resend') {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({ from: `${SHOP_NAME} <info@darshanstylehub.com>`, to: [to], subject, html });
+    } else {
+      const transporter = createGmailTransporter();
+      await transporter.sendMail({ from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`, to, subject, html });
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('Order delivered email failed:', e);
+    return { success: false };
+  }
+}

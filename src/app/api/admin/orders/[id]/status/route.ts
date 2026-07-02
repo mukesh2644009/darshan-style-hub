@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
-import { sendOrderShippedEmail } from '@/lib/email';
+import { sendOrderShippedEmail, sendOrderDeliveredEmail } from '@/lib/email';
 import { restoreInventory } from '@/lib/inventory';
 
 export const dynamic = 'force-dynamic';
@@ -49,7 +49,7 @@ export async function PATCH(
       select: {
         status: true, shippingName: true, total: true,
         user: { select: { email: true, name: true } },
-        items: { select: { productId: true, size: true, quantity: true } },
+        items: { select: { productId: true, size: true, quantity: true, price: true, color: true, product: { select: { name: true } } } },
       },
     });
     if (existing?.status === 'CANCELLED') {
@@ -86,6 +86,23 @@ export async function PATCH(
         customerName: existing.shippingName || existing.user.name || 'Customer',
         orderId: params.id,
         total: existing.total,
+      }).catch(() => {});
+    }
+
+    // Send delivered email to customer
+    if (status === 'DELIVERED' && existing?.user?.email && !existing.user.email.endsWith('@darshan.local')) {
+      sendOrderDeliveredEmail({
+        to: existing.user.email,
+        customerName: existing.shippingName || existing.user.name || 'Customer',
+        orderId: params.id,
+        total: existing.total,
+        items: (existing.items || []).map(i => ({
+          name: i.product.name,
+          quantity: i.quantity,
+          price: i.price,
+          size: i.size,
+          color: i.color,
+        })),
       }).catch(() => {});
     }
 

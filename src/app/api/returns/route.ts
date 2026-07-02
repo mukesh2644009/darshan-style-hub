@@ -85,7 +85,6 @@ export async function POST(request: Request) {
       where: { id: orderId },
       include: { returnRequest: true },
     });
-
     if (!order) {
       return NextResponse.json(
         { success: false, error: 'Order not found' },
@@ -111,8 +110,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Enforce 3-day return window from delivery
-    const deliveredAt = order.updatedAt;
+    // Enforce 7-day return window from delivery
+    const deliveredAt = order.deliveredAt || order.updatedAt;
     const daysSinceDelivery = (Date.now() - new Date(deliveredAt).getTime()) / (1000 * 60 * 60 * 24);
     if (daysSinceDelivery > 7) {
       return NextResponse.json(

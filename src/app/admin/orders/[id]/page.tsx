@@ -357,6 +357,28 @@ export default async function OrderDetailPage({ params }: { params: { id: string
                     Print Invoice
                   </a>
                 </div>
+
+                {/* Reverse pickup info */}
+                {(order as any).reverseAwb && (
+                  <div className="mt-3 pt-3 border-t border-orange-100 bg-orange-50 rounded-lg p-3 space-y-1.5">
+                    <p className="text-xs font-bold text-orange-700 uppercase tracking-wide">Reverse Pickup</p>
+                    <div className="flex justify-between gap-4 text-sm">
+                      <span className="text-orange-600">Return AWB</span>
+                      <span className="font-mono text-xs font-semibold text-orange-800">{(order as any).reverseAwb}</span>
+                    </div>
+                    {(order as any).reverseLabelUrl && (
+                      <a
+                        href={(order as any).reverseLabelUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200 hover:bg-orange-200 transition-colors mt-1"
+                      >
+                        <FiExternalLink className="w-3.5 h-3.5" />
+                        Return Label
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <p className="text-sm text-gray-500">Shipment not created yet.</p>

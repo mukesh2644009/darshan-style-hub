@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
 import { sendOrderShippedEmail, sendOrderDeliveredEmail } from '@/lib/email';
 import { restoreInventory } from '@/lib/inventory';
+import { createNimbusReversePickup } from '@/lib/nimbuspost';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,6 +49,9 @@ export async function PATCH(
       where: { id: params.id },
       select: {
         status: true, shippingName: true, total: true,
+        shippingPhone: true, shippingAddress: true, shippingCity: true,
+        shippingState: true, shippingPincode: true,
+        awbNumber: true, reverseAwb: true,
         user: { select: { email: true, name: true } },
         items: { select: { productId: true, size: true, quantity: true, price: true, color: true, product: { select: { name: true } } } },
       },
@@ -87,6 +91,36 @@ export async function PATCH(
         orderId: params.id,
         total: existing.total,
       }).catch(() => {});
+    }
+
+    // Auto-create reverse pickup in NimbusPost when return/exchange is approved
+    if (
+      (status === 'RETURN_APPROVED' || status === 'EXCHANGE_APPROVED') &&
+      existing?.shippingPhone &&
+      !existing.reverseAwb   // don't create twice
+    ) {
+      createNimbusReversePickup({
+        originalOrderId: params.id,
+        originalAwb: existing.awbNumber,
+        customerName: existing.shippingName || 'Customer',
+        customerPhone: existing.shippingPhone,
+        customerAddress: existing.shippingAddress || '',
+        customerCity: existing.shippingCity || '',
+        customerState: existing.shippingState || '',
+        customerPincode: existing.shippingPincode || '',
+        weightGrams: 500,
+        enableQc: true,
+      }).then(async (result) => {
+        if (result.awbNumber || result.labelUrl) {
+          await prisma.order.update({
+            where: { id: params.id },
+            data: {
+              reverseAwb: result.awbNumber || null,
+              reverseLabelUrl: result.labelUrl || null,
+            },
+          });
+        }
+      }).catch((err) => console.error('Reverse pickup creation failed:', err));
     }
 
     // Send delivered email to customer

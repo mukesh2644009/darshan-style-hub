@@ -218,6 +218,8 @@ model Order {
   nimbusStatus        String?
   nimbusStatusCode    String?
   nimbusWebhookPayload Json?
+  reverseAwb          String?
+  reverseLabelUrl     String?
   
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt

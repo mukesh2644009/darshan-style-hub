@@ -530,6 +530,110 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
   return mapShipmentResponse(raw);
 }
 
+export type NimbusReversePickupInput = {
+  originalOrderId: string;       // our DSH order id (short ref used as return order number)
+  originalAwb?: string | null;   // AWB of the forward shipment (for linking)
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  customerCity: string;
+  customerState: string;
+  customerPincode: string;
+  weightGrams?: number;
+  enableQc?: boolean;            // Reverse QC — courier checks item before pickup
+};
+
+export type NimbusReversePickupResult = {
+  awbNumber?: string;
+  shipmentId?: string;
+  courierName?: string;
+  labelUrl?: string;
+  raw: unknown;
+};
+
+export async function createNimbusReversePickup(
+  input: NimbusReversePickupInput
+): Promise<NimbusReversePickupResult> {
+  const apiKey = getRequiredEnv('NIMBUSPOST_API_KEY');
+  const url = joinUrl(getBaseUrl(), getCreateShipmentPath());
+
+  const pickupContactName = process.env.NIMBUSPOST_PICKUP_CONTACT_NAME || 'Darshan Style Hub';
+  const pickupAddress    = process.env.NIMBUSPOST_PICKUP_ADDRESS    || 'DARSHAN STYLE HUB, Plot No. B-11, Shri Ram Vihar-B, Shri Kishanpura, Sanganer';
+  const pickupCity       = process.env.NIMBUSPOST_PICKUP_CITY       || 'Jaipur';
+  const pickupState      = process.env.NIMBUSPOST_PICKUP_STATE      || 'Rajasthan';
+  const pickupPincode    = process.env.NIMBUSPOST_PICKUP_PINCODE    || '302017';
+  const pickupPhone      = normalizePhone(process.env.NIMBUSPOST_PICKUP_PHONE || '9019076335');
+
+  const shortRef   = `RTN-${input.originalOrderId.slice(0, 8).toUpperCase()}`;
+  const weightKg   = Number(((input.weightGrams ?? 500) / 1000).toFixed(3));
+  const weightG    = Math.max(1, Math.round(input.weightGrams ?? 500));
+  const packageLength  = Number(process.env.NIMBUSPOST_PACKAGE_LENGTH  || 10);
+  const packageBreadth = Number(process.env.NIMBUSPOST_PACKAGE_BREADTH || 10);
+  const packageHeight  = Number(process.env.NIMBUSPOST_PACKAGE_HEIGHT  || 10);
+  const { addressLine1, addressLine2 } = resolveAddressLine(input.customerAddress);
+  const courierId = process.env.NIMBUSPOST_COURIER_ID ? Number(process.env.NIMBUSPOST_COURIER_ID) : null;
+
+  // Reverse shipment: consignee = YOUR warehouse, pickup = customer address
+  const basePayload = {
+    order_number: shortRef,
+    order_type: 'reverse',
+    shipment_type: 'reverse',
+    type: 'reverse',
+    is_reverse: true,
+    reverse: true,
+    payment_type: 'prepaid',
+    order_amount: 0,
+    package_weight: weightG,
+    package_length: packageLength,
+    package_breadth: packageBreadth,
+    package_height: packageHeight,
+    ...(input.enableQc ? { enable_qc: true, qc: true, reverse_qc: true } : {}),
+    ...(input.originalAwb ? { original_awb: input.originalAwb, forward_awb: input.originalAwb } : {}),
+    ...(courierId ? { courier_id: courierId } : {}),
+    // Consignee = warehouse (destination for returned goods)
+    consignee: {
+      name: pickupContactName,
+      address: pickupAddress,
+      address_2: '',
+      city: pickupCity,
+      state: pickupState,
+      pincode: pickupPincode,
+      phone: pickupPhone,
+    },
+    // Pickup = customer's address
+    pickup: {
+      name: input.customerName,
+      address: addressLine1,
+      address_2: addressLine2 || '',
+      city: input.customerCity,
+      state: input.customerState,
+      pincode: input.customerPincode,
+      phone: normalizePhone(input.customerPhone),
+    },
+    order_items: [{ name: 'Returned item', qty: '1', price: '0', sku: '' }],
+    weight: weightKg,
+  };
+
+  const raw = await nimbusFetch<Record<string, unknown>>(
+    url,
+    {
+      method: 'POST',
+      headers: getNimbusAuthHeaders(apiKey),
+      body: JSON.stringify(basePayload),
+    },
+    { allowLoginFallback: true, apiKey }
+  );
+
+  const result = mapShipmentResponse(raw);
+  return {
+    awbNumber: result.awbNumber,
+    shipmentId: result.shipmentId,
+    courierName: result.courierName,
+    labelUrl: result.labelUrl,
+    raw,
+  };
+}
+
 export async function cancelNimbusShipment(awb: string): Promise<unknown> {
   const apiKey = getRequiredEnv('NIMBUSPOST_API_KEY');
   const url = joinUrl(getBaseUrl(), getCancelShipmentPathTemplate());

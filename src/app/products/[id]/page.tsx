@@ -130,7 +130,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
         returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
         merchantReturnDays: 7,
         returnMethod: 'https://schema.org/ReturnByMail',
-        returnFees: 'https://schema.org/FreeReturn',
+        returnFees: 'https://schema.org/ReturnFeesCustomerResponsibility',
+        returnPolicySeasonalOverride: null,
+        customerRemorseReturnFees: 'https://schema.org/ReturnFeesCustomerResponsibility',
+        itemDefectReturnFees: 'https://schema.org/FreeReturn',
       },
     },
   };

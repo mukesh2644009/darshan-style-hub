@@ -98,18 +98,25 @@ export default function RootLayout({
             description: 'Designer suits and co ord sets for women in Jaipur. Premium ethnic wear with free shipping across India.',
             address: {
               '@type': 'PostalAddress',
+              streetAddress: 'Plot No. B-11, Shri Ram Vihar-B, Shri Kishanpura, Sanganer',
               addressLocality: 'Jaipur',
               addressRegion: 'Rajasthan',
+              postalCode: '302017',
               addressCountry: 'IN',
             },
-            sameAs: [],
+            telephone: '+919019076335',
+            email: 'darshanstylehub.business@gmail.com',
+            sameAs: [
+              'https://www.instagram.com/darshanstylehub',
+            ],
             hasMerchantReturnPolicy: {
               '@type': 'MerchantReturnPolicy',
               applicableCountry: 'IN',
               returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
               merchantReturnDays: 7,
               returnMethod: 'https://schema.org/ReturnByMail',
-              returnFees: 'https://schema.org/FreeReturn',
+              returnFees: 'https://schema.org/ReturnFeesCustomerResponsibility',
+              itemDefectReturnFees: 'https://schema.org/FreeReturn',
             },
           }) }}
         />

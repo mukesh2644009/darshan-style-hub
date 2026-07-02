@@ -42,7 +42,7 @@ function DescriptionSection({ product }: { product: Product }) {
 
   const lines = product.description
     .split(/\n/)
-    .map(l => stripEmojis(l).trim())
+    .map(l => (product.category === 'Sarees' ? l : stripEmojis(l)).trim())
     .filter(l => l.length > 0);
 
   const descLines: string[] = [];
@@ -80,7 +80,7 @@ function DescriptionSection({ product }: { product: Product }) {
             {descLines.length > 0 ? (
               descLines.map((line, idx) => <p key={idx}>{line}</p>)
             ) : (
-              <p>{stripEmojis(product.description)}</p>
+              <p>{product.category === 'Sarees' ? product.description : stripEmojis(product.description)}</p>
             )}
           </div>
         </div>

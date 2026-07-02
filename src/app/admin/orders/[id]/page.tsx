@@ -320,6 +320,16 @@ export default async function OrderDetailPage({ params }: { params: { id: string
                       Label
                     </a>
                   )}
+                  {/* Invoice / Packing Slip */}
+                  <a
+                    href={`/api/admin/orders/invoice?orderId=${order.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 transition-colors"
+                  >
+                    <FiExternalLink className="w-3.5 h-3.5" />
+                    Print Invoice
+                  </a>
                 </div>
               </div>
             ) : (

@@ -198,8 +198,12 @@ export default function ProductCard({ product }: ProductCardProps) {
               className="object-cover object-top transition-transform duration-500 group-hover:scale-110"
             />
 
-            {/* Badges */}
-            <div className="absolute bottom-3 left-3 sm:bottom-auto sm:top-3 flex flex-col gap-1.5 sm:gap-2">
+            {/* Badges — bottom-right for Sarees to avoid covering model's face, top-left for others */}
+            <div className={`absolute flex flex-col gap-1.5 sm:gap-2 ${
+              product.category === 'Sarees'
+                ? 'bottom-3 right-3 items-end'
+                : 'bottom-3 left-3 sm:bottom-auto sm:top-3'
+            }`}>
               {discount > 0 && (
                 <span className="bg-primary-600 text-white text-[10px] sm:text-xs font-semibold px-2 py-0.5 sm:py-1 rounded-full">
                   {discount}% OFF

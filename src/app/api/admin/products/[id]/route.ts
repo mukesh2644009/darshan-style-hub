@@ -52,7 +52,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival, afNumber, sizes, images, rating, reviews } = body;
+    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival, afNumber, sizes, images, colors, rating, reviews } = body;
 
     // Validate required fields
     if (!sku || !name || !description || price === undefined) {
@@ -113,6 +113,20 @@ export async function PATCH(
         await prisma.productImage.create({
           data: {
             url,
+            productId: params.id,
+          },
+        });
+      }
+    }
+
+    // Update colors if provided
+    if (colors && Array.isArray(colors)) {
+      await prisma.productColor.deleteMany({ where: { productId: params.id } });
+      for (const color of colors) {
+        await prisma.productColor.create({
+          data: {
+            name: color.name,
+            hex: color.hex,
             productId: params.id,
           },
         });

@@ -275,13 +275,14 @@ export default function ProductAddForm() {
     }
   };
 
-  const categories = ['Suits', 'Kurtis', 'Co Ord Sets', 'Summer Co-ord Sets', 'Tops'];
+  const categories = ['Suits', 'Kurtis', 'Co Ord Sets', 'Summer Co-ord Sets', 'Tops', 'Sarees'];
   const subcategories: Record<string, string[]> = {
     'Suits': ['Anarkali Suits', 'Salwar Suits', 'Palazzo Suits', 'Churidar Suits', 'Party Wear Suits', 'Designer Suits'],
     'Co Ord Sets': ['Printed Co Ord Sets', 'Embroidered Co Ord Sets', 'Party Wear Co Ord Sets', 'Casual Co Ord Sets', 'Cotton Co Ord Sets', 'Designer Co Ord Sets'],
     'Summer Co-ord Sets': ['Co-ord Set with Shorts', 'Printed Summer Co-ord Sets', 'Cotton Summer Co-ord Sets', 'Casual Summer Co-ord Sets'],
     'Kurtis': ['Printed Kurti', 'Cotton Kurti', 'Party Wear Kurti', 'Casual Kurti', 'Embroidered Kurti'],
     'Tops': ['Crop Tops', 'Long Tops', 'Casual Tops', 'Party Tops', 'Printed Tops'],
+    'Sarees': ['Banarasi Silk Saree', 'Cotton Saree', 'Georgette Saree', 'Chiffon Saree', 'Silk Saree', 'Printed Saree', 'Embroidered Saree', 'Party Wear Saree', 'Wedding Saree', 'Daily Wear Saree'],
   };
 
   return (

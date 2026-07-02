@@ -29,6 +29,7 @@ interface Product {
   subcategory: string | null;
   featured: boolean;
   newArrival: boolean;
+  afNumber?: string | null;
   sizes?: ProductSize[];
   images?: ProductImage[];
 }
@@ -52,6 +53,7 @@ export default function ProductEditForm({ product }: Props) {
     subcategory: product.subcategory || '',
     featured: product.featured,
     newArrival: product.newArrival,
+    afNumber: product.afNumber || '',
   });
 
   const [sizeQuantities, setSizeQuantities] = useState<Record<string, { id: string; quantity: number }>>(
@@ -313,6 +315,29 @@ export default function ProductEditForm({ product }: Props) {
           </div>
         </div>
       </div>
+
+      {/* AF Number — internal saree reference, admin only */}
+      {formData.category === 'Sarees' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
+          <h2 className="text-lg font-bold text-amber-800 mb-1 flex items-center gap-2">
+            🏷️ Saree Internal Reference
+          </h2>
+          <p className="text-sm text-amber-600 mb-4">This field is for internal use only — not visible to customers.</p>
+          <div>
+            <label className="block text-sm font-medium text-amber-800 mb-2">
+              AF Number <span className="text-amber-500">(Admin Only)</span>
+            </label>
+            <input
+              type="text"
+              name="afNumber"
+              value={formData.afNumber}
+              onChange={handleChange}
+              placeholder="e.g. AF-001, AF-002..."
+              className="w-full px-4 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-400 focus:border-amber-400 bg-white"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Product Images */}
       <div className="bg-white rounded-xl shadow-sm p-6">

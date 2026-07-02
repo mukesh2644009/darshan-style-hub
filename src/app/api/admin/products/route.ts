@@ -27,6 +27,7 @@ export async function POST(request: Request) {
       subcategory, 
       featured, 
       newArrival,
+      afNumber,
       images,
       sizes,
       colors 
@@ -81,6 +82,7 @@ export async function POST(request: Request) {
         subcategory: subcategory || '',
         featured: Boolean(featured),
         newArrival: Boolean(newArrival),
+        afNumber: afNumber || null,
         images: images && images.length > 0 ? {
           create: images.map((url: string) => ({ url }))
         } : undefined,

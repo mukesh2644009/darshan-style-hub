@@ -137,6 +137,11 @@ export default async function ProductsPage() {
                         <div>
                           <p className="font-medium text-gray-900">{product.name}</p>
                           <p className="text-sm text-gray-500 truncate max-w-xs">{product.subcategory}</p>
+                          {product.category === 'Sarees' && product.afNumber && (
+                            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                              🏷️ {product.afNumber}
+                            </span>
+                          )}
                           <a
                             href={`https://www.darshanstylehub.com/products/${product.slug || product.id}`}
                             target="_blank"

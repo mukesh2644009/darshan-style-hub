@@ -76,8 +76,9 @@ export async function POST(request: Request) {
     }
 
     const paymentMode = order.paymentMethod === 'COD' ? 'COD' : 'PREPAID';
+    const shortOrderRef = `DSH${order.id.slice(0, 8).toUpperCase()}`;
     const shipment = await createNimbusShipment({
-      orderNumber: order.id,
+      orderNumber: shortOrderRef,
       paymentMode,
       amount: order.total,
       customerName: order.shippingName,

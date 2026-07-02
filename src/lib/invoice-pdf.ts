@@ -81,15 +81,18 @@ export async function generateOrderInvoicePDF(data: InvoiceData): Promise<Buffer
 
       // Order info — right aligned below title
       const infoY = invoiceTitleY + 25;
+      doc.fontSize(11)
+         .fillColor(darkColor)
+         .font('Helvetica-Bold')
+         .text(`Order ID: DSH${data.orderId.slice(0, 8).toUpperCase()}`, margin, infoY, { width: contentWidth, align: 'right' });
       doc.fontSize(10)
          .fillColor(grayColor)
          .font('Helvetica')
-         .text(`Order ID: DSH${data.orderId.slice(0, 8).toUpperCase()}`, margin, infoY, { width: contentWidth, align: 'right' })
          .text(`Date: ${data.orderDate.toLocaleDateString('en-IN', {
            day: '2-digit',
            month: 'short',
            year: 'numeric',
-         })}`, margin, infoY + 15, { width: contentWidth, align: 'right' });
+         })}`, margin, infoY + 18, { width: contentWidth, align: 'right' });
 
       // Payment status badge
       const statusColor = data.paymentStatus === 'PAID' ? '#059669' : '#d97706';
@@ -97,7 +100,7 @@ export async function generateOrderInvoicePDF(data: InvoiceData): Promise<Buffer
       doc.fontSize(10)
          .fillColor(statusColor)
          .font('Helvetica-Bold')
-         .text(`Payment: ${statusText}`, margin, infoY + 35, { width: contentWidth, align: 'right' });
+         .text(`Payment: ${statusText}`, margin, infoY + 38, { width: contentWidth, align: 'right' });
 
       // --- Divider ---
       const divider1Y = infoY + 58;

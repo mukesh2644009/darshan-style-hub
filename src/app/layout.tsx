@@ -116,6 +116,7 @@ export default function RootLayout({
               merchantReturnDays: 7,
               returnMethod: 'https://schema.org/ReturnByMail',
               returnFees: 'https://schema.org/ReturnFeesCustomerResponsibility',
+              refundType: 'https://schema.org/FullRefund',
               itemDefectReturnFees: 'https://schema.org/FreeReturn',
             },
           }) }}

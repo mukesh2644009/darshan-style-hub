@@ -19,7 +19,9 @@ interface OrderItem {
 
 export default function OrderItemsPopover({ items }: { items: OrderItem[] }) {
   const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
   const ref = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -29,8 +31,18 @@ export default function OrderItemsPopover({ items }: { items: OrderItem[] }) {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
+  const openPopover = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      // Show below the button; shift left if too close to right edge
+      const left = Math.min(rect.left, window.innerWidth - 320 - 8);
+      setDropPos({ top: rect.bottom + window.scrollY + 4, left });
+    }
+    setOpen(v => !v);
+  };
+
   return (
-    <div className="relative inline-block" ref={ref}>
+    <div className="inline-block" ref={ref}>
       <div className="flex items-center gap-2">
         {/* Stacked thumbnail previews */}
         <div className="flex -space-x-2">
@@ -76,7 +88,8 @@ export default function OrderItemsPopover({ items }: { items: OrderItem[] }) {
         </div>
 
         <button
-          onClick={() => setOpen(v => !v)}
+          ref={btnRef}
+          onClick={openPopover}
           className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-primary-600 transition-colors shrink-0"
           title="View all items"
         >
@@ -85,7 +98,10 @@ export default function OrderItemsPopover({ items }: { items: OrderItem[] }) {
       </div>
 
       {open && (
-        <div className="absolute left-0 top-full mt-1 z-[300] w-80 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden">
+        <div
+          style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, zIndex: 9999 }}
+          className="w-80 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden"
+        >
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50">
             <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
               {items.length} Item{items.length !== 1 ? 's' : ''}

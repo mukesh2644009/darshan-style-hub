@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   FiCheck, FiX, FiLoader, FiExternalLink, FiTag, FiSlash,
-  FiRefreshCw, FiChevronDown, FiTruck, FiPackage,
+  FiRefreshCw, FiChevronDown, FiTruck, FiFileText,
 } from 'react-icons/fi';
 
 type QuickOrderActionsProps = {
@@ -29,7 +29,9 @@ export default function QuickOrderActions({
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, right: 0 });
   const dropRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -38,6 +40,14 @@ export default function QuickOrderActions({
     if (open) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
+
+  const openDropdown = () => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + window.scrollY + 4, right: window.innerWidth - rect.right });
+    }
+    setOpen(v => !v);
+  };
 
   if (isFailedPayment) return <span className="text-xs text-gray-400">—</span>;
 
@@ -154,21 +164,48 @@ export default function QuickOrderActions({
     menuItems.push({ label: 'Cancel Order', icon: FiX, onClick: handleCancel, danger: true });
   }
 
-  if (menuItems.length === 0 && currentStatus === 'DELIVERED') {
+  // Always add Print Invoice at the bottom
+  menuItems.push({
+    label: 'Print Invoice',
+    icon: FiFileText,
+    onClick: () => { window.open(`/api/admin/orders/invoice?orderId=${orderId}`, '_blank'); setOpen(false); },
+    color: 'text-green-700',
+  });
+
+  if (currentStatus === 'DELIVERED') {
     return (
-      <div className="flex items-center gap-1.5">
+      <div className="flex items-center gap-1.5" ref={dropRef}>
         {awbNumber && trackingUrl && (
           <a href={trackingUrl} target="_blank" rel="noopener noreferrer"
             className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-sky-50 border border-sky-200 text-sky-700 hover:bg-sky-100 transition-colors">
             <FiTruck className="w-3 h-3" /> Track
           </a>
         )}
-        <span className="text-xs text-gray-400">—</span>
+        {/* Invoice for delivered orders */}
+        <button
+          ref={btnRef}
+          onClick={openDropdown}
+          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors"
+        >
+          Actions <FiChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+        </button>
+        {open && (
+          <div
+            style={{ position: 'fixed', top: dropPos.top, right: dropPos.right, zIndex: 9999 }}
+            className="w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden"
+          >
+            <button
+              onClick={() => { window.open(`/api/admin/orders/invoice?orderId=${orderId}`, '_blank'); setOpen(false); }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium text-left text-green-700 hover:bg-green-50 transition-colors"
+            >
+              <FiFileText className="w-3.5 h-3.5 shrink-0" />
+              Print Invoice
+            </button>
+          </div>
+        )}
       </div>
     );
   }
-
-  if (menuItems.length === 0) return <span className="text-xs text-gray-400">—</span>;
 
   return (
     <div className="flex items-center gap-2" ref={dropRef}>
@@ -180,10 +217,11 @@ export default function QuickOrderActions({
         </span>
       )}
 
-      {/* Actions dropdown */}
+      {/* Actions dropdown — fixed position so it's never clipped by overflow-hidden */}
       <div className="relative">
         <button
-          onClick={() => setOpen(v => !v)}
+          ref={btnRef}
+          onClick={openDropdown}
           disabled={isLoading}
           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
         >
@@ -194,7 +232,10 @@ export default function QuickOrderActions({
         </button>
 
         {open && (
-          <div className="absolute right-0 top-full mt-1 z-[300] w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
+          <div
+            style={{ position: 'fixed', top: dropPos.top, right: dropPos.right, zIndex: 9999 }}
+            className="w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden"
+          >
             {menuItems.map((item, idx) => (
               <button
                 key={idx}

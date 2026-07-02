@@ -102,6 +102,21 @@ export async function PATCH(
             where: { id: sizeData.id },
             data: { quantity: sizeData.quantity || 0 }
           });
+        } else if (sizeData.size) {
+          // No id means it's a new size record (e.g. Free Size for sarees) — create if not exists
+          const existing = await prisma.productSize.findFirst({
+            where: { productId: params.id, size: sizeData.size },
+          });
+          if (existing) {
+            await prisma.productSize.update({
+              where: { id: existing.id },
+              data: { quantity: sizeData.quantity || 0 },
+            });
+          } else {
+            await prisma.productSize.create({
+              data: { productId: params.id, size: sizeData.size, quantity: sizeData.quantity || 0 },
+            });
+          }
         }
       }
     }

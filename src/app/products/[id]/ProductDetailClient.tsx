@@ -200,7 +200,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   }, [product.id]);
 
   const doAddToCart = () => {
-    // Track add to cart in Google Analytics
     gaAddToCart({
       id: product.id,
       name: product.name,
@@ -208,9 +207,12 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       price: product.price,
       quantity: quantity,
     });
-    
+
+    // For sarees, use 'Free Size' so inventory is tracked and decremented correctly
+    const sizeToUse = product.category === 'Sarees' ? 'Free Size' : selectedSize;
+
     for (let i = 0; i < quantity; i++) {
-      addItem(product, selectedSize, selectedColor);
+      addItem(product, sizeToUse, selectedColor);
     }
     openCart();
   };
@@ -568,6 +570,14 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
             {/* Actions */}
             <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8 -mx-1 px-1">
               {/* Add to Cart */}
+              {!product.inStock ? (
+                <button
+                  disabled
+                  className="w-full btn-primary text-sm sm:text-base py-2.5 sm:py-3 disabled:opacity-70 disabled:cursor-not-allowed bg-gray-400 hover:bg-gray-400"
+                >
+                  {product.category === 'Sarees' ? '🔴 Sold Out — This Saree is Unavailable' : 'Out of Stock'}
+                </button>
+              ) : (
               <button
                 onClick={handleAddToCart}
                 disabled={!product.inStock}
@@ -575,6 +585,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
               >
                 Add to Cart
               </button>
+              )}
 
               {/* Order on WhatsApp */}
               <button

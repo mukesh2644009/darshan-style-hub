@@ -438,6 +438,30 @@ export default function ProductAddForm() {
         </div>
       </div>
 
+      {/* Saree Stock Quantity */}
+      {formData.category === 'Sarees' && (
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-1">Stock Quantity</h2>
+          <p className="text-sm text-gray-500 mb-4">How many pieces of this saree do you have? Usually 1 for unique sarees.</p>
+          <div className="flex items-center gap-4">
+            <input
+              type="number"
+              min="0"
+              value={sizeQuantities['Free Size'] ?? 1}
+              onChange={(e) => setSizeQuantities({ 'Free Size': parseInt(e.target.value) || 0 })}
+              className="w-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 text-center text-lg font-bold"
+            />
+            <span className="text-gray-500">pieces in stock</span>
+            {(sizeQuantities['Free Size'] ?? 1) === 0 && (
+              <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">Will show Out of Stock</span>
+            )}
+            {(sizeQuantities['Free Size'] ?? 1) === 1 && (
+              <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">Only 1 left! badge will show</span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* AF Number — internal saree reference, admin only */}
       {formData.category === 'Sarees' && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-6">
@@ -606,8 +630,7 @@ export default function ProductAddForm() {
       </div>
 
       {/* Sizes — hidden for Sarees */}
-      {formData.category !== 'Sarees' && (
-      <div className="bg-white rounded-xl shadow-sm p-6">
+      {formData.category !== 'Sarees' && (      <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-900">Sizes & Inventory</h2>
           {getTotalQuantity() > 0 && (

@@ -40,6 +40,12 @@ export default function ProductCard({ product }: ProductCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    // Sarees: no size picker needed — add directly with Free Size
+    if (product.category === 'Sarees') {
+      addItem(product, 'Free Size', product.colors[0]?.name || '');
+      openCart();
+      return;
+    }
     setSelectedSize('');
     setSelectedColor(product.colors[0]?.name || '');
     setShowSizePicker(true);
@@ -224,6 +230,15 @@ export default function ProductCard({ product }: ProductCardProps) {
 
             {/* Wishlist + Compare Buttons */}
             <div className="absolute top-3 right-3 flex flex-col gap-1.5">
+
+            {/* Sold Out overlay banner */}
+            {product.inStock === false && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none z-10">
+                <span className="bg-red-600 text-white font-bold text-sm px-4 py-1.5 rounded-full shadow-lg tracking-wide">
+                  SOLD OUT
+                </span>
+              </div>
+            )}
               <button
                 onClick={handleWishlist}
                 className={`p-2 rounded-full transition-all duration-300 ${
@@ -269,6 +284,11 @@ export default function ProductCard({ product }: ProductCardProps) {
                 isHovered ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
               }`}
             >
+              {product.inStock === false ? (
+                <div className="w-full bg-gray-800/90 text-white py-2.5 rounded-full font-medium flex items-center justify-center gap-2">
+                  🔴 Sold Out
+                </div>
+              ) : (
               <button
                 onClick={handleAddToCart}
                 className="w-full bg-white text-gray-900 py-2.5 rounded-full font-medium flex items-center justify-center gap-2 hover:bg-primary-600 hover:text-white transition-colors"
@@ -276,6 +296,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <FiShoppingBag size={18} />
                 Add to Cart
               </button>
+              )}
             </div>
           </div>
 

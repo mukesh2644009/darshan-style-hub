@@ -23,32 +23,50 @@ const STATUS_META: Record<string, { label: string; dot: string; bg: string; text
 };
 
 async function getData() {
-  const [orders, productsCount, customersCount, suitsCount, coOrdCount, pendingReturns] = await Promise.all([
+  const [orders, productsCount, customersCount, allProducts, pendingReturns] = await Promise.all([
     prisma.order.findMany({
       take: 5, orderBy: { createdAt: 'desc' },
       include: { user: true, items: { include: { product: true } } },
     }),
     prisma.product.count(),
     prisma.user.count({ where: { role: 'CUSTOMER' } }),
-    prisma.product.count({ where: { category: 'Suits' } }),
-    prisma.product.count({ where: { category: 'Co Ord Sets' } }),
+    prisma.product.findMany({ select: { category: true } }),
     prisma.returnRequest.count({ where: { status: 'PENDING' } }),
   ]);
+
+  // Dynamic category counts
+  const categoryCounts: Record<string, number> = {};
+  for (const p of allProducts) {
+    categoryCounts[p.category] = (categoryCounts[p.category] || 0) + 1;
+  }
 
   const allOrders = await prisma.order.findMany({ select: { total: true, status: true, createdAt: true } });
   const revenue = allOrders.filter(o => o.status !== 'CANCELLED').reduce((s, o) => s + o.total, 0);
   const pending = allOrders.filter(o => o.status === 'PENDING').length;
 
-  return { orders, productsCount, customersCount, revenue, suitsCount, coOrdCount, pendingReturns, pending, totalOrders: allOrders.length };
+  return { orders, productsCount, customersCount, revenue, categoryCounts, pendingReturns, pending, totalOrders: allOrders.length };
 }
 
 export default async function AdminDashboard() {
   const d = await getData();
 
+  const categoryEntries = Object.entries(d.categoryCounts).sort((a, b) => b[1] - a[1]);
+  const categoryIcons: Record<string, string> = {
+    'Suits': '👗', 'Co Ord Sets': '👚', 'Sarees': '🥻', 'Kurtis': '👘',
+    'Summer Co-ord Set with Shorts': '🩳', 'Lehengas': '👰', 'Tops': '👕',
+  };
+  const categoryColors: Record<string, { bg: string; text: string; icon: string; hover: string }> = {
+    'Suits':       { bg: 'bg-purple-100', text: 'text-purple-700', icon: 'text-purple-500', hover: 'group-hover:text-purple-500' },
+    'Co Ord Sets': { bg: 'bg-orange-100', text: 'text-orange-600', icon: 'text-orange-500', hover: 'group-hover:text-orange-500' },
+    'Sarees':      { bg: 'bg-pink-100',   text: 'text-pink-700',   icon: 'text-pink-500',   hover: 'group-hover:text-pink-500'   },
+    'Kurtis':      { bg: 'bg-green-100',  text: 'text-green-700',  icon: 'text-green-500',  hover: 'group-hover:text-green-500'  },
+  };
+  const defaultColor = { bg: 'bg-blue-100', text: 'text-blue-700', icon: 'text-blue-500', hover: 'group-hover:text-blue-500' };
+
   const stats = [
     { label: 'Total Orders',   value: d.totalOrders,           sub: `${d.pending} pending`,  icon: FiShoppingBag, color: 'from-primary-500 to-primary-700', href: '/admin/orders'   },
     { label: 'Revenue',        value: `₹${d.revenue.toLocaleString('en-IN')}`, sub: 'all time', icon: FiDollarSign,  color: 'from-green-500 to-green-700',   href: '/admin/orders'   },
-    { label: 'Products',       value: d.productsCount,         sub: `${d.suitsCount} suits · ${d.coOrdCount} co-ord`, icon: FiPackage, color: 'from-purple-500 to-purple-700', href: '/admin/products' },
+    { label: 'Products',       value: d.productsCount,         sub: categoryEntries.slice(0,2).map(([c,n]) => `${n} ${c.toLowerCase()}`).join(' · ') || 'none yet', icon: FiPackage, color: 'from-purple-500 to-purple-700', href: '/admin/products' },
     { label: 'Customers',      value: d.customersCount,        sub: 'registered',            icon: FiUsers,       color: 'from-blue-500 to-blue-700',     href: '/admin/customers' },
     { label: 'Pending Returns',value: d.pendingReturns,        sub: 'awaiting action',       icon: FiRotateCcw,   color: 'from-orange-400 to-orange-600', href: '/admin/returns'   },
   ];
@@ -154,30 +172,26 @@ export default async function AdminDashboard() {
         )}
       </div>
 
-      {/* Category cards */}
-      <div className="grid sm:grid-cols-2 gap-4">
-        <Link href="/admin/products?category=Suits" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-all flex items-center gap-4 group">
-          <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
-            <span className="text-2xl">👗</span>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 font-medium">Suits</p>
-            <p className="text-3xl font-bold text-purple-700">{d.suitsCount}</p>
-            <p className="text-xs text-gray-400">products listed</p>
-          </div>
-          <FiTrendingUp className="w-4 h-4 text-gray-300 ml-auto group-hover:text-purple-500 transition-colors" />
-        </Link>
-        <Link href="/admin/products?category=Co+Ord+Sets" className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-all flex items-center gap-4 group">
-          <div className="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
-            <span className="text-2xl">👚</span>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 font-medium">Co Ord Sets</p>
-            <p className="text-3xl font-bold text-orange-600">{d.coOrdCount}</p>
-            <p className="text-xs text-gray-400">products listed</p>
-          </div>
-          <FiTrendingUp className="w-4 h-4 text-gray-300 ml-auto group-hover:text-orange-500 transition-colors" />
-        </Link>
+      {/* Category cards — dynamic */}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {categoryEntries.map(([cat, count]) => {
+          const col = categoryColors[cat] || defaultColor;
+          const icon = categoryIcons[cat] || '🛍️';
+          return (
+            <Link key={cat} href={`/admin/products?category=${encodeURIComponent(cat)}`}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md transition-all flex items-center gap-4 group">
+              <div className={`w-14 h-14 ${col.bg} rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform`}>
+                <span className="text-2xl">{icon}</span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-gray-500 font-medium truncate">{cat}</p>
+                <p className={`text-3xl font-bold ${col.text}`}>{count}</p>
+                <p className="text-xs text-gray-400">products listed</p>
+              </div>
+              <FiTrendingUp className={`w-4 h-4 text-gray-300 ml-auto shrink-0 ${col.hover} transition-colors`} />
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

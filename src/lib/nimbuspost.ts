@@ -2,6 +2,8 @@ type NimbusCreateShipmentInput = {
   orderNumber: string;
   paymentMode: 'COD' | 'PREPAID';
   amount: number;
+  shippingCharges?: number;
+  codCharges?: number;
   customerName: string;
   customerPhone: string;
   customerEmail?: string;
@@ -329,9 +331,9 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
   const packageLength = Number(process.env.NIMBUSPOST_PACKAGE_LENGTH || 10);
   const packageBreadth = Number(process.env.NIMBUSPOST_PACKAGE_BREADTH || 10);
   const packageHeight = Number(process.env.NIMBUSPOST_PACKAGE_HEIGHT || 10);
-  const shippingCharges = Number(process.env.NIMBUSPOST_SHIPPING_CHARGES || 0);
+  const shippingCharges = input.shippingCharges ?? Number(process.env.NIMBUSPOST_SHIPPING_CHARGES || 0);
   const discount = Number(process.env.NIMBUSPOST_DEFAULT_DISCOUNT || 0);
-  const codCharges = Number(process.env.NIMBUSPOST_COD_CHARGES || 0);
+  const codCharges = input.codCharges ?? Number(process.env.NIMBUSPOST_COD_CHARGES || 0);
   const courierId = process.env.NIMBUSPOST_COURIER_ID ? Number(process.env.NIMBUSPOST_COURIER_ID) : null;
 
   const nimbusDocPayload = {

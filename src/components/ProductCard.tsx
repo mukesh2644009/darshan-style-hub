@@ -231,7 +231,8 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <FiHeart size={18} fill={isWishlisted ? 'currentColor' : 'none'} />
               </button>
 
-              {/* Compare button with visible hover label */}
+              {/* Compare button — hidden for Sarees */}
+              {product.category !== 'Sarees' && (
               <div className="relative group/compare flex items-center justify-end">
                 {/* Tooltip label — slides in from the right on hover */}
                 <span className="absolute right-full mr-2 whitespace-nowrap bg-gray-900/90 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full pointer-events-none
@@ -255,6 +256,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                   <FiRefreshCw size={15} />
                 </button>
               </div>
+              )}
             </div>
 
             {/* Quick Add Button */}

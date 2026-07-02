@@ -216,7 +216,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   };
 
   const handleAddToCart = () => {
-    if (!selectedSize) {
+    if (!selectedSize && product.category !== 'Sarees') {
       alert('Please select a size');
       return;
     }
@@ -225,7 +225,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   };
 
   const handleOrderOnWhatsApp = () => {
-    if (!selectedSize) {
+    if (!selectedSize && product.category !== 'Sarees') {
       alert('Please select a size');
       return;
     }
@@ -455,7 +455,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
               )}
             </div>
 
-            {/* Size Selection */}
+            {/* Size Selection — hidden for Sarees */}
+            {product.category !== 'Sarees' && (
             <div className="mb-6">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-medium text-gray-900">Select Size</h3>
@@ -477,6 +478,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 ))}
               </div>
             </div>
+            )}
 
             {/* Quantity */}
             <div className="mb-8">

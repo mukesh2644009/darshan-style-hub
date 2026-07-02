@@ -217,17 +217,16 @@ export default function ProductAddForm() {
     }
 
     const selectedSizes = Object.keys(sizeQuantities);
-    if (selectedSizes.length === 0) {
+    if (selectedSizes.length === 0 && formData.category !== 'Sarees') {
       setMessage('Please select at least one size');
       setMessageType('error');
       setLoading(false);
       return;
     }
 
-    const sizesWithQuantity = selectedSizes.map(size => ({
-      size,
-      quantity: sizeQuantities[size] || 0
-    }));
+    const sizesWithQuantity = formData.category === 'Sarees'
+      ? [{ size: 'Free Size', quantity: sizeQuantities['Free Size'] || 1 }]
+      : selectedSizes.map(size => ({ size, quantity: sizeQuantities[size] || 0 }));
 
     try {
       setMessage('Uploading images...');
@@ -535,7 +534,8 @@ export default function ProductAddForm() {
         )}
       </div>
 
-      {/* Sizes */}
+      {/* Sizes — hidden for Sarees */}
+      {formData.category !== 'Sarees' && (
       <div className="bg-white rounded-xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-gray-900">Sizes & Inventory</h2>
@@ -585,6 +585,7 @@ export default function ProductAddForm() {
           </div>
         )}
       </div>
+      )}
 
 
       {/* Pricing */}

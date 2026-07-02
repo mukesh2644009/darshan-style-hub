@@ -525,8 +525,8 @@ export default function ProductEditForm({ product }: Props) {
         )}
       </div>
 
-      {/* Inventory / Stock */}
-      {Object.keys(sizeQuantities).length > 0 && (
+      {/* Inventory / Stock — hidden for Sarees */}
+      {formData.category !== 'Sarees' && Object.keys(sizeQuantities).length > 0 && (
         <div className="bg-white rounded-xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-bold text-gray-900">Inventory / Stock</h2>

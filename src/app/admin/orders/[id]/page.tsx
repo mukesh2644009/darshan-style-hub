@@ -125,24 +125,50 @@ export default async function OrderDetailPage({ params }: { params: { id: string
             <div className="divide-y divide-gray-100">
               {order.items.map((item) => (
                 <div key={item.id} className="p-6 flex gap-4">
-                  <div className="relative w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
-                    {item.product?.images[0] ? (
-                      <Image
-                        src={item.product.images[0].url}
-                        alt={item.product.name}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
-                        <FiPackage className="w-8 h-8" />
+                  {/* Images: main + thumbnails */}
+                  <div className="flex flex-col gap-1.5 shrink-0">
+                    <div className="relative w-24 h-28 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                      {item.product?.images[0] ? (
+                        <Image
+                          src={item.product.images[0].url}
+                          alt={item.product?.name || 'Product'}
+                          fill
+                          className="object-cover object-top"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <FiPackage className="w-8 h-8" />
+                        </div>
+                      )}
+                    </div>
+                    {/* Extra thumbnails */}
+                    {item.product?.images && item.product.images.length > 1 && (
+                      <div className="flex gap-1">
+                        {item.product.images.slice(1, 4).map((img, idx) => (
+                          <div key={idx} className="relative w-7 h-8 rounded overflow-hidden border border-gray-200 bg-gray-100">
+                            <Image
+                              src={img.url}
+                              alt=""
+                              fill
+                              className="object-cover object-top"
+                              unoptimized
+                            />
+                          </div>
+                        ))}
+                        {item.product.images.length > 4 && (
+                          <div className="w-7 h-8 rounded bg-gray-200 flex items-center justify-center text-[9px] text-gray-500 font-semibold border border-gray-200">
+                            +{item.product.images.length - 4}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
+
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900">{item.product?.name || 'Product'}</h3>
                     <div className="text-sm text-gray-500 mt-1 space-y-0.5">
-                      {item.size && <p>Size: {item.size}</p>}
+                      {item.size && item.size !== 'Free Size' && <p>Size: {item.size}</p>}
                       {item.color && <p>Color: {item.color}</p>}
                       <p>Quantity: {item.quantity}</p>
                     </div>

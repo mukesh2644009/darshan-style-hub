@@ -31,15 +31,54 @@ export default function OrderItemsPopover({ items }: { items: OrderItem[] }) {
 
   return (
     <div className="relative inline-block" ref={ref}>
-      <div className="flex items-center gap-1.5">
-        <div className="text-xs text-gray-600 truncate max-w-[120px]">
-          {items[0]?.product?.name ?? '—'}
-          {items.length > 1 && <span className="text-gray-400 ml-1">+{items.length - 1}</span>}
+      <div className="flex items-center gap-2">
+        {/* Stacked thumbnail previews */}
+        <div className="flex -space-x-2">
+          {items.slice(0, 3).map((item, idx) => {
+            const imgUrl = item.product?.images?.[0]?.url
+              ? normalizeProductImageUrl(item.product.images[0].url)
+              : null;
+            return (
+              <div
+                key={item.id}
+                className="w-9 h-10 rounded-md border-2 border-white bg-gray-100 overflow-hidden shrink-0 shadow-sm"
+                style={{ zIndex: 10 - idx }}
+              >
+                {imgUrl ? (
+                  <Image
+                    src={imgUrl}
+                    alt={item.product?.name || ''}
+                    width={36}
+                    height={40}
+                    className="w-full h-full object-cover object-top"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-300 text-[8px]">?</div>
+                )}
+              </div>
+            );
+          })}
+          {items.length > 3 && (
+            <div className="w-9 h-10 rounded-md border-2 border-white bg-gray-200 flex items-center justify-center text-[10px] font-semibold text-gray-500 shadow-sm" style={{ zIndex: 7 }}>
+              +{items.length - 3}
+            </div>
+          )}
         </div>
+
+        <div className="min-w-0">
+          <div className="text-xs text-gray-700 font-medium truncate max-w-[100px] leading-tight">
+            {items[0]?.product?.name ?? '—'}
+          </div>
+          {items.length > 1 && (
+            <span className="text-[10px] text-gray-400">+{items.length - 1} more</span>
+          )}
+        </div>
+
         <button
           onClick={() => setOpen(v => !v)}
           className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-primary-600 transition-colors shrink-0"
-          title="View items"
+          title="View all items"
         >
           <FiEye className="w-3.5 h-3.5" />
         </button>

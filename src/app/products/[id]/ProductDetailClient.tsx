@@ -480,6 +480,27 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
             </div>
             )}
 
+            {/* Color swatches — shown only for Sarees */}
+            {product.category === 'Sarees' && product.colors && product.colors.length > 0 && (
+              <div className="mb-6">
+                <h3 className="font-medium text-gray-900 mb-3">Available Colors</h3>
+                <div className="flex flex-wrap gap-3">
+                  {product.colors.map((color) => (
+                    <div
+                      key={color.name}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-white"
+                    >
+                      <span
+                        className="w-5 h-5 rounded-full border border-gray-300 flex-shrink-0"
+                        style={{ backgroundColor: color.hex }}
+                      />
+                      <span className="text-sm text-gray-700">{color.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Quantity */}
             <div className="mb-8">
               <h3 className="font-medium text-gray-900 mb-3">Quantity</h3>

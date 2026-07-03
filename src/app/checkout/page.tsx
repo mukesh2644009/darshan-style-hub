@@ -718,9 +718,9 @@ export default function CheckoutPage() {
               </h2>
 
               {!isAuthenticated && (
-                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-3 text-blue-800">
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3 text-green-800">
                   <FiInfo className="flex-shrink-0 mt-0.5 w-4 h-4" />
-                  <p className="text-sm">Checking out as <strong>guest</strong>. <Link href="/login?redirect=/checkout" className="underline font-medium">Login</Link> to track your order easily.</p>
+                  <p className="text-sm">✅ No account needed! You can checkout as a guest. Order confirmation will be sent to your email. <Link href="/login?redirect=/checkout" className="underline font-medium text-green-700">Sign in</Link> to track orders on site.</p>
                 </div>
               )}
 

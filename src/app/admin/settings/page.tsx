@@ -151,35 +151,31 @@ export default function SettingsPage() {
               {
                 icon: FiDollarSign,
                 label: 'COD Remittance',
-                desc: 'Check pending & paid COD payouts',
-                url: 'https://ship.nimbuspost.com/cod-remittance',
+                desc: 'Login → COD Management in left sidebar',
                 color: 'text-green-700 bg-green-50 border-green-200 hover:bg-green-100',
               },
               {
                 icon: FiPackage,
                 label: 'Shipments',
-                desc: 'All shipments & their statuses',
-                url: 'https://ship.nimbuspost.com/shipments',
+                desc: 'Login → Orders / Shipments section',
                 color: 'text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100',
               },
               {
                 icon: FiRepeat,
                 label: 'Returns / Reverse Pickups',
-                desc: 'Manage reverse shipments & QC',
-                url: 'https://ship.nimbuspost.com/reverse-shipments',
+                desc: 'Login → Returns Management section',
                 color: 'text-purple-700 bg-purple-50 border-purple-200 hover:bg-purple-100',
               },
               {
                 icon: FiDollarSign,
-                label: 'Wallet Balance',
-                desc: 'Top up & check wallet balance',
-                url: 'https://ship.nimbuspost.com/wallet',
+                label: 'Wallet & Billing',
+                desc: 'Login → Wallet & Billing section',
                 color: 'text-amber-700 bg-amber-50 border-amber-200 hover:bg-amber-100',
               },
             ].map((item) => (
               <a
                 key={item.label}
-                href={item.url}
+                href="https://ship.nimbuspost.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${item.color}`}
@@ -193,6 +189,9 @@ export default function SettingsPage() {
               </a>
             ))}
           </div>
+          <p className="text-xs text-gray-400 mt-3">
+            All links open <strong>ship.nimbuspost.com</strong> — log in and navigate using the left sidebar.
+          </p>
         </div>
       </div>
     </div>

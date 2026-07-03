@@ -69,6 +69,14 @@ export async function POST(request: Request) {
     }).then(rows => rows.map(r => r.slug).filter(Boolean) as string[]);
     const slug = generateUniqueSlug(baseSlug, existingSlugs);
 
+    // Compute inStock from sizes so sarees with quantity > 0 start as in-stock
+    const totalQtyFromSizes = sizes && sizes.length > 0
+      ? sizes.reduce((sum: number, s: { size: string; quantity: number } | string) => {
+          if (typeof s === 'string') return sum;
+          return sum + (s.quantity || 0);
+        }, 0)
+      : 0;
+
     // Create product with related data
     const product = await prisma.product.create({
       data: {
@@ -83,6 +91,7 @@ export async function POST(request: Request) {
         featured: Boolean(featured),
         newArrival: Boolean(newArrival),
         afNumber: afNumber || null,
+        inStock: totalQtyFromSizes > 0,
         images: images && images.length > 0 ? {
           create: images.map((url: string) => ({ url }))
         } : undefined,

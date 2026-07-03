@@ -121,6 +121,21 @@ export async function PATCH(
       }
     }
 
+    // Auto-sync inStock based on size quantities for sarees
+    if (sizes && Array.isArray(sizes)) {
+      const allSizes = await prisma.productSize.findMany({
+        where: { productId: params.id },
+        select: { quantity: true },
+      });
+      if (allSizes.length > 0) {
+        const totalQty = allSizes.reduce((sum, s) => sum + s.quantity, 0);
+        await prisma.product.update({
+          where: { id: params.id },
+          data: { inStock: totalQty > 0 },
+        });
+      }
+    }
+
     // Update images if provided
     if (images && Array.isArray(images)) {
       await prisma.productImage.deleteMany({ where: { productId: params.id } });

@@ -3,6 +3,7 @@ import { FiInstagram, FiFacebook, FiTwitter, FiYoutube, FiMail, FiPhone, FiMapPi
 import { FaWhatsapp } from 'react-icons/fa';
 import { buildDefaultStoreWhatsAppUrl } from '@/lib/whatsapp-customer';
 import PaymentBadges from '@/components/PaymentBadges';
+import NewsletterSection from '@/components/NewsletterSection';
 
 export default function Footer() {
   const footerWhatsAppHref = buildDefaultStoreWhatsAppUrl();
@@ -10,26 +11,7 @@ export default function Footer() {
   return (
     <footer className="bg-accent-900 text-white">
       {/* Newsletter */}
-      <div className="bg-primary-700 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h3 className="font-display text-2xl sm:text-3xl font-bold mb-2">
-            Join Our Family
-          </h3>
-          <p className="text-primary-100 mb-6 max-w-md mx-auto">
-            Subscribe for exclusive offers, new arrivals, and styling tips
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-4 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:border-white/40"
-            />
-            <button className="bg-white text-primary-700 px-6 py-3 rounded-full font-medium hover:bg-accent-100 transition-colors">
-              Subscribe
-            </button>
-          </div>
-        </div>
-      </div>
+      <NewsletterSection />
 
       {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

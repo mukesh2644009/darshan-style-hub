@@ -56,8 +56,8 @@ export default function ContactPage() {
     <div className="min-h-screen bg-accent-50 py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="font-display text-4xl font-bold text-gray-900 mb-4">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="font-display text-2xl sm:text-4xl font-bold text-gray-900 mb-4">
             Contact Us
           </h1>
           <p className="text-gray-600 max-w-2xl mx-auto">
@@ -66,10 +66,10 @@ export default function ContactPage() {
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-5 sm:gap-8">
           {/* Contact Info */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white rounded-2xl shadow-sm p-6">
+          <div className="lg:col-span-1 space-y-4 sm:space-y-6 min-w-0">
+            <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-6">
               <h3 className="font-semibold text-lg text-gray-900 mb-4">Get in Touch</h3>
               
               <div className="space-y-4">
@@ -103,14 +103,14 @@ export default function ContactPage() {
 
                 <a 
                   href="mailto:darshanstylehub.business@gmail.com" 
-                  className="flex items-center gap-4 p-3 rounded-lg hover:bg-accent-50 transition-colors"
+                  className="flex items-center gap-4 p-3 rounded-lg hover:bg-accent-50 transition-colors min-w-0"
                 >
                   <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
                     <FiMail className="text-primary-600" size={20} />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm text-gray-500">Email</p>
-                    <p className="font-medium text-gray-900">darshanstylehub.business@gmail.com</p>
+                    <p className="font-medium text-gray-900 break-all text-sm sm:text-base">darshanstylehub.business@gmail.com</p>
                   </div>
                 </a>
 
@@ -140,8 +140,8 @@ export default function ContactPage() {
           </div>
 
           {/* Contact Form */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm p-8">
+          <div className="lg:col-span-2 min-w-0">
+            <div className="bg-white rounded-2xl shadow-sm p-4 sm:p-8">
               {success ? (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -161,8 +161,8 @@ export default function ContactPage() {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid sm:grid-cols-2 gap-6">
+                <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Your Name *
@@ -191,7 +191,7 @@ export default function ContactPage() {
                     </div>
                   </div>
 
-                  <div className="grid sm:grid-cols-2 gap-6">
+                  <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Phone Number

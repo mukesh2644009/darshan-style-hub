@@ -127,15 +127,29 @@ export async function POST(request: Request) {
     }
 
     const mappedStatus = mapNimbusToOrderStatus(nimbusStatus);
+    const isDelivered = nimbusStatus.toUpperCase() === 'DELIVERED';
+
+    // For COD orders: when NimbusPost confirms delivery, customer has paid cash to courier → auto-mark PAID
+    let autoPaymentStatus: string | undefined;
+    if (isDelivered) {
+      const orderForPayment = await prisma.order.findFirst({
+        where: shipmentId ? { shipmentId } : { awbNumber: awbNumber! },
+        select: { paymentMethod: true, paymentStatus: true },
+      });
+      if (orderForPayment?.paymentMethod === 'COD' && orderForPayment.paymentStatus !== 'PAID') {
+        autoPaymentStatus = 'PAID';
+      }
+    }
 
     const updated = await prisma.order.updateMany({
       where: shipmentId ? { shipmentId } : { awbNumber: awbNumber! },
       data: {
         ...(mappedStatus ? { status: mappedStatus } : {}),
         ...(trackingUrl ? { trackingUrl } : {}),
+        ...(autoPaymentStatus ? { paymentStatus: autoPaymentStatus } : {}),
         nimbusStatus,
         nimbusStatusCode: statusCode || null,
-        ...(nimbusStatus.toUpperCase() === 'DELIVERED' ? { deliveredAt: new Date() } : {}),
+        ...(isDelivered ? { deliveredAt: new Date() } : {}),
         nimbusWebhookPayload: payload as Prisma.InputJsonValue,
       },
     });

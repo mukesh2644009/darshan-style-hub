@@ -1,4 +1,4 @@
-import { FiSettings, FiHome, FiPhone, FiMail, FiMapPin } from 'react-icons/fi';
+import { FiHome, FiPhone, FiMapPin, FiExternalLink, FiTruck, FiDollarSign, FiPackage, FiRepeat } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import NimbusConnectionTestCard from './NimbusConnectionTestCard';
 import ChangePasswordCard from './ChangePasswordCard';
@@ -136,6 +136,64 @@ export default function SettingsPage() {
         </div>
 
         <NimbusConnectionTestCard />
+
+        {/* NimbusPost Quick Links */}
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-1 flex items-center gap-2">
+            <FiTruck className="w-5 h-5" />
+            NimbusPost Dashboard Links
+          </h2>
+          <p className="text-sm text-gray-500 mb-4">
+            NimbusPost does not expose a COD balance API — open their dashboard directly to check remittances and wallet.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {[
+              {
+                icon: FiDollarSign,
+                label: 'COD Remittance',
+                desc: 'Check pending & paid COD payouts',
+                url: 'https://ship.nimbuspost.com/cod-remittance',
+                color: 'text-green-700 bg-green-50 border-green-200 hover:bg-green-100',
+              },
+              {
+                icon: FiPackage,
+                label: 'Shipments',
+                desc: 'All shipments & their statuses',
+                url: 'https://ship.nimbuspost.com/shipments',
+                color: 'text-blue-700 bg-blue-50 border-blue-200 hover:bg-blue-100',
+              },
+              {
+                icon: FiRepeat,
+                label: 'Returns / Reverse Pickups',
+                desc: 'Manage reverse shipments & QC',
+                url: 'https://ship.nimbuspost.com/reverse-shipments',
+                color: 'text-purple-700 bg-purple-50 border-purple-200 hover:bg-purple-100',
+              },
+              {
+                icon: FiDollarSign,
+                label: 'Wallet Balance',
+                desc: 'Top up & check wallet balance',
+                url: 'https://ship.nimbuspost.com/wallet',
+                color: 'text-amber-700 bg-amber-50 border-amber-200 hover:bg-amber-100',
+              },
+            ].map((item) => (
+              <a
+                key={item.label}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${item.color}`}
+              >
+                <item.icon className="w-5 h-5 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm">{item.label}</p>
+                  <p className="text-xs opacity-75">{item.desc}</p>
+                </div>
+                <FiExternalLink className="w-4 h-4 shrink-0 opacity-60" />
+              </a>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FiCheck, FiLoader, FiDollarSign, FiTruck } from 'react-icons/fi';
+import { FiCheck, FiLoader, FiDollarSign, FiTruck, FiAlertTriangle, FiX } from 'react-icons/fi';
 
 const ORDER_STATUSES = [
   { value: 'PENDING', label: 'Pending', color: 'bg-yellow-500', icon: '🕐' },
@@ -31,15 +31,23 @@ export default function OrderStatusUpdater({ orderId, currentStatus, currentPaym
   const [paymentStatus, setPaymentStatus] = useState(currentPaymentStatus);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [showConfirm, setShowConfirm] = useState(false);
 
   const RETURN_STATUSES = ['RETURN_REQUESTED', 'RETURN_APPROVED', 'RETURNED', 'EXCHANGE_REQUESTED', 'EXCHANGE_APPROVED', 'EXCHANGED'];
   const isCancelled = currentStatus === 'CANCELLED';
   const isReturnFlow = RETURN_STATUSES.includes(currentStatus);
   const hasChanges = status !== currentStatus || paymentStatus !== currentPaymentStatus;
 
+  const isDangerous = status === 'CANCELLED' || status === 'DELIVERED';
+
+  const handleSaveClick = () => {
+    if (!hasChanges) return;
+    setShowConfirm(true);
+  };
+
   const handleUpdate = async () => {
     if (!hasChanges) return;
-
+    setShowConfirm(false);
     setLoading(true);
     setMessage('');
 
@@ -113,7 +121,7 @@ export default function OrderStatusUpdater({ orderId, currentStatus, currentPaym
           </div>
           {paymentStatus !== currentPaymentStatus && (
             <button
-              onClick={handleUpdate}
+              onClick={handleSaveClick}
               disabled={loading}
               className="mt-3 px-4 py-2 rounded-lg bg-primary-600 text-white text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
             >
@@ -125,6 +133,35 @@ export default function OrderStatusUpdater({ orderId, currentStatus, currentPaym
           <p className={`text-sm text-center ${message.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
             {message}
           </p>
+        )}
+
+        {showConfirm && (
+          <div
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowConfirm(false)}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-11 h-11 bg-blue-100 rounded-xl flex items-center justify-center shrink-0">
+                  <FiAlertTriangle className="w-5 h-5 text-blue-600" />
+                </div>
+                <button onClick={() => setShowConfirm(false)} className="text-gray-400 hover:text-gray-600 p-1">
+                  <FiX className="w-5 h-5" />
+                </button>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Save Payment Status?</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Payment status: <span className="font-semibold">{currentPaymentStatus}</span> → <span className="font-semibold">{paymentStatus}</span>
+              </p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowConfirm(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors">Go Back</button>
+                <button onClick={handleUpdate} className="flex-1 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-colors">Yes, Save</button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     );
@@ -199,7 +236,7 @@ export default function OrderStatusUpdater({ orderId, currentStatus, currentPaym
       </div>
 
       <button
-        onClick={handleUpdate}
+        onClick={handleSaveClick}
         disabled={loading || !hasChanges}
         className={`w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors ${
           loading || !hasChanges
@@ -226,6 +263,59 @@ export default function OrderStatusUpdater({ orderId, currentStatus, currentPaym
         }`}>
           {message}
         </p>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirm && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => setShowConfirm(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${isDangerous ? 'bg-red-100' : 'bg-blue-100'}`}>
+                <FiAlertTriangle className={`w-5 h-5 ${isDangerous ? 'text-red-600' : 'text-blue-600'}`} />
+              </div>
+              <button onClick={() => setShowConfirm(false)} className="text-gray-400 hover:text-gray-600 p-1">
+                <FiX className="w-5 h-5" />
+              </button>
+            </div>
+
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Save Changes?</h3>
+            <div className="space-y-1.5 text-sm text-gray-600 mb-1">
+              {status !== currentStatus && (
+                <p>Order status: <span className="font-semibold text-gray-900">{currentStatus}</span> → <span className="font-semibold text-gray-900">{status}</span></p>
+              )}
+              {paymentStatus !== currentPaymentStatus && (
+                <p>Payment status: <span className="font-semibold text-gray-900">{currentPaymentStatus}</span> → <span className="font-semibold text-gray-900">{paymentStatus}</span></p>
+              )}
+            </div>
+            {isDangerous && (
+              <p className="text-xs text-red-500 font-medium mt-2 mb-4">
+                {status === 'CANCELLED' ? '⚠️ Cancelling an order will restore inventory stock.' : '⚠️ Marking as Delivered unlocks the return & exchange window for the customer.'}
+              </p>
+            )}
+            {!isDangerous && <div className="mb-4" />}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                Go Back
+              </button>
+              <button
+                onClick={handleUpdate}
+                className={`flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors ${isDangerous ? 'bg-red-600 hover:bg-red-700' : 'bg-primary-600 hover:bg-primary-700'}`}
+              >
+                Yes, Save
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

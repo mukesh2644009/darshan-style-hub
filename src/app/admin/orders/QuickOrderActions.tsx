@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   FiCheck, FiX, FiLoader, FiExternalLink, FiTag, FiSlash,
-  FiRefreshCw, FiChevronDown, FiTruck, FiFileText,
+  FiRefreshCw, FiChevronDown, FiTruck, FiFileText, FiAlertTriangle,
 } from 'react-icons/fi';
 
 type QuickOrderActionsProps = {
@@ -32,6 +32,7 @@ export default function QuickOrderActions({
   const [dropPos, setDropPos] = useState({ top: 0, right: 0 });
   const dropRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
+  const [confirm, setConfirm] = useState<{ label: string; description: string; danger?: boolean; onConfirm: () => void } | null>(null);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -65,10 +66,17 @@ export default function QuickOrderActions({
     finally { setLoading(null); }
   };
 
-  const handleConfirm = () => updateStatus('CONFIRMED');
-  const handleCancel = async () => {
-    setLoading('CANCEL');
+  const handleConfirm = () => {
     setOpen(false);
+    setConfirm({
+      label: 'Confirm Order',
+      description: 'Mark this order as Confirmed? This will notify the customer that their order is being processed.',
+      onConfirm: () => updateStatus('CONFIRMED'),
+    });
+  };
+
+  const doCancelOrder = async () => {
+    setLoading('CANCEL');
     try {
       if (shippingPartner === 'NIMBUSPOST') {
         await fetch('/api/admin/shipping/nimbuspost/cancel-shipment', {
@@ -85,6 +93,18 @@ export default function QuickOrderActions({
       router.refresh();
     } catch { /* silent */ }
     finally { setLoading(null); }
+  };
+
+  const handleCancel = () => {
+    setOpen(false);
+    setConfirm({
+      label: 'Cancel Order',
+      description: shippingPartner === 'NIMBUSPOST'
+        ? 'This will cancel the order AND cancel the NimbusPost shipment. This cannot be undone.'
+        : 'This will permanently cancel the order. This cannot be undone.',
+      danger: true,
+      onConfirm: doCancelOrder,
+    });
   };
 
   const handleCreateShipment = async () => {
@@ -123,9 +143,8 @@ export default function QuickOrderActions({
     finally { setLoading(null); }
   };
 
-  const handleCancelShipment = async () => {
+  const doCancelShipment = async () => {
     setLoading('CANCEL_SHIPMENT');
-    setOpen(false);
     try {
       const res = await fetch('/api/admin/shipping/nimbuspost/cancel-shipment', {
         method: 'POST',
@@ -139,6 +158,16 @@ export default function QuickOrderActions({
       router.refresh();
     } catch { alert('Failed'); }
     finally { setLoading(null); }
+  };
+
+  const handleCancelShipment = () => {
+    setOpen(false);
+    setConfirm({
+      label: 'Cancel Shipment',
+      description: `This will cancel the NimbusPost shipment (AWB: ${awbNumber}). The order status will remain unchanged. Only do this if the courier has not yet picked up the package.`,
+      danger: true,
+      onConfirm: doCancelShipment,
+    });
   };
 
   const isLoading = loading !== null;
@@ -172,42 +201,86 @@ export default function QuickOrderActions({
     color: 'text-green-700',
   });
 
+  // Shared confirmation modal
+  const ConfirmModal = confirm ? (
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={() => !loading && setConfirm(null)}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between mb-4">
+          <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${confirm.danger ? 'bg-red-100' : 'bg-blue-100'}`}>
+            <FiAlertTriangle className={`w-5 h-5 ${confirm.danger ? 'text-red-600' : 'text-blue-600'}`} />
+          </div>
+          <button onClick={() => setConfirm(null)} className="text-gray-400 hover:text-gray-600 p-1">
+            <FiX className="w-5 h-5" />
+          </button>
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">{confirm.label}?</h3>
+        <p className="text-sm text-gray-600 mb-5">{confirm.description}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setConfirm(null)}
+            disabled={loading !== null}
+            className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => { confirm.onConfirm(); setConfirm(null); }}
+            disabled={loading !== null}
+            className={`flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-colors disabled:opacity-50 ${confirm.danger ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+          >
+            Yes, {confirm.label}
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   if (currentStatus === 'DELIVERED') {
     return (
-      <div className="flex items-center gap-1.5" ref={dropRef}>
-        {awbNumber && trackingUrl && (
-          <a href={trackingUrl} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-sky-50 border border-sky-200 text-sky-700 hover:bg-sky-100 transition-colors">
-            <FiTruck className="w-3 h-3" /> Track
-          </a>
-        )}
-        {/* Invoice for delivered orders */}
-        <button
-          ref={btnRef}
-          onClick={openDropdown}
-          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors"
-        >
-          Actions <FiChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
-        </button>
-        {open && (
-          <div
-            style={{ position: 'fixed', top: dropPos.top, right: dropPos.right, zIndex: 9999 }}
-            className="w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden"
+      <>
+        {ConfirmModal}
+        <div className="flex items-center gap-1.5" ref={dropRef}>
+          {awbNumber && trackingUrl && (
+            <a href={trackingUrl} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-sky-50 border border-sky-200 text-sky-700 hover:bg-sky-100 transition-colors">
+              <FiTruck className="w-3 h-3" /> Track
+            </a>
+          )}
+          <button
+            ref={btnRef}
+            onClick={openDropdown}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100 transition-colors"
           >
-            <button
-              onClick={() => { window.open(`/api/admin/orders/invoice?orderId=${orderId}`, '_blank'); setOpen(false); }}
-              className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium text-left text-green-700 hover:bg-green-50 transition-colors"
+            Actions <FiChevronDown className={`w-3 h-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+          </button>
+          {open && (
+            <div
+              style={{ position: 'fixed', top: dropPos.top, right: dropPos.right, zIndex: 9999 }}
+              className="w-48 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden"
             >
-              <FiFileText className="w-3.5 h-3.5 shrink-0" />
-              Print Invoice
-            </button>
-          </div>
-        )}
-      </div>
+              <button
+                onClick={() => { window.open(`/api/admin/orders/invoice?orderId=${orderId}`, '_blank'); setOpen(false); }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs font-medium text-left text-green-700 hover:bg-green-50 transition-colors"
+              >
+                <FiFileText className="w-3.5 h-3.5 shrink-0" />
+                Print Invoice
+              </button>
+            </div>
+          )}
+        </div>
+      </>
     );
   }
 
   return (
+    <>
+    {ConfirmModal}
     <div className="flex items-center gap-2" ref={dropRef}>
       {/* AWB chip — always visible when present */}
       {awbNumber && (
@@ -252,5 +325,6 @@ export default function QuickOrderActions({
         )}
       </div>
     </div>
+    </>
   );
 }

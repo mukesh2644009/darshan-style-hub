@@ -29,9 +29,9 @@ function DescriptionSection({ product }: { product: Product }) {
   if (!mounted) {
     return (
       <section>
-        <div className="grid md:grid-cols-2 gap-8">
-          <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm h-48 animate-pulse" />
-          <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm h-48 animate-pulse" />
+        <div className="grid md:grid-cols-2 gap-4 sm:gap-8">
+          <div className="bg-white rounded-2xl p-4 sm:p-8 shadow-sm h-48 animate-pulse" />
+          <div className="bg-white rounded-2xl p-4 sm:p-8 shadow-sm h-48 animate-pulse" />
         </div>
       </section>
     );
@@ -70,8 +70,8 @@ function DescriptionSection({ product }: { product: Product }) {
 
   return (
     <section>
-      <div className="grid md:grid-cols-2 gap-8">
-        <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm">
+      <div className="grid md:grid-cols-2 gap-4 sm:gap-8">
+        <div className="bg-white rounded-2xl p-4 sm:p-8 shadow-sm">
           <h2 className="font-display text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             <span className="w-1 h-6 bg-primary-600 rounded-full" />
             Product Description
@@ -85,7 +85,7 @@ function DescriptionSection({ product }: { product: Product }) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm">
+        <div className="bg-white rounded-2xl p-4 sm:p-8 shadow-sm">
           <h2 className="font-display text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             <span className="w-1 h-6 bg-primary-600 rounded-full" />
             Key Features
@@ -300,10 +300,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-6">
-        <div className="grid lg:grid-cols-2 gap-6 lg:gap-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-10 min-w-0">
           {/* Images */}
-          <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <div className="space-y-4 lg:sticky lg:top-24 lg:self-start min-w-0">
             {/* Main Image with Swipe */}
             <div 
               className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-white touch-pan-y"
@@ -400,7 +400,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
           </div>
 
           {/* Product Info */}
-          <div className="lg:py-4 overflow-hidden">
+          <div className="lg:py-4 overflow-hidden min-w-0">
             {/* Category & Rating */}
             <div className="flex items-center gap-3 sm:gap-4 mb-2 sm:mb-4">
               <span className="text-xs sm:text-sm text-primary-600 font-medium">{product.subcategory}</span>
@@ -530,13 +530,13 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
             {/* Delivery Details */}
             <div className="mb-6 border border-gray-200 rounded-xl overflow-hidden">
-              <p className="text-xs font-bold text-gray-700 tracking-widest px-4 pt-3 pb-2 bg-gray-50 border-b border-gray-100 uppercase">
+              <p className="text-xs font-bold text-gray-700 tracking-wider sm:tracking-widest px-3 sm:px-4 pt-3 pb-2 bg-gray-50 border-b border-gray-100 uppercase">
                 Delivery Details
               </p>
-              <div className="px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-2 flex-1 border border-gray-200 rounded-lg px-3 py-2 bg-white">
-                    <FiMapPin className="text-gray-400 shrink-0" size={15} />
+              <div className="px-3 sm:px-4 py-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="flex items-center gap-2 flex-1 min-w-0 border border-gray-200 rounded-lg px-2.5 sm:px-3 py-2 bg-white">
+                    <FiMapPin className="text-gray-400 shrink-0" size={14} />
                     <input
                       type="text"
                       inputMode="numeric"
@@ -545,12 +545,12 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                       onChange={e => { setPincode(e.target.value.replace(/\D/g, '')); setDeliveryDate(null); setPincodeError(''); }}
                       onKeyDown={e => e.key === 'Enter' && checkPincodeDelivery()}
                       placeholder="Enter pincode"
-                      className="flex-1 text-sm text-gray-800 outline-none bg-transparent placeholder-gray-400 min-w-0"
+                      className="flex-1 min-w-0 text-sm text-gray-800 outline-none bg-transparent placeholder-gray-400"
                     />
                   </div>
                   <button
                     onClick={checkPincodeDelivery}
-                    className="text-xs font-bold text-primary-600 hover:text-primary-700 px-2 py-2 shrink-0 transition-colors"
+                    className="text-xs font-bold text-primary-600 hover:text-primary-700 px-2 py-2 shrink-0 whitespace-nowrap transition-colors"
                   >
                     CHECK
                   </button>
@@ -568,7 +568,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
             </div>
 
             {/* Actions */}
-            <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8 -mx-1 px-1">
+            <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">
               {/* Add to Cart */}
               {!product.inStock ? (
                 <button
@@ -677,7 +677,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
             <h2 className="font-display text-2xl font-bold text-gray-900 mb-8">
               You May Also Like
             </h2>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {relatedProducts.map((relatedProduct) => (
                 <ProductCard key={relatedProduct.id} product={relatedProduct} />
               ))}

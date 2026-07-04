@@ -74,11 +74,13 @@ export async function GET() {
     const rows: string[][] = [headers];
 
     for (const product of products) {
-      // Skip products with no images — Meta requires a valid image_link
-      if (!product.images[0]?.url) continue;
+      // Primary image: prefer images relation, fall back to legacy image field
+      const primaryImage = product.images[0]?.url || product.image || '';
+
+      // Skip products with no image at all — Meta requires a valid image_link
+      if (!primaryImage) continue;
 
       const productUrl = `${BASE}/products/${product.slug || product.id}`;
-      const primaryImage = product.images[0].url;
       const additionalImages = product.images.slice(1, 5).map(i => i.url).join(',');
 
       // Clean description - strip newlines for CSV

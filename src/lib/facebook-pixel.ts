@@ -5,12 +5,31 @@ declare global {
 }
 
 export function trackPixelEvent(eventName: string, params?: Record<string, unknown>, eventId?: string) {
-  if (typeof window !== 'undefined' && window.fbq) {
-    if (eventId) {
-      window.fbq('track', eventName, params, { eventID: eventId });
-    } else {
-      window.fbq('track', eventName, params);
+  if (typeof window === 'undefined') return;
+
+  const fire = () => {
+    if (window.fbq) {
+      if (eventId) {
+        window.fbq('track', eventName, params, { eventID: eventId });
+      } else {
+        window.fbq('track', eventName, params);
+      }
     }
+  };
+
+  if (window.fbq) {
+    fire();
+  } else {
+    // Wait for pixel to initialize (afterInteractive script may load after useEffect)
+    let attempts = 0;
+    const interval = setInterval(() => {
+      if (window.fbq) {
+        fire();
+        clearInterval(interval);
+      } else if (++attempts > 20) {
+        clearInterval(interval);
+      }
+    }, 100);
   }
 }
 

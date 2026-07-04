@@ -62,7 +62,7 @@ export async function GET(request: Request) {
 
     for (const cart of firstReminders) {
       try {
-        const items = cart.items as Parameters<typeof abandonedCartEmail>[0]['items'];
+        const items = cart.items as unknown as Parameters<typeof abandonedCartEmail>[0]['items'];
         const { subject, html } = abandonedCartEmail({
           name: cart.name,
           items,
@@ -85,7 +85,7 @@ export async function GET(request: Request) {
 
     for (const cart of secondReminders) {
       try {
-        const items = cart.items as Parameters<typeof abandonedCartEmail>[0]['items'];
+        const items = cart.items as unknown as Parameters<typeof abandonedCartEmail>[0]['items'];
         const { subject, html } = abandonedCartEmail({
           name: cart.name,
           items,

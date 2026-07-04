@@ -133,7 +133,8 @@ export default function CartSidebar() {
                                   item.quantity + 1
                                 )
                               }
-                              className="p-1.5 hover:bg-accent-100 rounded-full transition-colors"
+                              disabled={item.quantity >= (item.product.stock ?? 99)}
+                              className="p-1.5 hover:bg-accent-100 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               <FiPlus size={14} />
                             </button>

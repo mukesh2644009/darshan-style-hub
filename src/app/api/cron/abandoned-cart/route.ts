@@ -16,15 +16,19 @@ function createTransporter() {
 }
 
 export async function GET(request: Request) {
-  // Verify cron secret to prevent unauthorized calls
+  const { searchParams } = new URL(request.url);
+  const testMode = searchParams.get('test') === 'true';
+
+  // Verify cron secret to prevent unauthorized calls (skipped in test mode)
   const authHeader = request.headers.get('authorization');
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!testMode && process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const now = new Date();
-  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  // In test mode, send immediately (0 min wait); otherwise 1 hour
+  const oneHourAgo = new Date(now.getTime() - (testMode ? 0 : 60 * 60 * 1000));
+  const twentyFourHoursAgo = new Date(now.getTime() - (testMode ? 0 : 24 * 60 * 60 * 1000));
   const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
 
   let sent = 0;
@@ -42,13 +46,14 @@ export async function GET(request: Request) {
       where: {
         status: 'PENDING',
         reminderCount: 0,
-        createdAt: { lt: oneHourAgo },
+        createdAt: { lte: oneHourAgo },
       },
       take: 50,
     });
 
-    // Find carts for second reminder (24+ hours old, only 1 reminder sent)
-    const secondReminders = await prisma.abandonedCart.findMany({
+    // Find carts for second reminder (24+ hours old, only 1 reminder sent).
+    // Skipped in test mode to avoid double-sending to the same cart in one call.
+    const secondReminders = testMode ? [] : await prisma.abandonedCart.findMany({
       where: {
         status: 'PENDING',
         reminderCount: 1,

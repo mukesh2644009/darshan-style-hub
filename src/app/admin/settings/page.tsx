@@ -2,6 +2,7 @@ import { FiHome, FiPhone, FiMapPin, FiExternalLink, FiTruck, FiDollarSign, FiPac
 import { FaWhatsapp } from 'react-icons/fa';
 import NimbusConnectionTestCard from './NimbusConnectionTestCard';
 import ChangePasswordCard from './ChangePasswordCard';
+import MetaCatalogSyncCard from './MetaCatalogSyncCard';
 
 export default function SettingsPage() {
   return (
@@ -136,6 +137,7 @@ export default function SettingsPage() {
         </div>
 
         <NimbusConnectionTestCard />
+        <MetaCatalogSyncCard />
 
         {/* NimbusPost Quick Links */}
         <div className="bg-white rounded-xl shadow-sm p-6">

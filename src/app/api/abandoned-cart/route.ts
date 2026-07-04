@@ -1,0 +1,34 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export async function POST(request: Request) {
+  try {
+    const { email, name, phone, items, total } = await request.json();
+
+    if (!email || !items?.length) {
+      return NextResponse.json({ success: false }, { status: 400 });
+    }
+
+    // Upsert: if same email already has a PENDING cart, update it; else create new
+    const existing = await prisma.abandonedCart.findFirst({
+      where: { email, status: 'PENDING' },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (existing) {
+      await prisma.abandonedCart.update({
+        where: { id: existing.id },
+        data: { items, total, name: name || existing.name, phone: phone || existing.phone, updatedAt: new Date() },
+      });
+    } else {
+      await prisma.abandonedCart.create({
+        data: { email, name, phone, items, total },
+      });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Abandoned cart save error:', error);
+    return NextResponse.json({ success: false }, { status: 500 });
+  }
+}

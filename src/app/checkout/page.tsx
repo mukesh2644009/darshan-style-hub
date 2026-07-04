@@ -769,6 +769,22 @@ export default function CheckoutPage() {
                       setFormData({ ...formData, email: e.target.value });
                       if (errors.email) setErrors({ ...errors, email: '' });
                     }}
+                    onBlur={(e) => {
+                      const email = e.target.value.trim();
+                      if (email && items.length > 0) {
+                        fetch('/api/abandoned-cart', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            email,
+                            name: `${formData.firstName} ${formData.lastName}`.trim() || undefined,
+                            phone: formData.phone || undefined,
+                            items,
+                            total: getTotalPrice(),
+                          }),
+                        }).catch(() => {});
+                      }
+                    }}
                     className={`input-field ${errors.email ? 'border-red-500' : ''}`}
                     placeholder="For order confirmation email (optional)"
                   />

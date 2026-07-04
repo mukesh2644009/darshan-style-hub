@@ -243,6 +243,14 @@ export async function POST(request: Request) {
       }
     }
 
+    // Mark any abandoned cart for this email as recovered
+    if (shippingEmail) {
+      prisma.abandonedCart.updateMany({
+        where: { email: shippingEmail.toLowerCase().trim(), status: 'PENDING' },
+        data: { status: 'RECOVERED', recoveredAt: new Date() },
+      }).catch(() => {});
+    }
+
     // Send order confirmation emails
     const customerEmail = shippingEmail || (user?.email?.endsWith('@darshan.local') ? null : user?.email);
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub.business@gmail.com';

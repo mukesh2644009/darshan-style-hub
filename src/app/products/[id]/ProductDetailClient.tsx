@@ -11,7 +11,7 @@ import { useWishlistStore } from '@/store/wishlistStore';
 import ProductCard from '@/components/ProductCard';
 import { createWhatsAppOrderLink, createWhatsAppShareLink } from '@/components/WhatsAppButton';
 import { gaViewItem, gaAddToCart, gaWhatsAppClick } from '@/lib/google-analytics';
-import { fbViewContent } from '@/lib/facebook-pixel';
+import { fbViewContent, fbAddToCart } from '@/lib/facebook-pixel';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 import { useRecentlyViewedStore } from '@/store/recentlyViewedStore';
 import RecentlyViewed from '@/components/RecentlyViewed';
@@ -209,6 +209,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       price: product.price,
       quantity: quantity,
     });
+    fbAddToCart(product.id, product.name, product.category, product.price);
 
     // For sarees, use 'Free Size' so inventory is tracked and decremented correctly
     const sizeToUse = product.category === 'Sarees' ? 'Free Size' : selectedSize;

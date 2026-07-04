@@ -58,6 +58,16 @@ export default async function ProductsPage() {
               <p className="text-sm text-gray-500">Total Products</p>
               <p className="text-2xl font-bold text-gray-900">{products.length}</p>
             </div>
+            {(() => {
+              const noImage = products.filter(p => p.images.length === 0).length;
+              return noImage > 0 ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg shadow-sm p-4 col-span-2 md:col-span-1">
+                  <p className="text-sm text-red-600 font-medium">⚠️ No Images</p>
+                  <p className="text-2xl font-bold text-red-700">{noImage}</p>
+                  <p className="text-xs text-red-500">products missing images</p>
+                </div>
+              ) : null;
+            })()}
             {categoryEntries.map(([cat, count], i) => (
               <div key={cat} className="bg-white rounded-lg shadow-sm p-4">
                 <p className="text-sm text-gray-500 truncate">{cat}</p>
@@ -129,8 +139,9 @@ export default async function ProductsPage() {
                               className="object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-400">
-                              <FiPackage />
+                            <div className="w-full h-full flex items-center justify-center bg-red-50 text-red-400 flex-col gap-0.5" title="No images uploaded">
+                              <FiPackage className="w-4 h-4" />
+                              <span className="text-[9px] font-bold leading-none">NO IMG</span>
                             </div>
                           )}
                         </div>

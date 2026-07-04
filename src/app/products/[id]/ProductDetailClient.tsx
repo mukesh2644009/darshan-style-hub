@@ -130,7 +130,7 @@ interface ProductDetailClientProps {
 }
 
 export default function ProductDetailClient({ product, relatedProducts }: ProductDetailClientProps) {
-  const { addItem, openCart } = useCartStore();
+  const { addItem, openCart, items } = useCartStore();
   const { toggleItem, isInWishlist } = useWishlistStore();
   const addToRecentlyViewed = useRecentlyViewedStore((s) => s.addItem);
 
@@ -223,6 +223,22 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const handleAddToCart = () => {
     if (!selectedSize && product.category !== 'Sarees') {
       alert('Please select a size');
+      return;
+    }
+
+    // Check if adding would exceed available stock
+    const sizeToUse = product.category === 'Sarees' ? 'Free Size' : selectedSize;
+    const alreadyInCart = items
+      .filter(i => i.product.id === product.id && i.selectedSize === sizeToUse)
+      .reduce((sum, i) => sum + i.quantity, 0);
+
+    if (alreadyInCart + quantity > product.stock) {
+      const remaining = Math.max(0, product.stock - alreadyInCart);
+      if (remaining === 0) {
+        alert(`Sorry, you already have all available stock (${product.stock}) in your cart.`);
+      } else {
+        alert(`Only ${remaining} more available. You already have ${alreadyInCart} in your cart.`);
+      }
       return;
     }
 

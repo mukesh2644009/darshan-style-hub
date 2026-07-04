@@ -75,7 +75,8 @@ export async function GET() {
 
     for (const product of products) {
       // Primary image: prefer images relation, fall back to legacy image field
-      const primaryImage = product.images[0]?.url || product.image || '';
+      const legacyImage = (product as unknown as { image?: string }).image;
+      const primaryImage = product.images[0]?.url || legacyImage || '';
 
       // Skip products with no image at all — Meta requires a valid image_link
       if (!primaryImage) continue;

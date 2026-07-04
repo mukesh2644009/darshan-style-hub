@@ -37,6 +37,17 @@ export function trackServerEvent(
   }).catch(() => {});
 }
 
+export function fbViewContent(productId: string, name: string, category: string, price: number) {
+  trackServerEvent('ViewContent', {
+    content_ids: [productId],
+    content_name: name,
+    content_category: category,
+    content_type: 'product',
+    value: price,
+    currency: 'INR',
+  });
+}
+
 export function fbAddToCart(productId: string, name: string, category: string, price: number) {
   trackServerEvent('AddToCart', {
     content_ids: [productId],

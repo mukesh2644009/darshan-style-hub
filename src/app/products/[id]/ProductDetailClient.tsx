@@ -11,6 +11,7 @@ import { useWishlistStore } from '@/store/wishlistStore';
 import ProductCard from '@/components/ProductCard';
 import { createWhatsAppOrderLink, createWhatsAppShareLink } from '@/components/WhatsAppButton';
 import { gaViewItem, gaAddToCart, gaWhatsAppClick } from '@/lib/google-analytics';
+import { fbViewContent } from '@/lib/facebook-pixel';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 import { useRecentlyViewedStore } from '@/store/recentlyViewedStore';
 import RecentlyViewed from '@/components/RecentlyViewed';
@@ -195,6 +196,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       category: product.category,
       price: product.price,
     });
+    fbViewContent(product.id, product.name, product.category, product.price);
     addToRecentlyViewed(product);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id]);

@@ -29,7 +29,11 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
 
   // Save the cart for abandoned-cart email recovery (fire-and-forget)
   const saveAbandonedCart = (customerEmail: string, customerName: string, customerPhone: string) => {
-    if (!customerEmail.trim() || cartItems.length === 0) return;
+    console.log('[AbandonedCart] saveAbandonedCart called', { email: customerEmail, itemsCount: cartItems.length, total: cartTotal });
+    if (!customerEmail.trim() || cartItems.length === 0) {
+      console.log('[AbandonedCart] skipped — email empty or no items');
+      return;
+    }
     fetch('/api/abandoned-cart', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

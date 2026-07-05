@@ -35,11 +35,6 @@ type HeroCarouselProps = {
 
 export default function HeroCarousel({ fullBleed = false, cinematic = false, split = false }: HeroCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  // Hide the carousel until it has hydrated — the server-rendered static slide
-  // (rendered in page.tsx above this component) shows through during hydration,
-  // so the LCP element is the priority <img> in the HTML, not this client widget.
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
 
   const goTo = useCallback((index: number) => {
     setCurrentIndex((index + heroImages.length) % heroImages.length);
@@ -142,7 +137,7 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
   };
 
   return (
-    <div className={`relative h-full w-full min-h-0 bg-[#FFF8E6] transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+    <div className="relative h-full w-full min-h-0 bg-[#FFF8E6]">
       <AnimatePresence initial={false} mode="sync">
         <motion.div
           key={currentIndex}

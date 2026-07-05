@@ -80,31 +80,6 @@ export default async function Home() {
         {/* Below lg: aspect 192∶65 matches banners so object-contain has no thick letterboxing. lg+: cinematic height + object-cover. */}
         <div className="relative mx-auto w-full min-w-0 max-w-[min(100vw,calc(72vh*192/65))] aspect-[192/65] overflow-hidden rounded-none bg-[#FFF8F0] lg:aspect-auto lg:min-h-[220px] lg:h-[min(72vh,max(calc(100vw*65/192),min(42dvh,360px)))]">
           <div className="absolute inset-0">
-            {/*
-              SERVER-RENDERED LCP ELEMENT
-              ─────────────────────────────────────────────────────────────────────
-              Next.js emits <link rel="preload" fetchpriority="high"> for this image
-              directly in the HTML <head>, so the browser starts downloading the
-              hero banner IN PARALLEL with the JS bundle — not after it executes.
-
-              Without this, the image URL only appears in the DOM after HeroCarousel
-              (a 'use client' component) hydrates, which on slow 4G takes 5–7 s.
-              This single change typically drops LCP from ~8 s → ~2–3 s.
-
-              The HeroCarousel below starts opacity-0 and fades in after hydration,
-              so users never see a flash of duplicate images.
-            */}
-            <div className="absolute inset-0 bg-[#FFF8F0]">
-              <Image
-                src="/Banners/DARSHAN STYLE HUB.webp"
-                alt="Darshan Style Hub — designer suits, co ord sets & ethnic wear from Jaipur"
-                fill
-                priority
-                sizes="100vw"
-                quality={75}
-                className="object-contain object-center lg:object-cover lg:object-bottom [backface-visibility:hidden]"
-              />
-            </div>
             <HeroCarousel fullBleed cinematic />
           </div>
           <div

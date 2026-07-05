@@ -23,9 +23,6 @@ const nextConfig = {
       'jspdf',
       'nodemailer',
     ],
-    // Optimise package imports — tree-shakes icon libraries so only used icons
-    // are bundled. Reduces JS payload by ~80–120 KB for react-icons.
-    optimizePackageImports: ['react-icons', 'framer-motion'],
   },
 
   images: {

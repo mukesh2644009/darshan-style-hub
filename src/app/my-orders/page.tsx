@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   FiPackage, FiShoppingBag, FiLoader, FiArrowLeft, FiTrash2,
   FiDownload, FiRotateCcw, FiAlertTriangle, FiX, FiTruck,
-  FiCheckCircle, FiClock, FiXCircle, FiMapPin, FiRefreshCw, FiCreditCard,
+  FiCheckCircle, FiClock, FiXCircle, FiMapPin, FiRefreshCw, FiCreditCard, FiAward,
 } from 'react-icons/fi';
 import { useAuthStore } from '@/store/authStore';
 import ReturnRequestModal from '@/components/ReturnRequestModal';
@@ -90,6 +90,7 @@ export default function MyOrdersPage() {
   const [cancelling, setCancelling] = useState(false);
   const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(null);
   const [retryingPayment, setRetryingPayment] = useState<string | null>(null);
+  const [loyaltyBalance, setLoyaltyBalance] = useState<number | null>(null);
 
   useEffect(() => { checkAuth(); }, [checkAuth]);
 
@@ -98,7 +99,12 @@ export default function MyOrdersPage() {
   }, [isLoading, isAuthenticated, router]);
 
   useEffect(() => {
-    if (user) fetchOrders();
+    if (user) {
+      fetchOrders();
+      fetch('/api/loyalty').then(r => r.json()).then(d => {
+        if (d.balance !== undefined) setLoyaltyBalance(d.balance);
+      }).catch(() => {});
+    }
   }, [user]);
 
   const fetchOrders = async () => {
@@ -244,6 +250,33 @@ export default function MyOrdersPage() {
               <span className="text-sm text-gray-500">{orders.length} order{orders.length !== 1 ? 's' : ''}</span>
             </div>
           </div>
+
+          {/* Loyalty Points Card */}
+          {loyaltyBalance !== null && (
+            <div className="mt-5 flex items-center gap-4 bg-gradient-to-r from-primary-600 to-primary-700 rounded-2xl px-5 py-4 text-white shadow-sm">
+              <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                <FiAward className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-primary-100">Your Loyalty Points</p>
+                <p className="text-2xl font-bold leading-tight">
+                  {loyaltyBalance.toLocaleString('en-IN')}
+                  <span className="text-sm font-normal text-primary-200 ml-1.5">pts</span>
+                </p>
+                <p className="text-xs text-primary-200 mt-0.5">
+                  = ₹{Math.floor(loyaltyBalance / 10).toLocaleString('en-IN')} discount at checkout · 1 pt per ₹10 spent
+                </p>
+              </div>
+              {loyaltyBalance > 0 && (
+                <Link
+                  href="/products"
+                  className="shrink-0 text-xs font-semibold bg-white text-primary-700 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
+                >
+                  Shop now
+                </Link>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Empty state */}

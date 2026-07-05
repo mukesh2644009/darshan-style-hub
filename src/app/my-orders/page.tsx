@@ -20,6 +20,7 @@ interface OrderItem {
   color: string;
   product: {
     name: string;
+    category: string;
     sizes: Array<{ size: string; quantity?: number }>;
     colors: Array<{ name: string; hex?: string }>;
   };
@@ -217,6 +218,7 @@ export default function MyOrdersPage() {
               const returnFlowStatuses = ['RETURN_REQUESTED','RETURN_APPROVED','RETURNED','EXCHANGE_REQUESTED','EXCHANGE_APPROVED','EXCHANGED'];
               const inReturnFlow = returnFlowStatuses.includes(order.status);
               const canReturn = !isReplacement && order.status === 'DELIVERED' && !order.returnRequest && !inReturnFlow && withinReturnWindow;
+              const hasSaree = order.items.some(item => item.product.category?.toLowerCase().includes('saree'));
               const rCfg = order.returnRequest ? (RETURN_STATUS_CONFIG[order.returnRequest.status] ?? RETURN_STATUS_CONFIG['PENDING']) : null;
 
               return (
@@ -371,8 +373,8 @@ export default function MyOrdersPage() {
                         </button>
                       )}
 
-                      {/* Exchange */}
-                      {canReturn && (
+                      {/* Exchange — hidden for sarees (each is a unique, single-piece item) */}
+                      {canReturn && !hasSaree && (
                         <button
                           onClick={() => { setReturnModalType('EXCHANGE'); setReturnModalOrder(order); }}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-xs font-medium"

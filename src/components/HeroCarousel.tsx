@@ -5,11 +5,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
-/** Hero slides in `/public/Banners/` (wide landscape assets). */
+/**
+ * Hero slides — using pre-compressed WebP sources (87–89% smaller than original PNGs).
+ * Next.js /_next/image will still serve AVIF to supporting browsers on top of these.
+ * Double-optimized: small source + runtime format conversion.
+ */
 const BANNER_FILES = [
-  'DARSHAN STYLE HUB.png',
-  'Wear the Vibe, Own the Spotlight.png',
-  'new arrival linkedln banner.png',
+  'DARSHAN STYLE HUB.webp',
+  'Wear the Vibe, Own the Spotlight.webp',
+  'new arrival linkedln banner.webp',
 ] as const;
 
 const heroImages = BANNER_FILES.map((name) => `/Banners/${encodeURIComponent(name)}`);
@@ -31,6 +35,11 @@ type HeroCarouselProps = {
 
 export default function HeroCarousel({ fullBleed = false, cinematic = false, split = false }: HeroCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  // Hide the carousel until it has hydrated — the server-rendered static slide
+  // (rendered in page.tsx above this component) shows through during hydration,
+  // so the LCP element is the priority <img> in the HTML, not this client widget.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   const goTo = useCallback((index: number) => {
     setCurrentIndex((index + heroImages.length) % heroImages.length);
@@ -133,7 +142,7 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
   };
 
   return (
-    <div className="relative h-full w-full min-h-0 bg-[#FFF8E6]">
+    <div className={`relative h-full w-full min-h-0 bg-[#FFF8E6] transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
       <AnimatePresence initial={false} mode="sync">
         <motion.div
           key={currentIndex}

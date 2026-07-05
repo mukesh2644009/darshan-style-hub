@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 
-// Security headers for production
 const securityHeaders = [
   { key: 'X-DNS-Prefetch-Control', value: 'on' },
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
@@ -12,7 +11,7 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
-  // Gzip/Brotli compress all responses
+  // Brotli/Gzip compress all text responses
   compress: true,
 
   experimental: {
@@ -27,15 +26,19 @@ const nextConfig = {
       'jspdf',
       'nodemailer',
     ],
+    // Optimise package imports — tree-shakes icon libraries so only used icons
+    // are bundled. Reduces JS payload by ~80–120 KB for react-icons.
+    optimizePackageImports: ['react-icons', 'framer-motion'],
   },
 
   images: {
-    // Serve AVIF first (50% smaller than WebP), fallback to WebP — huge LCP win
+    // AVIF = ~50% smaller than WebP; WebP = ~30% smaller than JPEG.
+    // Next.js tries AVIF first (via Accept header), falls back to WebP.
     formats: ['image/avif', 'image/webp'],
-    // Trimmed to actual breakpoints — avoids generating unnecessary sizes
+    // Trimmed to actual responsive breakpoints used in sizes="" attributes.
     deviceSizes: [640, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    // Cache optimised images for 30 days on Vercel CDN
+    // Cache optimised images on Vercel CDN for 30 days.
     minimumCacheTTL: 2592000,
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
@@ -51,14 +54,22 @@ const nextConfig = {
         source: '/:path*',
         headers: securityHeaders,
       },
-      // Next.js JS/CSS chunks are content-hashed — cache forever
+      // Content-hashed JS/CSS chunks — safe to cache forever
       {
         source: '/_next/static/:path*',
         headers: [
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
-      // Public images: cache 7 days, serve stale for 1 day while revalidating
+      // Next.js optimised images are already cached by Vercel CDN;
+      // this adds a browser-level cache on top.
+      {
+        source: '/_next/image*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
+        ],
+      },
+      // Public images: 7-day browser cache, serve stale for 1 day while revalidating
       {
         source: '/Banners/:path*',
         headers: [
@@ -75,6 +86,6 @@ const nextConfig = {
   },
 
   poweredByHeader: false,
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;

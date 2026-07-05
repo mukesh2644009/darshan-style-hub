@@ -57,6 +57,8 @@ export async function getProducts(filters?: {
   featured?: boolean;
   newArrival?: boolean;
   search?: string;
+  /** Max rows to return — always set this on the homepage to avoid full-table scans */
+  take?: number;
 }): Promise<Product[]> {
   const where: any = {};
 
@@ -90,6 +92,7 @@ export async function getProducts(filters?: {
       { featured: 'desc' },
       { createdAt: 'desc' },
     ],
+    ...(filters?.take ? { take: filters.take } : {}),
   });
 
   return products.map(transformProduct);

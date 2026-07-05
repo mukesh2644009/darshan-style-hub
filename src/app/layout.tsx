@@ -60,6 +60,23 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${outfit.variable} ${playfair.variable}`}>
       <head>
+        {/*
+          Resource hints — tell the browser to open TCP/TLS connections early.
+          preconnect = full handshake (use for origins you WILL load from).
+          dns-prefetch = DNS only (use as fallback for older browsers).
+
+          Impact: saves 100–300 ms per third-party origin on slow 4G.
+        */}
+        {/* Google Fonts CDN (fonts are loaded by next/font, but preconnect helps font-display swap) */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Meta Pixel */}
+        <link rel="preconnect" href="https://connect.facebook.net" />
+        <link rel="dns-prefetch" href="https://www.facebook.com" />
+        {/* Google Analytics */}
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        {/* Razorpay */}
+        <link rel="preconnect" href="https://checkout.razorpay.com" />
         <meta name="facebook-domain-verification" content="qy5yj0z1grhtj55l2r97bdlf8sofiw" />
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         <Script id="meta-pixel" strategy="afterInteractive">

@@ -100,7 +100,6 @@ export default async function Home() {
                 alt="Darshan Style Hub — designer suits, co ord sets & ethnic wear from Jaipur"
                 fill
                 priority
-                fetchPriority="high"
                 sizes="100vw"
                 quality={75}
                 className="object-contain object-center lg:object-cover lg:object-bottom [backface-visibility:hidden]"
@@ -159,17 +158,23 @@ export default async function Home() {
       {/* Categories — Saree banner + 4 category cards */}
       <section className="py-12 sm:py-16 bg-[#FFF8E6]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <AnimatedSection className="text-center mb-8 sm:mb-10">
+          {/*
+            NO AnimatedSection here — the heading and Sarees banner are above the fold
+            on most mobile viewports. AnimatedSection starts at opacity:0 and requires
+            JS + IntersectionObserver to become visible, which makes it the LCP element.
+            Using a plain div keeps it instantly visible from the server-rendered HTML.
+          */}
+          <div className="text-center mb-8 sm:mb-10">
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
               Shop by Category
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base">
               Sarees, suits, co ord sets, kurtis & tops — pick a style and explore
             </p>
-          </AnimatedSection>
+          </div>
 
-          {/* Saree Banner */}
-          <AnimatedSection className="mb-8 sm:mb-10 max-w-5xl mx-auto">
+          {/* Saree Banner — priority because it is the LCP element on mobile viewports */}
+          <div className="mb-8 sm:mb-10 max-w-5xl mx-auto">
             <Link
               href={featuredCategory.href}
               className="group relative block w-full aspect-[21/9] sm:aspect-[3/1] rounded-2xl overflow-hidden border-2 border-gray-600 shadow-md ring-1 ring-gray-400/70 hover:border-gray-700 hover:ring-gray-500/80 hover:shadow-xl transition-all duration-300"
@@ -178,17 +183,20 @@ export default async function Home() {
                 src={featuredCategory.image}
                 alt={featuredCategory.alt}
                 fill
+                priority
+                fetchPriority="high"
                 sizes="(max-width: 640px) 95vw, (max-width: 1024px) 90vw, 1100px"
                 quality={75}
                 className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
               />
             </Link>
-          </AnimatedSection>
+          </div>
 
           {/* 4 Category Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10 max-w-5xl mx-auto">
             {shopCategoryCircles.map((item, index) => (
-              <AnimatedSection key={item.href} delay={0.05 * (index + 1)} className="w-full">
+              // Plain div — no AnimatedSection so images are visible immediately for LCP
+              <div key={item.href} className="w-full">
                 <Link
                   href={item.href}
                   className="group flex flex-col items-center gap-3 sm:gap-3.5 w-full"
@@ -208,10 +216,10 @@ export default async function Home() {
                     </div>
                   </div>
                   <span className="text-center text-sm sm:text-base font-semibold text-gray-800 group-hover:text-primary-600 transition-colors max-w-full px-1 leading-tight">
-                    {item.label}
-                  </span>
-                </Link>
-              </AnimatedSection>
+                  {item.label}
+                </span>
+              </Link>
+            </div>
             ))}
           </div>
         </div>

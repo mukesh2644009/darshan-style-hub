@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FiFilter, FiX, FiChevronDown, FiSearch } from 'react-icons/fi';
 import ProductCard from '@/components/ProductCard';
 import Breadcrumb from '@/components/Breadcrumb';
 import { Product } from '@/lib/products';
 
-export default function ProductsPage() {
+function ProductsContent() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get('category');
   const searchParam = searchParams.get('search') || '';
@@ -593,5 +593,13 @@ export default function ProductsPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense>
+      <ProductsContent />
+    </Suspense>
   );
 }

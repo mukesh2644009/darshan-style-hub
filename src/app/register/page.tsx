@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { FiUser, FiMail, FiPhone, FiLock, FiLoader, FiAlertCircle, FiEye, FiEyeOff } from 'react-icons/fi';
@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import { validateEmail } from '@/lib/validation';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
 
-export default function RegisterPage() {
+function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { register, isAuthenticated, checkAuth } = useAuthStore();
@@ -215,3 +215,10 @@ export default function RegisterPage() {
   );
 }
 
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterContent />
+    </Suspense>
+  );
+}

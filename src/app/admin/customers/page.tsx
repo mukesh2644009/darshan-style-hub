@@ -162,13 +162,18 @@ export default async function CustomersPage() {
                         })}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {customer.role !== 'ADMIN' && (
-                          <DeleteCustomerButton
-                            customerId={customer.id}
-                            customerName={customer.name || 'Unnamed'}
-                            orderCount={customer.orders.length}
-                          />
-                        )}
+                        {customer.role !== 'ADMIN' && (() => {
+                          const activeStatuses = ['SHIPPED', 'DELIVERED', 'RETURN_REQUESTED', 'RETURN_APPROVED', 'RETURNED', 'EXCHANGE_REQUESTED', 'EXCHANGE_APPROVED', 'EXCHANGED'];
+                          const hasActiveOrders = customer.orders.some((o: any) => activeStatuses.includes(o.status));
+                          return (
+                            <DeleteCustomerButton
+                              customerId={customer.id}
+                              customerName={customer.name || 'Unnamed'}
+                              orderCount={customer.orders.length}
+                              hasActiveOrders={hasActiveOrders}
+                            />
+                          );
+                        })()}
                       </td>
                     </tr>
                   );

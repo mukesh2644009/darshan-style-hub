@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { FiAlertCircle, FiLoader, FiMail, FiMapPin, FiPhone, FiUser, FiX } from 'react-icons/fi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
+import { useCartStore } from '@/store/cartStore';
 
 interface QuickSignupModalProps {
   isOpen: boolean;
@@ -23,6 +24,24 @@ type ExistingProfile = {
 
 export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSignupModalProps) {
   const { checkAuth } = useAuthStore();
+  const cartItems = useCartStore((s) => s.items);
+  const getTotalPrice = useCartStore((s) => s.getTotalPrice);
+
+  // Save the cart for abandoned-cart email recovery (fire-and-forget)
+  const saveAbandonedCart = (customerEmail: string, customerName: string, customerPhone: string) => {
+    if (!customerEmail.trim() || cartItems.length === 0) return;
+    fetch('/api/abandoned-cart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: customerEmail.trim(),
+        name: customerName.trim() || undefined,
+        phone: customerPhone.trim() || undefined,
+        items: cartItems,
+        total: getTotalPrice(),
+      }),
+    }).catch(() => {});
+  };
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -79,6 +98,8 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
   };
 
   const handleClose = () => {
+    // If they typed an email but are closing without submitting, still save the cart
+    saveAbandonedCart(email, name, phone);
     resetForm();
     onClose();
   };
@@ -101,6 +122,9 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
       setError('Enter a valid 6-digit pincode.');
       return;
     }
+
+    // Save abandoned cart before login attempt so reminders work even if login fails
+    saveAbandonedCart(email, name, phone);
 
     setLoading(true);
     try {

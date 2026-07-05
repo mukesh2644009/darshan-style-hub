@@ -20,8 +20,6 @@ const playfair = Playfair_Display({
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export const metadata: Metadata = {
@@ -63,13 +61,6 @@ export default function RootLayout({
     <html lang="en" className={`${outfit.variable} ${playfair.variable}`}>
       <head>
         <meta name="facebook-domain-verification" content="qy5yj0z1grhtj55l2r97bdlf8sofiw" />
-        {/* Preload the first hero banner — this is the LCP element on mobile */}
-        <link
-          rel="preload"
-          as="image"
-          href="/Banners/DARSHAN%20STYLE%20HUB.png"
-          fetchPriority="high"
-        />
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         <Script id="meta-pixel" strategy="afterInteractive">
           {`

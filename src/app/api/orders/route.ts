@@ -245,13 +245,15 @@ export async function POST(request: Request) {
 
     // Mark any abandoned cart for this email as recovered
     if (shippingEmail) {
-      prisma.abandonedCart.updateMany({
+      (prisma as any).abandonedCart.updateMany({
         where: { email: shippingEmail.toLowerCase().trim(), status: 'PENDING' },
         data: { status: 'RECOVERED', recoveredAt: new Date() },
       }).catch(() => {});
     }
 
-    // Send order confirmation emails
+    // For COD orders: send confirmation + award loyalty points immediately (payment is on delivery).
+    // For UPI/Razorpay: do NOT send emails or award points here — the order is PENDING payment.
+    // All of that happens in /api/razorpay/verify after the payment is successfully confirmed.
     const customerEmail = shippingEmail || (user?.email?.endsWith('@darshan.local') ? null : user?.email);
     const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub.business@gmail.com';
     const fullAddress = `${shippingAddress}, ${shippingCity}, ${shippingState} - ${shippingPincode}`;
@@ -263,21 +265,42 @@ export async function POST(request: Request) {
       color: item.color,
     }));
 
-    // Must await all notifications before returning — Vercel serverless
-    // terminates the function once the response is sent, killing any
-    // in-flight promises that haven't resolved yet.
-    try {
-      const { sendOrderConfirmationEmail } = await import('@/lib/email');
-      const { sendOrderWhatsAppNotification } = await import('@/lib/whatsapp');
+    let loyaltyPointsEarned = 0;
 
-      const emailPaymentStatus: 'PENDING' | 'PAID' | 'FAILED' = 'PENDING';
+    if (isCod) {
+      // Must await all notifications before returning — Vercel serverless
+      // terminates the function once the response is sent.
+      try {
+        const { sendOrderConfirmationEmail } = await import('@/lib/email');
+        const { sendOrderWhatsAppNotification } = await import('@/lib/whatsapp');
 
-      const emailPromises: Promise<unknown>[] = [];
+        const emailPromises: Promise<unknown>[] = [];
 
-      if (customerEmail) {
+        if (customerEmail) {
+          emailPromises.push(
+            sendOrderConfirmationEmail({
+              to: customerEmail,
+              customerName: shippingName,
+              orderId: order.id,
+              total: order.total,
+              subtotal: order.subtotal,
+              shipping: order.shipping,
+              discount: order.discount,
+              items: emailItems,
+              shippingAddress: fullAddress,
+              shippingPhone: shippingPhone,
+              paymentMethod,
+              paymentStatus: 'PENDING',
+              orderDate: order.createdAt,
+            }).catch((err: unknown) => {
+              console.error('Failed to send customer order email:', err);
+            })
+          );
+        }
+
         emailPromises.push(
           sendOrderConfirmationEmail({
-            to: customerEmail,
+            to: adminEmail,
             customerName: shippingName,
             orderId: order.id,
             total: order.total,
@@ -287,103 +310,84 @@ export async function POST(request: Request) {
             items: emailItems,
             shippingAddress: fullAddress,
             shippingPhone: shippingPhone,
+            shippingEmail: customerEmail || undefined,
             paymentMethod,
-            paymentStatus: emailPaymentStatus,
+            paymentStatus: 'PENDING',
+            isAdminCopy: true,
             orderDate: order.createdAt,
           }).catch((err: unknown) => {
-            console.error('Failed to send customer order email:', err);
+            console.error('Failed to send admin order email:', err);
           })
         );
+
+        emailPromises.push(
+          sendOrderWhatsAppNotification({
+            orderId: order.id,
+            customerName: shippingName,
+            customerPhone: shippingPhone,
+            customerEmail: customerEmail || undefined,
+            items: emailItems,
+            total: order.total,
+            paymentMethod,
+            shippingAddress: fullAddress,
+          }).catch((err: unknown) => {
+            console.error('Failed to send WhatsApp notification:', err);
+          })
+        );
+
+        await Promise.allSettled(emailPromises);
+      } catch (notificationError) {
+        console.error('Notification service error:', notificationError);
       }
 
-      emailPromises.push(
-        sendOrderConfirmationEmail({
-          to: adminEmail,
-          customerName: shippingName,
-          orderId: order.id,
-          total: order.total,
-          subtotal: order.subtotal,
-          shipping: order.shipping,
-          discount: order.discount,
-          items: emailItems,
-          shippingAddress: fullAddress,
-          shippingPhone: shippingPhone,
-          shippingEmail: customerEmail || undefined,
-          paymentMethod,
-          paymentStatus: emailPaymentStatus,
-          isAdminCopy: true,
-          orderDate: order.createdAt,
-        }).catch((err: unknown) => {
-          console.error('Failed to send admin order email:', err);
-        })
-      );
+      // Deduct redeemed loyalty points (COD only — UPI deduction happens in verify endpoint)
+      if (user && validatedPointsToRedeem > 0) {
+        try {
+          await (prisma as any).$transaction([
+            (prisma as any).user.update({
+              where: { id: user.id },
+              data: { loyaltyPoints: { decrement: validatedPointsToRedeem } },
+            }),
+            (prisma as any).loyaltyTransaction.create({
+              data: {
+                userId: user.id,
+                points: -validatedPointsToRedeem,
+                type: 'REDEEM',
+                description: `Redeemed for order #${order.id.slice(-8).toUpperCase()} (₹${pointsDiscount} off)`,
+                orderId: order.id,
+              },
+            }),
+          ]);
+        } catch (redeemError) {
+          console.error('Points deduction failed (non-critical):', redeemError);
+        }
+      }
 
-      emailPromises.push(
-        sendOrderWhatsAppNotification({
-          orderId: order.id,
-          customerName: shippingName,
-          customerPhone: shippingPhone,
-          customerEmail: customerEmail || undefined,
-          items: emailItems,
-          total: order.total,
-          paymentMethod,
-          shippingAddress: fullAddress,
-        }).catch((err: unknown) => {
-          console.error('Failed to send WhatsApp notification:', err);
-        })
-      );
-
-      await Promise.allSettled(emailPromises);
-    } catch (notificationError) {
-      console.error('Notification service error:', notificationError);
-    }
-
-    // Deduct redeemed loyalty points
-    if (user && validatedPointsToRedeem > 0) {
-      try {
-        await (prisma as any).$transaction([
-          (prisma as any).user.update({
-            where: { id: user.id },
-            data: { loyaltyPoints: { decrement: validatedPointsToRedeem } },
-          }),
-          (prisma as any).loyaltyTransaction.create({
-            data: {
-              userId: user.id,
-              points: -validatedPointsToRedeem,
-              type: 'REDEEM',
-              description: `Redeemed for order #${order.id.slice(-8).toUpperCase()} (₹${pointsDiscount} off)`,
-              orderId: order.id,
-            },
-          }),
-        ]);
-      } catch (redeemError) {
-        console.error('Points deduction failed (non-critical):', redeemError);
+      // Award loyalty points for COD orders (1 point per ₹10 spent)
+      loyaltyPointsEarned = user ? Math.floor(total / 10) : 0;
+      if (user && loyaltyPointsEarned > 0) {
+        try {
+          await (prisma as any).$transaction([
+            (prisma as any).user.update({
+              where: { id: user.id },
+              data: { loyaltyPoints: { increment: loyaltyPointsEarned } },
+            }),
+            (prisma as any).loyaltyTransaction.create({
+              data: {
+                userId: user.id,
+                points: loyaltyPointsEarned,
+                type: 'EARN_ORDER',
+                description: `Earned for order #${order.id.slice(-8).toUpperCase()}`,
+                orderId: order.id,
+              },
+            }),
+          ]);
+        } catch (loyaltyError) {
+          console.error('Loyalty points award failed (non-critical):', loyaltyError);
+        }
       }
     }
-
-    // Award loyalty points for logged-in users (1 point per ₹10 spent, on actual amount paid)
-    const loyaltyPointsEarned = user ? Math.floor(total / 10) : 0;
-    if (user && loyaltyPointsEarned > 0) {
-      try {
-        await (prisma as any).$transaction([
-          (prisma as any).user.update({
-            where: { id: user.id },
-            data: { loyaltyPoints: { increment: loyaltyPointsEarned } },
-          }),
-          (prisma as any).loyaltyTransaction.create({
-            data: {
-              userId: user.id,
-              points: loyaltyPointsEarned,
-              type: 'EARN_ORDER',
-              description: `Earned for order #${order.id.slice(-8).toUpperCase()}`,
-              orderId: order.id,
-            },
-          }),
-        ]);
-      } catch (loyaltyError) {
-        console.error('Loyalty points award failed (non-critical):', loyaltyError);
-      }
-    }
+    // UPI orders: no emails, no loyalty points — all deferred to /api/razorpay/verify
 
     return NextResponse.json({
       ...order,

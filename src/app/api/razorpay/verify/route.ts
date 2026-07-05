@@ -27,68 +27,142 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Payment verification failed' }, { status: 400 });
     }
 
+    let loyaltyPointsEarned = 0;
+
     if (orderId) {
-      // Update order payment status
+      // Update order: mark as CONFIRMED + PAID
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
         data: {
+          status: 'CONFIRMED',
           paymentStatus: 'PAID',
           paymentMethod: 'UPI (Razorpay)',
           razorpayPaymentId: razorpay_payment_id,
         },
         include: {
+          items: {
+            include: { product: { select: { name: true } } },
+          },
           user: {
-            select: {
-              email: true,
-            },
+            select: { id: true, email: true, loyaltyPoints: true },
           },
         },
       });
 
-      // Await emails before returning — serverless functions terminate after response
+      const customerEmail = user.email || updatedOrder.user?.email;
+      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub.business@gmail.com';
+      const fullAddress = `${updatedOrder.shippingAddress}, ${updatedOrder.shippingCity}, ${updatedOrder.shippingState} - ${updatedOrder.shippingPincode}`;
+      const emailItems = updatedOrder.items.map((item) => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        price: item.price,
+        size: item.size,
+        color: item.color,
+      }));
+
+      // Send full order confirmation emails now that payment is confirmed
       try {
-        const { sendPaymentConfirmationEmail } = await import('@/lib/email');
-        const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub.business@gmail.com';
+        const { sendOrderConfirmationEmail } = await import('@/lib/email');
+        const { sendOrderWhatsAppNotification } = await import('@/lib/whatsapp');
 
         const emailPromises: Promise<unknown>[] = [];
 
-        const customerEmail = user.email || updatedOrder.user?.email;
-        if (customerEmail) {
+        if (customerEmail && !customerEmail.endsWith('@darshan.local')) {
           emailPromises.push(
-            sendPaymentConfirmationEmail({
+            sendOrderConfirmationEmail({
               to: customerEmail,
               customerName: updatedOrder.shippingName,
               orderId: orderId,
               total: updatedOrder.total,
-              paymentId: razorpay_payment_id,
+              subtotal: updatedOrder.subtotal,
+              shipping: updatedOrder.shipping,
+              discount: updatedOrder.discount,
+              items: emailItems,
+              shippingAddress: fullAddress,
+              shippingPhone: updatedOrder.shippingPhone,
+              paymentMethod: 'UPI (Razorpay)',
+              paymentStatus: 'PAID',
+              orderDate: updatedOrder.createdAt,
             }).catch((err: unknown) => {
-              console.error('Failed to send customer payment confirmation:', err);
+              console.error('Failed to send customer order confirmation:', err);
             })
           );
         }
 
         emailPromises.push(
-          sendPaymentConfirmationEmail({
+          sendOrderConfirmationEmail({
             to: adminEmail,
             customerName: updatedOrder.shippingName,
             orderId: orderId,
             total: updatedOrder.total,
-            paymentId: razorpay_payment_id,
+            subtotal: updatedOrder.subtotal,
+            shipping: updatedOrder.shipping,
+            discount: updatedOrder.discount,
+            items: emailItems,
+            shippingAddress: fullAddress,
+            shippingPhone: updatedOrder.shippingPhone,
+            shippingEmail: (customerEmail && !customerEmail.endsWith('@darshan.local')) ? customerEmail : undefined,
+            paymentMethod: 'UPI (Razorpay)',
+            paymentStatus: 'PAID',
             isAdminCopy: true,
+            orderDate: updatedOrder.createdAt,
           }).catch((err: unknown) => {
-            console.error('Failed to send admin payment confirmation:', err);
+            console.error('Failed to send admin order notification:', err);
+          })
+        );
+
+        emailPromises.push(
+          sendOrderWhatsAppNotification({
+            orderId: orderId,
+            customerName: updatedOrder.shippingName,
+            customerPhone: updatedOrder.shippingPhone,
+            customerEmail: (customerEmail && !customerEmail.endsWith('@darshan.local')) ? customerEmail : undefined,
+            items: emailItems,
+            total: updatedOrder.total,
+            paymentMethod: 'UPI (Razorpay)',
+            shippingAddress: fullAddress,
+          }).catch((err: unknown) => {
+            console.error('Failed to send WhatsApp notification:', err);
           })
         );
 
         await Promise.allSettled(emailPromises);
       } catch (emailError) {
-        console.error('Email service not available:', emailError);
+        console.error('Email/WhatsApp service error:', emailError);
+      }
+
+      // Award loyalty points now that payment is confirmed (1 point per ₹10)
+      const orderUser = updatedOrder.user;
+      if (orderUser) {
+        loyaltyPointsEarned = Math.floor(updatedOrder.total / 10);
+        if (loyaltyPointsEarned > 0) {
+          try {
+            await (prisma as any).$transaction([
+              (prisma as any).user.update({
+                where: { id: orderUser.id },
+                data: { loyaltyPoints: { increment: loyaltyPointsEarned } },
+              }),
+              (prisma as any).loyaltyTransaction.create({
+                data: {
+                  userId: orderUser.id,
+                  points: loyaltyPointsEarned,
+                  type: 'EARN_ORDER',
+                  description: `Earned for order #${orderId.slice(-8).toUpperCase()}`,
+                  orderId: orderId,
+                },
+              }),
+            ]);
+          } catch (loyaltyError) {
+            console.error('Loyalty points award failed (non-critical):', loyaltyError);
+          }
+        }
       }
     }
 
     return NextResponse.json({
       success: true,
       paymentId: razorpay_payment_id,
+      loyaltyPointsEarned,
     });
   } catch (error) {
     console.error('Razorpay verify error:', error);

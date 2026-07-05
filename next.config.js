@@ -61,14 +61,6 @@ const nextConfig = {
           { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
         ],
       },
-      // Next.js optimised images are already cached by Vercel CDN;
-      // this adds a browser-level cache on top.
-      {
-        source: '/_next/image*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' },
-        ],
-      },
       // Public images: 7-day browser cache, serve stale for 1 day while revalidating
       {
         source: '/Banners/:path*',

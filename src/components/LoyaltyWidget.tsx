@@ -114,10 +114,6 @@ export default function LoyaltyWidget() {
             <FiGift size={13} className="text-primary-500 shrink-0" />
             <span>1 point for every ₹10 spent on orders</span>
           </div>
-          <div className="flex items-center gap-2">
-            <FiGift size={13} className="text-primary-500 shrink-0" />
-            <span>10 points bonus on your first prepaid order</span>
-          </div>
         </div>
       </div>
 

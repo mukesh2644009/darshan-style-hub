@@ -4,12 +4,14 @@ import { useState } from 'react';
 import { FiAlertCircle, FiLoader, FiMail, FiMapPin, FiPhone, FiUser, FiX } from 'react-icons/fi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthStore } from '@/store/authStore';
-import { useCartStore } from '@/store/cartStore';
+import { CartItem } from '@/store/cartStore';
 
 interface QuickSignupModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  cartItems?: CartItem[];
+  cartTotal?: number;
 }
 
 type ExistingProfile = {
@@ -22,10 +24,8 @@ type ExistingProfile = {
   pincode: string;
 };
 
-export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSignupModalProps) {
+export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems = [], cartTotal = 0 }: QuickSignupModalProps) {
   const { checkAuth } = useAuthStore();
-  const cartItems = useCartStore((s) => s.items);
-  const getTotalPrice = useCartStore((s) => s.getTotalPrice);
 
   // Save the cart for abandoned-cart email recovery (fire-and-forget)
   const saveAbandonedCart = (customerEmail: string, customerName: string, customerPhone: string) => {
@@ -33,12 +33,12 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess }: QuickSi
     fetch('/api/abandoned-cart', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+        body: JSON.stringify({
         email: customerEmail.trim(),
         name: customerName.trim() || undefined,
         phone: customerPhone.trim() || undefined,
         items: cartItems,
-        total: getTotalPrice(),
+        total: cartTotal,
       }),
     }).catch(() => {});
   };

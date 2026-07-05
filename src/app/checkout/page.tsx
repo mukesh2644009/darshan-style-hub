@@ -1201,6 +1201,8 @@ export default function CheckoutPage() {
           setShowSignupModal(false);
           checkAuth();
         }}
+        cartItems={items}
+        cartTotal={getTotalPrice()}
       />
     </div>
   );

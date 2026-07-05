@@ -48,7 +48,12 @@ export default async function OrdersPage() {
   const shipped = orders.filter(o => o.status === 'SHIPPED').length;
   const delivered = orders.filter(o => o.status === 'DELIVERED').length;
   const returns = orders.filter(o => ['RETURN_REQUESTED','EXCHANGE_REQUESTED'].includes(o.status)).length;
-  const revenue = orders.filter(o => o.status !== 'CANCELLED').reduce((s, o) => s + o.total, 0);
+  const revenue = orders.filter(o => {
+    if (o.status === 'CANCELLED') return false;
+    const isCod = o.paymentMethod === 'COD';
+    if (isCod) return o.status !== 'PENDING';
+    return o.paymentStatus === 'PAID';
+  }).reduce((s, o) => s + o.total, 0);
 
   const stats = [
     { label: 'Total Orders', value: total,   icon: FiShoppingBag,  color: 'from-primary-500 to-primary-600' },

@@ -40,8 +40,18 @@ async function getData() {
     categoryCounts[p.category] = (categoryCounts[p.category] || 0) + 1;
   }
 
-  const allOrders = await prisma.order.findMany({ select: { total: true, status: true, createdAt: true } });
-  const revenue = allOrders.filter(o => o.status !== 'CANCELLED').reduce((s, o) => s + o.total, 0);
+  const allOrders = await prisma.order.findMany({ select: { total: true, status: true, paymentStatus: true, paymentMethod: true, createdAt: true } });
+
+  // Only count revenue for genuinely completed/committed orders:
+  // - COD orders that are CONFIRMED or beyond (payment is on delivery — committed)
+  // - Online (Razorpay) orders where paymentStatus is PAID
+  const revenue = allOrders.filter(o => {
+    if (o.status === 'CANCELLED') return false;
+    const isCod = o.paymentMethod === 'COD';
+    if (isCod) return o.status !== 'PENDING'; // COD PENDING = not yet confirmed
+    return o.paymentStatus === 'PAID'; // online: only count after payment confirmed
+  }).reduce((s, o) => s + o.total, 0);
+
   const pending = allOrders.filter(o => o.status === 'PENDING').length;
 
   return { orders, productsCount, customersCount, revenue, categoryCounts, pendingReturns, pending, totalOrders: allOrders.length };

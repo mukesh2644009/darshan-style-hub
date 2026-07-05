@@ -1452,3 +1452,42 @@ export async function sendOrderDeliveredEmail(props: OrderDeliveredProps) {
     return { success: false };
   }
 }
+
+// Generic email sender that uses the same Resend → Gmail fallback as all other emails.
+// Used by abandoned cart recovery and other transactional emails.
+export async function sendTransactionalEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
+  const service = getEmailService();
+  if (!service || !to) return { success: false, error: 'Email not configured' };
+
+  // Try Resend first
+  if (service === 'resend') {
+    try {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const { error } = await resend.emails.send({
+        from: `${SHOP_NAME} <info@darshanstylehub.com>`,
+        to: [to],
+        subject,
+        html,
+      });
+      if (!error) return { success: true, via: 'resend' };
+      console.error('Resend transactional email error, trying Gmail:', error);
+    } catch (e) {
+      console.error('Resend failed, trying Gmail:', e);
+    }
+  }
+
+  // Gmail fallback
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    try {
+      const transporter = createGmailTransporter();
+      await transporter.sendMail({ from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`, to, subject, html });
+      return { success: true, via: 'gmail' };
+    } catch (e) {
+      console.error('Gmail transactional email failed:', e);
+      return { success: false, error: e instanceof Error ? e.message : 'gmail failed' };
+    }
+  }
+
+  return { success: false, error: 'All email services failed' };
+}

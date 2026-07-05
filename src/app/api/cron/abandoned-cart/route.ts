@@ -1,19 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import nodemailer from 'nodemailer';
 import { abandonedCartEmail } from '@/lib/abandoned-cart-email';
+import { sendTransactionalEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
-
-function createTransporter() {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
-  });
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -62,52 +52,45 @@ export async function GET(request: Request) {
       take: 50,
     });
 
-    const transporter = createTransporter();
-    const fromEmail = `"Darshan Style Hub™" <${process.env.GMAIL_USER}>`;
-
     for (const cart of firstReminders) {
-      try {
-        const items = cart.items as unknown as Parameters<typeof abandonedCartEmail>[0]['items'];
-        const { subject, html } = abandonedCartEmail({
-          name: cart.name,
-          items,
-          total: cart.total,
-          isSecondReminder: false,
-        });
+      const items = cart.items as unknown as Parameters<typeof abandonedCartEmail>[0]['items'];
+      const { subject, html } = abandonedCartEmail({
+        name: cart.name,
+        items,
+        total: cart.total,
+        isSecondReminder: false,
+      });
 
-        await transporter.sendMail({ from: fromEmail, to: cart.email, subject, html });
-
+      const result = await sendTransactionalEmail({ to: cart.email, subject, html });
+      if (result.success) {
         await prisma.abandonedCart.update({
           where: { id: cart.id },
           data: { reminderCount: 1, lastReminderAt: now },
         });
-
         sent++;
-      } catch (err) {
-        console.error(`Failed to send first reminder to ${cart.email}:`, err);
+      } else {
+        console.error(`Failed to send first reminder to ${cart.email}:`, result.error);
       }
     }
 
     for (const cart of secondReminders) {
-      try {
-        const items = cart.items as unknown as Parameters<typeof abandonedCartEmail>[0]['items'];
-        const { subject, html } = abandonedCartEmail({
-          name: cart.name,
-          items,
-          total: cart.total,
-          isSecondReminder: true,
-        });
+      const items = cart.items as unknown as Parameters<typeof abandonedCartEmail>[0]['items'];
+      const { subject, html } = abandonedCartEmail({
+        name: cart.name,
+        items,
+        total: cart.total,
+        isSecondReminder: true,
+      });
 
-        await transporter.sendMail({ from: fromEmail, to: cart.email, subject, html });
-
+      const result = await sendTransactionalEmail({ to: cart.email, subject, html });
+      if (result.success) {
         await prisma.abandonedCart.update({
           where: { id: cart.id },
           data: { reminderCount: 2, lastReminderAt: now },
         });
-
         sent++;
-      } catch (err) {
-        console.error(`Failed to send second reminder to ${cart.email}:`, err);
+      } else {
+        console.error(`Failed to send second reminder to ${cart.email}:`, result.error);
       }
     }
 

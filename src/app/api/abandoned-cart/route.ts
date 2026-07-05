@@ -29,6 +29,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Abandoned cart save error:', error);
-    return NextResponse.json({ success: false }, { status: 500 });
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'save failed' }, { status: 500 });
   }
 }

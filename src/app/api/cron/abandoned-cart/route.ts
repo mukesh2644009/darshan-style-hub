@@ -111,15 +111,19 @@ export async function GET(request: Request) {
       }
     }
 
+    const totalCarts = await prisma.abandonedCart.count();
+    const pendingCarts = await prisma.abandonedCart.count({ where: { status: 'PENDING' } });
+
     return NextResponse.json({
       success: true,
       sent,
       expired,
       firstReminders: firstReminders.length,
       secondReminders: secondReminders.length,
+      debug: { totalCartsInDb: totalCarts, pendingCarts },
     });
   } catch (error) {
     console.error('Abandoned cart cron error:', error);
-    return NextResponse.json({ error: 'Cron job failed' }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Cron job failed' }, { status: 500 });
   }
 }

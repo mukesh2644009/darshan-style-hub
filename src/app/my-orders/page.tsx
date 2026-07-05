@@ -93,6 +93,7 @@ export default function MyOrdersPage() {
   const [cancelling, setCancelling] = useState(false);
   const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(null);
   const [retryingPayment, setRetryingPayment] = useState<string | null>(null);
+  const [cancellingPending, setCancellingPending] = useState<string | null>(null);
   const [loyaltyBalance, setLoyaltyBalance] = useState<number | null>(null);
 
   useEffect(() => { checkAuth(); }, [checkAuth]);
@@ -211,6 +212,22 @@ export default function MyOrdersPage() {
       alert('Something went wrong. Please try again.');
     } finally {
       setRetryingPayment(null);
+    }
+  };
+
+  const handleEditPendingOrder = async (orderId: string) => {
+    setCancellingPending(orderId);
+    try {
+      // Cancel the pending unpaid order so it doesn't linger in DB
+      await fetch(`/api/my-orders/${orderId}`, { method: 'DELETE' });
+      // Cart items are still in store (clearCart only runs after successful payment)
+      // Take them straight to checkout to edit and re-place
+      router.push('/checkout');
+    } catch {
+      // Even if cancel fails, still go to checkout — order will stay as PENDING
+      router.push('/checkout');
+    } finally {
+      setCancellingPending(null);
     }
   };
 
@@ -365,22 +382,35 @@ export default function MyOrdersPage() {
 
                   {/* Payment pending banner — Razorpay order not yet paid */}
                   {canRetryPayment && (
-                    <div className="px-5 py-3 bg-amber-50 border-b border-amber-100 flex items-center justify-between gap-3">
+                    <div className="px-5 py-3 bg-amber-50 border-b border-amber-100 flex items-center justify-between gap-3 flex-wrap">
                       <div className="flex items-center gap-2">
                         <FiClock className="w-4 h-4 text-amber-500 shrink-0" />
-                        <p className="text-xs font-semibold text-amber-700">Payment pending — complete payment to confirm your order</p>
+                        <p className="text-xs font-semibold text-amber-700">Payment pending — pay now or edit your cart before paying</p>
                       </div>
-                      <button
-                        onClick={() => handleRetryPayment(order)}
-                        disabled={retryingPayment === order.id}
-                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700 transition-colors disabled:opacity-60"
-                      >
-                        {retryingPayment === order.id
-                          ? <FiLoader className="w-3 h-3 animate-spin" />
-                          : <FiCreditCard className="w-3 h-3" />
-                        }
-                        Pay Now
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => handleEditPendingOrder(order.id)}
+                          disabled={cancellingPending === order.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-300 bg-white text-amber-700 text-xs font-semibold hover:bg-amber-50 transition-colors disabled:opacity-60"
+                        >
+                          {cancellingPending === order.id
+                            ? <FiLoader className="w-3 h-3 animate-spin" />
+                            : <FiRotateCcw className="w-3 h-3" />
+                          }
+                          Edit Cart
+                        </button>
+                        <button
+                          onClick={() => handleRetryPayment(order)}
+                          disabled={retryingPayment === order.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700 transition-colors disabled:opacity-60"
+                        >
+                          {retryingPayment === order.id
+                            ? <FiLoader className="w-3 h-3 animate-spin" />
+                            : <FiCreditCard className="w-3 h-3" />
+                          }
+                          Pay Now
+                        </button>
+                      </div>
                     </div>
                   )}
 
@@ -482,19 +512,32 @@ export default function MyOrdersPage() {
                         </button>
                       )}
 
-                      {/* Pay Now — for pending UPI/Razorpay orders */}
+                      {/* Pay Now + Edit Cart — for pending UPI/Razorpay orders */}
                       {canRetryPayment && (
-                        <button
-                          onClick={() => handleRetryPayment(order)}
-                          disabled={retryingPayment === order.id}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary-300 bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors text-xs font-semibold disabled:opacity-60"
-                        >
-                          {retryingPayment === order.id
-                            ? <FiLoader className="w-3.5 h-3.5 animate-spin" />
-                            : <FiCreditCard className="w-3.5 h-3.5" />
-                          }
-                          {retryingPayment === order.id ? 'Opening…' : 'Pay Now'}
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleEditPendingOrder(order.id)}
+                            disabled={cancellingPending === order.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors text-xs font-medium disabled:opacity-60"
+                          >
+                            {cancellingPending === order.id
+                              ? <FiLoader className="w-3.5 h-3.5 animate-spin" />
+                              : <FiRotateCcw className="w-3.5 h-3.5" />
+                            }
+                            Edit Cart
+                          </button>
+                          <button
+                            onClick={() => handleRetryPayment(order)}
+                            disabled={retryingPayment === order.id}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary-300 bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors text-xs font-semibold disabled:opacity-60"
+                          >
+                            {retryingPayment === order.id
+                              ? <FiLoader className="w-3.5 h-3.5 animate-spin" />
+                              : <FiCreditCard className="w-3.5 h-3.5" />
+                            }
+                            {retryingPayment === order.id ? 'Opening…' : 'Pay Now'}
+                          </button>
+                        </>
                       )}
 
                       {/* Cancel */}

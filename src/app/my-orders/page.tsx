@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
+import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 import {
   FiPackage, FiShoppingBag, FiLoader, FiArrowLeft, FiTrash2,
   FiDownload, FiRotateCcw, FiAlertTriangle, FiX, FiTruck,
@@ -23,6 +25,7 @@ interface OrderItem {
     category: string;
     sizes: Array<{ size: string; quantity?: number }>;
     colors: Array<{ name: string; hex?: string }>;
+    images: Array<{ url: string }>;
   };
 }
 
@@ -394,8 +397,20 @@ export default function MyOrdersPage() {
                     {order.items.map((item) => (
                       <div key={item.id} className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3 min-w-0">
-                          <div className="w-9 h-9 rounded-lg bg-accent-100 flex items-center justify-center shrink-0 mt-0.5">
-                            <FiPackage className="w-4 h-4 text-primary-600" />
+                          <div className="relative w-12 h-14 rounded-lg overflow-hidden bg-accent-100 shrink-0">
+                            {item.product.images?.[0]?.url ? (
+                              <Image
+                                src={normalizeProductImageUrl(item.product.images[0].url) || '/products/logo.jpeg'}
+                                alt={item.product.name}
+                                fill
+                                unoptimized
+                                className="object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <FiPackage className="w-4 h-4 text-primary-400" />
+                              </div>
+                            )}
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-gray-900 leading-snug line-clamp-2">{item.product.name}</p>

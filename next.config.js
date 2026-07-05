@@ -15,9 +15,6 @@ const nextConfig = {
   compress: true,
 
   experimental: {
-    outputFileTracingExcludes: {
-      '*': ['./public/**/*'],
-    },
     serverComponentsExternalPackages: [
       '@prisma/client',
       'prisma',

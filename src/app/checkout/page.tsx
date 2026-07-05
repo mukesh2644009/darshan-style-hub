@@ -997,7 +997,7 @@ export default function CheckoutPage() {
                     className="flex gap-3 items-start"
                   >
                     {/* Thumbnail */}
-                    <div className="relative w-14 h-18 rounded-lg overflow-hidden flex-shrink-0">
+                    <div className="relative w-14 h-[72px] rounded-lg overflow-hidden flex-shrink-0">
                       <Image
                         src={normalizeProductImageUrl(item.product.images?.[0]) || '/products/logo.jpeg'}
                         alt={item.product.name}

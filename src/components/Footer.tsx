@@ -3,15 +3,11 @@ import { FiInstagram, FiFacebook, FiTwitter, FiYoutube, FiMail, FiPhone, FiMapPi
 import { FaWhatsapp } from 'react-icons/fa';
 import { buildDefaultStoreWhatsAppUrl } from '@/lib/whatsapp-customer';
 import PaymentBadges from '@/components/PaymentBadges';
-import NewsletterSection from '@/components/NewsletterSection';
-
 export default function Footer() {
   const footerWhatsAppHref = buildDefaultStoreWhatsAppUrl();
 
   return (
     <footer className="bg-accent-900 text-white">
-      {/* Newsletter */}
-      <NewsletterSection />
 
       {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

@@ -56,6 +56,7 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
   const [state, setState] = useState('');
   const [pincode, setPincode] = useState('');
   const [pincodeLoading, setPincodeLoading] = useState(false);
+  const [pincodeError, setPincodeError] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [profileLookupLoading, setProfileLookupLoading] = useState(false);
@@ -75,11 +76,19 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
     setExistingProfile(null);
     setLoading(false);
     setPincodeLoading(false);
+    setPincodeError('');
   };
 
   const handlePincodeChange = async (val: string) => {
     setPincode(val);
-    if (val.length !== 6 || !/^\d{6}$/.test(val)) return;
+    setPincodeError('');
+    if (val.length !== 6 || !/^\d{6}$/.test(val)) {
+      if (val.length > 0 && val.length < 6) {
+        setCity('');
+        setState('');
+      }
+      return;
+    }
     setPincodeLoading(true);
     try {
       const res = await fetch(`https://api.postalpincode.in/pincode/${val}`);
@@ -88,9 +97,13 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
       if (data?.[0]?.Status === 'Success' && po) {
         setCity(po.District || po.Name || '');
         setState(po.State || '');
+      } else {
+        setCity('');
+        setState('');
+        setPincodeError('Pincode not found. Please enter city & state manually.');
       }
     } catch {
-      // ignore, user can fill manually
+      setPincodeError('Could not verify pincode. Please fill city & state manually.');
     } finally {
       setPincodeLoading(false);
     }
@@ -290,12 +303,28 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
                         onChange={(e) => handlePincodeChange(e.target.value)}
                         placeholder="Pincode * (auto-fills city & state)"
                         maxLength={6}
-                        className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
+                        className={`w-full rounded-lg border px-4 py-2.5 pr-24 text-sm transition-colors focus:ring-2 ${
+                          pincodeError
+                            ? 'border-red-400 bg-red-50 focus:border-red-400 focus:ring-red-200'
+                            : city && state && pincode.length === 6
+                              ? 'border-green-400 bg-green-50 focus:border-green-400 focus:ring-green-200'
+                              : 'border-gray-300 focus:border-primary-500 focus:ring-primary-500'
+                        }`}
                       />
-                      {pincodeLoading && (
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">Fetching…</span>
-                      )}
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs">
+                        {pincodeLoading && <span className="text-gray-400">Fetching…</span>}
+                        {!pincodeLoading && pincodeError && <span className="text-red-500">✗ Invalid</span>}
+                        {!pincodeLoading && !pincodeError && city && state && pincode.length === 6 && (
+                          <span className="text-green-600">✓ Found</span>
+                        )}
+                      </span>
                     </div>
+                    {pincodeError && (
+                      <p className="flex items-center gap-1.5 text-xs text-red-600 -mt-1">
+                        <FiAlertCircle size={12} className="shrink-0" />
+                        {pincodeError}
+                      </p>
+                    )}
                     <div className="grid grid-cols-2 gap-3">
                       <input
                         type="text"

@@ -144,6 +144,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const [pincode, setPincode] = useState('');
   const [deliveryDate, setDeliveryDate] = useState<string | null>(null);
   const [pincodeError, setPincodeError] = useState('');
+  const [sizeNudge, setSizeNudge] = useState(false);
+  const [cartNudge, setCartNudge] = useState<string | null>(null);
+  const sizeRef = useRef<HTMLDivElement>(null);
   
   // Swipe handling for mobile
   const touchStartX = useRef<number>(0);
@@ -220,9 +223,20 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     openCart();
   };
 
+  const triggerSizeNudge = () => {
+    setSizeNudge(true);
+    sizeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => setSizeNudge(false), 1500);
+  };
+
+  const showCartNudge = (msg: string) => {
+    setCartNudge(msg);
+    setTimeout(() => setCartNudge(null), 3500);
+  };
+
   const handleAddToCart = () => {
     if (!selectedSize && product.category !== 'Sarees') {
-      alert('Please select a size');
+      triggerSizeNudge();
       return;
     }
 
@@ -235,9 +249,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     if (alreadyInCart + quantity > product.stock) {
       const remaining = Math.max(0, product.stock - alreadyInCart);
       if (remaining === 0) {
-        alert(`Sorry, you already have all available stock (${product.stock}) in your cart.`);
+        showCartNudge(`You already have all available stock (${product.stock}) in your cart.`);
       } else {
-        alert(`Only ${remaining} more available. You already have ${alreadyInCart} in your cart.`);
+        showCartNudge(`Only ${remaining} more available — you already have ${alreadyInCart} in your cart.`);
       }
       return;
     }
@@ -247,7 +261,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
   const handleOrderOnWhatsApp = () => {
     if (!selectedSize && product.category !== 'Sarees') {
-      alert('Please select a size');
+      triggerSizeNudge();
       return;
     }
 
@@ -478,20 +492,32 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
 
             {/* Size Selection — hidden for Sarees */}
             {product.category !== 'Sarees' && (
-            <div className="mb-6">
+            <div
+              ref={sizeRef}
+              className={`mb-6 rounded-xl p-3 -mx-3 transition-all duration-300 ${sizeNudge ? 'bg-red-50 ring-2 ring-red-300 animate-[shake_0.4s_ease-in-out]' : ''}`}
+            >
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-medium text-gray-900">Select Size</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-medium text-gray-900">Select Size</h3>
+                  {sizeNudge && (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-red-600 bg-red-100 px-2 py-0.5 rounded-full animate-pulse">
+                      ← Pick a size to continue
+                    </span>
+                  )}
+                </div>
                 <button type="button" onClick={() => setShowSizeGuide(true)} className="text-sm text-primary-600 hover:text-primary-700 underline">Size Guide</button>
               </div>
               <div className="flex flex-wrap gap-3">
                 {product.sizes.map((size) => (
                   <button
                     key={size}
-                    onClick={() => setSelectedSize(size)}
+                    onClick={() => { setSelectedSize(size); setSizeNudge(false); }}
                     className={`px-4 py-2 rounded-lg border-2 font-medium transition-all ${
                       selectedSize === size
                         ? 'border-primary-600 bg-primary-50 text-primary-700'
-                        : 'border-accent-300 hover:border-primary-400'
+                        : sizeNudge
+                          ? 'border-red-300 hover:border-primary-400 text-red-700'
+                          : 'border-accent-300 hover:border-primary-400'
                     }`}
                   >
                     {size}
@@ -585,6 +611,17 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 )}
               </div>
             </div>
+
+            {/* Stock limit nudge toast */}
+            {cartNudge && (
+              <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm animate-[fadeIn_0.25s_ease-out]">
+                <span className="mt-0.5 text-base">⚠️</span>
+                <p>{cartNudge}</p>
+                <button onClick={() => setCartNudge(null)} className="ml-auto shrink-0 text-amber-500 hover:text-amber-700 transition-colors">
+                  <FiX size={15} />
+                </button>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="space-y-2 sm:space-y-3 mb-6 sm:mb-8">

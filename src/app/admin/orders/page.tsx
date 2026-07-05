@@ -213,7 +213,10 @@ export default async function OrdersPage() {
                             labelUrl={order.labelUrl}
                             isFailedPayment={isFailedPayment}
                           />
-                          <DeleteOrderButton orderId={order.id} orderRef={order.id.slice(0, 8).toUpperCase()} />
+                          {/* Hide delete for shipped/delivered/return-flow orders to prevent accidental data loss */}
+                          {!['SHIPPED', 'DELIVERED', 'RETURN_REQUESTED', 'RETURN_APPROVED', 'RETURNED', 'EXCHANGE_REQUESTED', 'EXCHANGE_APPROVED', 'EXCHANGED'].includes(order.status) && (
+                            <DeleteOrderButton orderId={order.id} orderRef={order.id.slice(0, 8).toUpperCase()} />
+                          )}
                         </div>
                       </td>
                     </tr>

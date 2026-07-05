@@ -3,9 +3,17 @@ import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-// Debug endpoint: GET ?test=true creates a dummy cart to verify DB writes work
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
+
+  // Fetch a specific cart by id (used by the recovery page)
+  const id = searchParams.get('id');
+  if (id) {
+    const cart = await prisma.abandonedCart.findUnique({ where: { id } });
+    if (!cart) return NextResponse.json({ error: 'not found' }, { status: 404 });
+    return NextResponse.json({ items: cart.items, total: cart.total });
+  }
+
   if (searchParams.get('test') !== 'true') {
     const total = await prisma.abandonedCart.count();
     return NextResponse.json({ totalCartsInDb: total });

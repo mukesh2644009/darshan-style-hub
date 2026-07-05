@@ -16,14 +16,18 @@ export function abandonedCartEmail({
   items,
   total,
   isSecondReminder = false,
+  cartId,
 }: {
   name?: string | null;
   items: CartItem[];
   total: number;
   isSecondReminder?: boolean;
+  cartId?: string;
 }): { subject: string; html: string } {
   const firstName = name?.split(' ')[0] || 'there';
-  const checkoutUrl = 'https://www.darshanstylehub.com/checkout';
+  const checkoutUrl = cartId
+    ? `https://www.darshanstylehub.com/recover-cart?id=${cartId}`
+    : 'https://www.darshanstylehub.com/checkout';
 
   const subject = isSecondReminder
     ? `⏰ Last chance! Your Darshan Style Hub cart is expiring`

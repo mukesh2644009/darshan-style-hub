@@ -59,6 +59,7 @@ export async function GET(request: Request) {
         items,
         total: cart.total,
         isSecondReminder: false,
+        cartId: cart.id,
       });
 
       const result = await sendTransactionalEmail({ to: cart.email, subject, html });
@@ -80,6 +81,7 @@ export async function GET(request: Request) {
         items,
         total: cart.total,
         isSecondReminder: true,
+        cartId: cart.id,
       });
 
       const result = await sendTransactionalEmail({ to: cart.email, subject, html });

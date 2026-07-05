@@ -13,6 +13,7 @@ interface CartState {
   items: CartItem[];
   isOpen: boolean;
   addItem: (product: Product, size: string, color: string) => void;
+  restoreCart: (items: CartItem[]) => void;
   removeItem: (productId: string, size: string, color: string) => void;
   updateQuantity: (productId: string, size: string, color: string, quantity: number) => void;
   clearCart: () => void;
@@ -48,6 +49,8 @@ export const useCartStore = create<CartState>()(
           });
         }
       },
+
+      restoreCart: (items) => set({ items }),
 
       removeItem: (productId, size, color) => {
         set({

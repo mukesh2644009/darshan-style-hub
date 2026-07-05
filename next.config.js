@@ -15,11 +15,8 @@ const nextConfig = {
   compress: true,
 
   experimental: {
-    // Exclude public/ assets from file-tracing — prevents micromatch stack overflow
-    // on Next.js 14.0.x when the public/ tree has many deeply-nested long-path files.
-    // (The original './public/**/*' had an invalid './' prefix that caused a build error.)
     outputFileTracingExcludes: {
-      '*': ['public/**'],
+      '*': ['./public/**/*'],
     },
     serverComponentsExternalPackages: [
       '@prisma/client',

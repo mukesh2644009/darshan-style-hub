@@ -118,7 +118,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                       alt={product.name}
                       fill
                       sizes="80px"
-                      unoptimized={primaryImage.startsWith('/products/')}
+                      quality={70}
                       className="object-cover object-top"
                     />
                   </div>

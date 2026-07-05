@@ -83,7 +83,9 @@ export async function GET() {
 
       // UTM parameters on every catalog product URL so GA4 attributes
       // Meta Catalog Sales traffic as "facebook / paid_social" instead of referral.
-      const productUrl = `${BASE}/products/${product.slug || product.id}?utm_source=facebook&utm_medium=paid_social&utm_campaign=catalog_sales&utm_content=${encodeURIComponent(product.slug || product.id)}`;
+      // {{site_source_name}} is a Meta macro that resolves to "fb", "ig", or "an"
+      // at click time — so GA4 can distinguish Facebook vs Instagram traffic.
+      const productUrl = `${BASE}/products/${product.slug || product.id}?utm_source={{site_source_name}}&utm_medium=paid_social&utm_campaign=catalog_sales&utm_content=${encodeURIComponent(product.slug || product.id)}`;
       const additionalImages = product.images.slice(1, 5).map(i => i.url).join(',');
 
       // Clean description - strip newlines for CSV

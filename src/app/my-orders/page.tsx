@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   FiPackage, FiShoppingBag, FiLoader, FiArrowLeft, FiTrash2,
   FiDownload, FiRotateCcw, FiAlertTriangle, FiX, FiTruck,
-  FiCheckCircle, FiClock, FiXCircle, FiMapPin, FiRefreshCw,
+  FiCheckCircle, FiClock, FiXCircle, FiMapPin, FiRefreshCw, FiCreditCard,
 } from 'react-icons/fi';
 import { useAuthStore } from '@/store/authStore';
 import ReturnRequestModal from '@/components/ReturnRequestModal';
@@ -89,6 +89,7 @@ export default function MyOrdersPage() {
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [downloadingInvoice, setDownloadingInvoice] = useState<string | null>(null);
+  const [retryingPayment, setRetryingPayment] = useState<string | null>(null);
 
   useEffect(() => { checkAuth(); }, [checkAuth]);
 
@@ -144,6 +145,63 @@ export default function MyOrdersPage() {
       alert('Could not download invoice. Please try again.');
     } finally {
       setDownloadingInvoice(null);
+    }
+  };
+
+  const handleRetryPayment = async (order: Order) => {
+    setRetryingPayment(order.id);
+    try {
+      const res = await fetch('/api/razorpay/retry-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        alert(data.error || 'Failed to initiate payment. Please try again.');
+        return;
+      }
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'Darshan Style Hub™',
+        description: 'Order Payment',
+        order_id: data.razorpayOrderId,
+        prefill: { name: order.shippingName, contact: order.shippingPhone },
+        theme: { color: '#9F580A' },
+        handler: async function (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) {
+          const verifyRes = await fetch('/api/razorpay/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              orderId: order.id,
+            }),
+          });
+          const verifyData = await verifyRes.json();
+          if (verifyData.success) {
+            fetchOrders(); // refresh the order list to show updated status
+          } else {
+            alert('Payment verification failed. Please contact support.');
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setRetryingPayment(null);
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } catch {
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setRetryingPayment(null);
     }
   };
 
@@ -211,6 +269,10 @@ export default function MyOrdersPage() {
               const isFailedPayment =
                 order.paymentMethod !== 'COD' &&
                 (order.paymentStatus === 'FAILED' || order.paymentStatus === 'PENDING');
+              const canRetryPayment =
+                order.paymentMethod?.includes('Razorpay') &&
+                order.paymentStatus === 'PENDING' &&
+                order.status === 'PENDING';
               const canCancel = !isReplacement && !isFailedPayment && ['PENDING', 'CONFIRMED'].includes(order.status);
               const daysSinceUpdate = (Date.now() - new Date(order.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
               // Return window: at least 1 day after delivery (item in hand), and within 7 days
@@ -265,8 +327,29 @@ export default function MyOrdersPage() {
                     )}
                   </div>
 
+                  {/* Payment pending banner — Razorpay order not yet paid */}
+                  {canRetryPayment && (
+                    <div className="px-5 py-3 bg-amber-50 border-b border-amber-100 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <FiClock className="w-4 h-4 text-amber-500 shrink-0" />
+                        <p className="text-xs font-semibold text-amber-700">Payment pending — complete payment to confirm your order</p>
+                      </div>
+                      <button
+                        onClick={() => handleRetryPayment(order)}
+                        disabled={retryingPayment === order.id}
+                        className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 text-white text-xs font-semibold hover:bg-primary-700 transition-colors disabled:opacity-60"
+                      >
+                        {retryingPayment === order.id
+                          ? <FiLoader className="w-3 h-3 animate-spin" />
+                          : <FiCreditCard className="w-3 h-3" />
+                        }
+                        Pay Now
+                      </button>
+                    </div>
+                  )}
+
                   {/* Transaction cancelled banner */}
-                  {isFailedPayment && (
+                  {isFailedPayment && !canRetryPayment && (
                     <div className="px-5 py-3 bg-red-50 border-b border-red-100 flex items-center gap-2">
                       <FiXCircle className="w-4 h-4 text-red-500 shrink-0" />
                       <p className="text-xs font-semibold text-red-600 uppercase tracking-wide">Transaction Cancelled — Payment not received</p>
@@ -348,6 +431,21 @@ export default function MyOrdersPage() {
                             : <FiDownload className="w-3.5 h-3.5" />
                           }
                           Invoice
+                        </button>
+                      )}
+
+                      {/* Pay Now — for pending UPI/Razorpay orders */}
+                      {canRetryPayment && (
+                        <button
+                          onClick={() => handleRetryPayment(order)}
+                          disabled={retryingPayment === order.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-primary-300 bg-primary-50 text-primary-700 hover:bg-primary-100 transition-colors text-xs font-semibold disabled:opacity-60"
+                        >
+                          {retryingPayment === order.id
+                            ? <FiLoader className="w-3.5 h-3.5 animate-spin" />
+                            : <FiCreditCard className="w-3.5 h-3.5" />
+                          }
+                          {retryingPayment === order.id ? 'Opening…' : 'Pay Now'}
                         </button>
                       )}
 

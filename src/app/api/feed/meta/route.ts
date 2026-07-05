@@ -81,7 +81,9 @@ export async function GET() {
       // Skip products with no image at all — Meta requires a valid image_link
       if (!primaryImage) continue;
 
-      const productUrl = `${BASE}/products/${product.slug || product.id}`;
+      // UTM parameters on every catalog product URL so GA4 attributes
+      // Meta Catalog Sales traffic as "facebook / paid_social" instead of referral.
+      const productUrl = `${BASE}/products/${product.slug || product.id}?utm_source=facebook&utm_medium=paid_social&utm_campaign=catalog_sales&utm_content=${encodeURIComponent(product.slug || product.id)}`;
       const additionalImages = product.images.slice(1, 5).map(i => i.url).join(',');
 
       // Clean description - strip newlines for CSV

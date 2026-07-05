@@ -350,7 +350,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 fill
                 className="object-cover object-top"
                 priority
-                unoptimized
+                fetchPriority="high"
+                quality={80}
+                sizes="(max-width: 1024px) 100vw, 50vw"
                 draggable={false}
               />
               {/* Discount badge - bottom on mobile to avoid covering face */}
@@ -423,7 +425,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                       src={normalizeProductImageUrl(image) || '/products/logo.jpeg'}
                       alt={`${product.name} ${index + 1}`}
                       fill
-                      unoptimized
+                      quality={60}
+                      sizes="80px"
                       className="object-cover object-top"
                     />
                   </button>

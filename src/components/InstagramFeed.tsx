@@ -160,8 +160,8 @@ export default function InstagramFeed() {
                   alt={post.caption}
                   fill
                   sizes="(max-width:640px) 33vw, (max-width:1024px) 25vw, 220px"
+                  quality={70}
                   className="object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                  unoptimized
                 />
 
                 {/* Hover overlay */}

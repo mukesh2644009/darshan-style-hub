@@ -55,7 +55,6 @@ export default function RecentlyViewed() {
                   alt={product.name}
                   fill
                   sizes="160px"
-                  unoptimized={img.startsWith('/products/')}
                   className="object-cover object-top transition-transform duration-300 group-hover:scale-105"
                 />
                 {discount > 0 && (

@@ -86,7 +86,6 @@ export default function CartSidebar() {
                           src={normalizeProductImageUrl(item.product.images?.[0]) || '/products/logo.jpeg'}
                           alt={item.product.name}
                           fill
-                          unoptimized
                           className="object-cover hover:scale-105 transition-transform duration-300"
                         />
                       </Link>

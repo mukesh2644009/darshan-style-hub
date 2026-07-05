@@ -433,7 +433,6 @@ export default function MyOrdersPage() {
                                 src={normalizeProductImageUrl(item.product.images[0].url) || '/products/logo.jpeg'}
                                 alt={item.product.name}
                                 fill
-                                unoptimized
                                 className="object-cover"
                               />
                             ) : (

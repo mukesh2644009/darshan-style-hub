@@ -187,7 +187,6 @@ export default function ComparePage() {
                   <Link href={`/products/${product.slug || product.id}`}>
                     <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-accent-100 mb-3 group">
                       <Image src={img} alt={product.name} fill sizes="200px"
-                        unoptimized={img.startsWith('/products/')}
                         className="object-cover object-top transition-transform duration-300 group-hover:scale-105" />
                       {discount > 0 && (
                         <span className="absolute top-2 left-2 bg-primary-600 text-white text-xs font-semibold px-2 py-0.5 rounded-full">

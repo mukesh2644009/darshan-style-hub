@@ -250,7 +250,6 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                             alt={product.name}
                             fill
                             sizes="64px"
-                            unoptimized={img.startsWith('/products/')}
                             className="object-cover object-top"
                           />
                           {discount > 0 && (

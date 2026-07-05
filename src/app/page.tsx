@@ -1,15 +1,18 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiArrowRight, FiTruck, FiRefreshCw, FiShield, FiHeadphones, FiDollarSign } from 'react-icons/fi';
+import { FiArrowRight, FiTruck, FiRefreshCw, FiShield, FiHeadphones } from 'react-icons/fi';
 import { FaMoneyBillWave } from 'react-icons/fa';
+import nextDynamic from 'next/dynamic';
 import ProductCard from '@/components/ProductCard';
 import HeroCarousel from '@/components/HeroCarousel';
 import AnimatedSection from '@/components/AnimatedSection';
-import RecentlyViewed from '@/components/RecentlyViewed';
-import SocialProof from '@/components/SocialProof';
-import Testimonials from '@/components/Testimonials';
-import InstagramFeed from '@/components/InstagramFeed';
 import { getFeaturedProducts, getProducts, type Product } from '@/lib/products';
+
+// Lazy-load below-fold sections — they are NOT part of LCP and don't need to block initial render
+const RecentlyViewed = nextDynamic(() => import('@/components/RecentlyViewed'), { ssr: false });
+const SocialProof = nextDynamic(() => import('@/components/SocialProof'));
+const Testimonials = nextDynamic(() => import('@/components/Testimonials'));
+const InstagramFeed = nextDynamic(() => import('@/components/InstagramFeed'));
 
 export const dynamic = 'force-dynamic';
 
@@ -146,6 +149,7 @@ export default async function Home() {
                 alt={featuredCategory.alt}
                 fill
                 sizes="(max-width: 640px) 95vw, (max-width: 1024px) 90vw, 1100px"
+                quality={75}
                 className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
               />
             </Link>
@@ -168,6 +172,7 @@ export default async function Home() {
                         alt={item.alt}
                         fill
                         sizes="(max-width: 640px) 42vw, (max-width: 1024px) 22vw, 260px"
+                        quality={70}
                         className="object-contain object-center p-1 sm:p-2 transition-transform duration-300 group-hover:scale-[1.02]"
                       />
                     </div>

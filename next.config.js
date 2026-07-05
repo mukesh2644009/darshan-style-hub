@@ -2,40 +2,19 @@
 
 // Security headers for production
 const securityHeaders = [
-  {
-    key: 'X-DNS-Prefetch-Control',
-    value: 'on'
-  },
-  {
-    key: 'Strict-Transport-Security',
-    value: 'max-age=63072000; includeSubDomains; preload'
-  },
-  {
-    key: 'X-XSS-Protection',
-    value: '1; mode=block'
-  },
-  {
-    key: 'X-Frame-Options',
-    value: 'SAMEORIGIN'
-  },
-  {
-    key: 'X-Content-Type-Options',
-    value: 'nosniff'
-  },
-  {
-    key: 'Referrer-Policy',
-    value: 'origin-when-cross-origin'
-  },
-  {
-    key: 'Permissions-Policy',
-    value: 'camera=(), microphone=(), geolocation=()'
-  }
+  { key: 'X-DNS-Prefetch-Control', value: 'on' },
+  { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+  { key: 'X-XSS-Protection', value: '1; mode=block' },
+  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
 ];
 
 const nextConfig = {
-  // Keep serverless traces small: `join(process.cwd(), 'public', …)` in API routes otherwise
-  // pulls the entire `public/` tree (~hundreds of MB) into the function zip (Vercel 250 MB cap).
-  // Static assets under `public/` are still deployed and served by the CDN; they are not removed from the site.
+  // Gzip/Brotli compress all responses
+  compress: true,
+
   experimental: {
     outputFileTracingExcludes: {
       '*': ['./public/**/*'],
@@ -51,39 +30,50 @@ const nextConfig = {
   },
 
   images: {
-    // Wider defaults help full-bleed hero banners stay sharp on large / high-DPR screens
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 2560, 3840],
+    // Serve AVIF first (50% smaller than WebP), fallback to WebP — huge LCP win
+    formats: ['image/avif', 'image/webp'],
+    // Trimmed to actual breakpoints — avoids generating unnecessary sizes
+    deviceSizes: [640, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Cache optimised images for 30 days on Vercel CDN
+    minimumCacheTTL: 2592000,
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.pexels.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'via.placeholder.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-      },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'images.pexels.com' },
+      { protocol: 'https', hostname: 'via.placeholder.com' },
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
     ],
   },
-  
-  // Add security headers to all routes
+
   async headers() {
     return [
       {
         source: '/:path*',
         headers: securityHeaders,
       },
+      // Next.js JS/CSS chunks are content-hashed — cache forever
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      // Public images: cache 7 days, serve stale for 1 day while revalidating
+      {
+        source: '/Banners/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' },
+        ],
+      },
+      {
+        source: '/products/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=604800, stale-while-revalidate=86400' },
+        ],
+      },
     ];
   },
 
-  // Disable x-powered-by header
   poweredByHeader: false,
 }
 

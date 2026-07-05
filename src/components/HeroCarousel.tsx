@@ -66,6 +66,10 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
       : '(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 640px';
 
   const renderSlide = () => {
+    const isFirst = currentIndex === 0;
+    // quality 75 = visually identical for banners, ~40% smaller WebP than quality 90
+    const q = isFirst ? 75 : 65;
+
     if (split) {
       return (
         <div className="absolute inset-0 overflow-hidden bg-[#FFF8F0]">
@@ -74,17 +78,17 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
             alt={`Darshan Style Hub promotional banner ${currentIndex + 1} of ${heroImages.length}`}
             fill
             sizes={imageSizes}
-            quality={90}
+            quality={q}
             placeholder="empty"
             className="object-cover [object-position:center_18%]"
-            priority={currentIndex === 0}
+            priority={isFirst}
+            fetchPriority={isFirst ? 'high' : 'low'}
             draggable={false}
           />
         </div>
       );
     }
     if (cinematic && fullBleed) {
-      // Portrait / narrow viewports: object-cover crops left-right; object-contain until lg on cream (#FFF8F0) letterboxing.
       const fitClass =
         currentIndex === 0
           ? 'object-contain object-center lg:object-cover lg:object-bottom'
@@ -92,19 +96,18 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
 
       return (
         <div className="absolute inset-0 bg-[#FFF8F0] isolate">
-          {/* Full-bleed inset: avoid extra inset on mobile — it scales the bitmap slightly and looks softer on retina */}
           <div className="absolute inset-0 overflow-hidden">
             <Image
               src={heroImages[currentIndex]}
               alt={`Darshan Style Hub promotional banner ${currentIndex + 1} of ${heroImages.length}`}
               fill
               sizes="100vw"
-              quality={90}
+              quality={q}
               placeholder="empty"
               className={`${fitClass} [backface-visibility:hidden]`}
-              priority={currentIndex === 0}
-              fetchPriority={currentIndex === 0 ? 'high' : 'auto'}
-              decoding="async"
+              priority={isFirst}
+              fetchPriority={isFirst ? 'high' : 'low'}
+              decoding={isFirst ? 'sync' : 'async'}
               draggable={false}
             />
           </div>
@@ -119,10 +122,11 @@ export default function HeroCarousel({ fullBleed = false, cinematic = false, spl
         alt={`Darshan Style Hub promotional banner ${currentIndex + 1} of ${heroImages.length}`}
         fill
         sizes={imageSizes}
-        quality={90}
+        quality={q}
         placeholder="empty"
         className={fitClass}
-        priority={currentIndex === 0}
+        priority={isFirst}
+        fetchPriority={isFirst ? 'high' : 'low'}
         draggable={false}
       />
     );

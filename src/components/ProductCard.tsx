@@ -200,7 +200,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               alt={product.name}
               fill
               sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 280px"
-              unoptimized={primaryImage.startsWith('/products/')}
+              quality={75}
               className="object-cover object-top transition-transform duration-500 group-hover:scale-110"
             />
 

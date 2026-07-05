@@ -1002,7 +1002,6 @@ export default function CheckoutPage() {
                         src={normalizeProductImageUrl(item.product.images?.[0]) || '/products/logo.jpeg'}
                         alt={item.product.name}
                         fill
-                        unoptimized
                         className="object-cover"
                       />
                     </div>

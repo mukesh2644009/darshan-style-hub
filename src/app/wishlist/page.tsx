@@ -85,7 +85,6 @@ export default function WishlistPage() {
                       src={normalizeProductImageUrl(product.images?.[0]) || '/products/logo.jpeg'}
                       alt={product.name}
                       fill
-                      unoptimized
                       className="object-cover"
                     />
                     {discount > 0 && (

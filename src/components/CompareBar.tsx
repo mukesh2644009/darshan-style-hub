@@ -43,7 +43,6 @@ export default function CompareBar() {
                         alt={product.name}
                         fill
                         sizes="40px"
-                        unoptimized={img.startsWith('/products/')}
                         className="object-cover object-top"
                       />
                     </div>

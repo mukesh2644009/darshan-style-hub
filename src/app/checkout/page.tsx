@@ -28,7 +28,7 @@ const INDIAN_STATES = [
 ];
 
 export default function CheckoutPage() {
-  const { items, getTotalPrice, clearCart } = useCartStore();
+  const { items, getTotalPrice, clearCart, removeItem, updateQuantity } = useCartStore();
   const { user, isAuthenticated, isLoading, checkAuth } = useAuthStore();
   const router = useRouter();
   const WHATSAPP_NUMBER = '919019076335';
@@ -989,18 +989,15 @@ export default function CheckoutPage() {
             <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm lg:sticky lg:top-32 overflow-hidden">
               <h2 className="font-display text-base sm:text-xl font-bold text-gray-900 mb-4">Order Summary</h2>
 
-              {/* Items — hidden on mobile to keep it compact, visible on lg */}
-              <div className="hidden lg:block space-y-4 mb-6">
+              {/* Cart items — editable on both desktop and mobile */}
+              <div className="space-y-3 mb-6">
                 {items.map((item) => (
                   <div
                     key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}`}
-                    className="flex gap-3"
+                    className="flex gap-3 items-start"
                   >
-                    <Link
-                      href={`/products/${item.product.slug || item.product.id}`}
-                      className="relative w-16 h-20 rounded-lg overflow-hidden flex-shrink-0 hover:opacity-90 transition-opacity"
-                      target="_blank"
-                    >
+                    {/* Thumbnail */}
+                    <div className="relative w-14 h-18 rounded-lg overflow-hidden flex-shrink-0">
                       <Image
                         src={normalizeProductImageUrl(item.product.images?.[0]) || '/products/logo.jpeg'}
                         alt={item.product.name}
@@ -1008,38 +1005,50 @@ export default function CheckoutPage() {
                         unoptimized
                         className="object-cover"
                       />
-                    </Link>
-                    <div className="flex-1 min-w-0">
-                      <Link
-                        href={`/products/${item.product.slug || item.product.id}`}
-                        target="_blank"
-                        className="font-medium text-gray-900 text-sm truncate block hover:text-primary-600 transition-colors"
-                      >
-                        {item.product.name}
-                      </Link>
-                      <p className="text-xs text-gray-500">
-                        {item.selectedSize} • {item.selectedColor} • Qty: {item.quantity}
-                      </p>
-                      <p className="text-sm font-medium text-gray-900 mt-1">
-                        ₹{(item.product.price * item.quantity).toLocaleString('en-IN')}
-                      </p>
                     </div>
-                  </div>
-                ))}
-              </div>
 
-              {/* Mobile: compact item list */}
-              <div className="lg:hidden space-y-1.5 mb-4">
-                {items.map((item) => (
-                  <div key={`${item.product.id}-${item.selectedSize}-${item.selectedColor}`} className="w-full flex justify-between items-baseline gap-2 text-sm">
-                    <Link
-                      href={`/products/${item.product.slug || item.product.id}`}
-                      target="_blank"
-                      className="text-gray-700 truncate min-w-0 flex-1 hover:text-primary-600 transition-colors"
-                    >
-                      {item.product.name} ×{item.quantity}
-                    </Link>
-                    <span className="font-medium text-gray-900 flex-shrink-0">₹{(item.product.price * item.quantity).toLocaleString('en-IN')}</span>
+                    {/* Details + controls */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 text-sm leading-snug line-clamp-2">
+                        {item.product.name}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {item.selectedSize && <>{item.selectedSize} · </>}{item.selectedColor}
+                      </p>
+                      <div className="flex items-center justify-between mt-1.5 gap-2">
+                        {/* Qty stepper */}
+                        <div className="flex items-center gap-1 bg-gray-100 rounded-lg px-1 py-0.5">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.product.id, item.selectedSize, item.selectedColor, item.quantity - 1)}
+                            className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-primary-600 transition-colors text-base font-bold"
+                          >
+                            −
+                          </button>
+                          <span className="text-xs font-semibold w-4 text-center">{item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.product.id, item.selectedSize, item.selectedColor, item.quantity + 1)}
+                            disabled={item.quantity >= (item.product.stock ?? 99)}
+                            className="w-6 h-6 flex items-center justify-center text-gray-600 hover:text-primary-600 transition-colors text-base font-bold disabled:opacity-30"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          ₹{(item.product.price * item.quantity).toLocaleString('en-IN')}
+                        </p>
+                        {/* Remove */}
+                        <button
+                          type="button"
+                          onClick={() => removeItem(item.product.id, item.selectedSize, item.selectedColor)}
+                          className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                          title="Remove item"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

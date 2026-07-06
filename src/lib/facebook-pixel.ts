@@ -65,7 +65,7 @@ export function trackServerEvent(
   }).catch(() => {});
 }
 
-export function fbViewContent(productId: string, name: string, category: string, price: number) {
+export function fbViewContent(productId: string, name: string, category: string, price: number, user?: { email?: string; phone?: string }) {
   trackServerEvent('ViewContent', {
     content_ids: [productId],
     content_name: name,
@@ -73,10 +73,10 @@ export function fbViewContent(productId: string, name: string, category: string,
     content_type: 'product',
     value: price,
     currency: 'INR',
-  });
+  }, { email: user?.email, phone: user?.phone });
 }
 
-export function fbAddToCart(productId: string, name: string, category: string, price: number, size?: string, totalSizes?: number) {
+export function fbAddToCart(productId: string, name: string, category: string, price: number, size?: string, totalSizes?: number, user?: { email?: string; phone?: string }) {
   // Match the catalog variant ID format: productId_Size for multi-size products
   const contentId = (totalSizes && totalSizes > 1 && size)
     ? `${productId}_${size.replace(/\s+/g, '_')}`
@@ -90,7 +90,7 @@ export function fbAddToCart(productId: string, name: string, category: string, p
     value: price,
     currency: 'INR',
     num_items: 1,
-  });
+  }, { email: user?.email, phone: user?.phone });
 }
 
 // cartItems format: { productId, size, totalSizes }

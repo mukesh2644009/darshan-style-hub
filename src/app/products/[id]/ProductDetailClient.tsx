@@ -8,6 +8,7 @@ import { FaWhatsapp, FaMoneyBillWave } from 'react-icons/fa';
 import { Product } from '@/lib/products';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
+import { useAuthStore } from '@/store/authStore';
 import ProductCard from '@/components/ProductCard';
 import { createWhatsAppOrderLink, createWhatsAppShareLink } from '@/components/WhatsAppButton';
 import { gaViewItem, gaAddToCart, gaWhatsAppClick } from '@/lib/google-analytics';
@@ -133,6 +134,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const { addItem, openCart, items } = useCartStore();
   const { toggleItem, isInWishlist } = useWishlistStore();
   const addToRecentlyViewed = useRecentlyViewedStore((s) => s.addItem);
+  const { user } = useAuthStore();
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState('');
@@ -199,7 +201,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       category: product.category,
       price: product.price,
     });
-    fbViewContent(product.id, product.name, product.category, product.price);
+    fbViewContent(product.id, product.name, product.category, product.price, { email: user?.email, phone: user?.phone });
     addToRecentlyViewed(product);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id]);
@@ -212,7 +214,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       price: product.price,
       quantity: quantity,
     });
-    fbAddToCart(product.id, product.name, product.category, product.price, product.category === 'Sarees' ? 'Free Size' : selectedSize, product.sizes.length);
+    fbAddToCart(product.id, product.name, product.category, product.price, product.category === 'Sarees' ? 'Free Size' : selectedSize, product.sizes.length, { email: user?.email, phone: user?.phone });
 
     // For sarees, use 'Free Size' so inventory is tracked and decremented correctly
     const sizeToUse = product.category === 'Sarees' ? 'Free Size' : selectedSize;

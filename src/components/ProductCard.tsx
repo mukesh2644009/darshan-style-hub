@@ -10,6 +10,7 @@ import { useWishlistStore } from '@/store/wishlistStore';
 import { useCompareStore } from '@/store/compareStore';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { fbAddToCart } from '@/lib/facebook-pixel';
 
 interface ProductCardProps {
   product: Product;
@@ -44,6 +45,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     if (product.category === 'Sarees') {
       addItem(product, 'Free Size', product.colors[0]?.name || '');
       openCart();
+      fbAddToCart(product.id, product.name, product.category, product.price);
       return;
     }
     setSelectedSize('');
@@ -58,6 +60,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     addItem(product, selectedSize, selectedColor || product.colors[0]?.name || '');
     setShowSizePicker(false);
     openCart();
+    fbAddToCart(product.id, product.name, product.category, product.price);
   };
 
   const handleWishlist = (e: React.MouseEvent) => {

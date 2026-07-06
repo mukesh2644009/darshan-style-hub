@@ -78,7 +78,10 @@ export default function RootLayout({
         {/* Razorpay */}
         <link rel="preconnect" href="https://checkout.razorpay.com" />
         <meta name="facebook-domain-verification" content="qy5yj0z1grhtj55l2r97bdlf8sofiw" />
-        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+      </head>
+      <body className="font-body bg-[#FFF8E6] text-gray-900 antialiased overflow-x-hidden w-full">
+        {/* Meta Pixel — must be in <body>, NOT inside <head> JSX in Next.js App Router.
+            Placing Script components inside <head> causes them to silently fail. */}
         <Script id="meta-pixel" strategy="afterInteractive">
           {`
             !function(f,b,e,v,n,t,s)
@@ -99,8 +102,7 @@ export default function RootLayout({
             alt=""
           />
         </noscript>
-      </head>
-      <body className="font-body bg-[#FFF8E6] text-gray-900 antialiased overflow-x-hidden w-full">
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         <GoogleAnalytics />
         <script
           type="application/ld+json"

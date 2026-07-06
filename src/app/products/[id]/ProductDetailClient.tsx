@@ -212,7 +212,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       price: product.price,
       quantity: quantity,
     });
-    fbAddToCart(product.id, product.name, product.category, product.price);
+    fbAddToCart(product.id, product.name, product.category, product.price, product.category === 'Sarees' ? 'Free Size' : selectedSize, product.sizes.length);
 
     // For sarees, use 'Free Size' so inventory is tracked and decremented correctly
     const sizeToUse = product.category === 'Sarees' ? 'Free Size' : selectedSize;

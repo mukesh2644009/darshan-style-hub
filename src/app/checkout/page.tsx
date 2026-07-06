@@ -162,7 +162,7 @@ export default function CheckoutPage() {
     if (items.length > 0) {
       // Facebook Pixel - begin checkout
       fbInitiateCheckout(
-        items.map(item => item.product.id),
+        items.map(item => ({ productId: item.product.id, size: item.selectedSize, totalSizes: item.product.sizes?.length ?? 1 })),
         getTotalPrice(),
         items.reduce((sum, item) => sum + item.quantity, 0)
       );
@@ -295,7 +295,7 @@ export default function CheckoutPage() {
           // Facebook Pixel - purchase
           fbPurchase(
             data.id || '',
-            items.map(item => item.product.id),
+            items.map(item => ({ productId: item.product.id, size: item.selectedSize, totalSizes: item.product.sizes?.length ?? 1 })),
             data.total || total,
             items.reduce((sum, item) => sum + item.quantity, 0),
             formData.email,
@@ -379,7 +379,7 @@ export default function CheckoutPage() {
             // Facebook Pixel - purchase
             fbPurchase(
               orderDbId,
-              items.map(item => item.product.id),
+              items.map(item => ({ productId: item.product.id, size: item.selectedSize, totalSizes: item.product.sizes?.length ?? 1 })),
               amount,
               items.reduce((sum, item) => sum + item.quantity, 0),
               formData.email,

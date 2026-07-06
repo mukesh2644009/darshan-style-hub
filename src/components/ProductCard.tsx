@@ -45,7 +45,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     if (product.category === 'Sarees') {
       addItem(product, 'Free Size', product.colors[0]?.name || '');
       openCart();
-      fbAddToCart(product.id, product.name, product.category, product.price);
+      fbAddToCart(product.id, product.name, product.category, product.price, 'Free Size', 1);
       return;
     }
     setSelectedSize('');
@@ -60,7 +60,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     addItem(product, selectedSize, selectedColor || product.colors[0]?.name || '');
     setShowSizePicker(false);
     openCart();
-    fbAddToCart(product.id, product.name, product.category, product.price);
+    fbAddToCart(product.id, product.name, product.category, product.price, selectedSize, product.sizes.length);
   };
 
   const handleWishlist = (e: React.MouseEvent) => {

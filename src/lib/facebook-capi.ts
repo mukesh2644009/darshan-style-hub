@@ -26,12 +26,20 @@ interface UserData {
 interface CustomData {
   value?: number;
   currency?: string;
+  // camelCase (used internally)
   contentName?: string;
   contentCategory?: string;
   contentIds?: string[];
   contentType?: string;
   numItems?: number;
   orderId?: string;
+  // snake_case (sent from browser pixel via /api/track)
+  content_name?: string;
+  content_category?: string;
+  content_ids?: string[];
+  content_type?: string;
+  num_items?: number;
+  order_id?: string;
 }
 
 function buildUserData(user: UserData) {
@@ -58,12 +66,19 @@ function buildCustomData(custom: CustomData) {
 
   if (custom.value !== undefined) data.value = custom.value;
   if (custom.currency) data.currency = custom.currency;
-  if (custom.contentName) data.content_name = custom.contentName;
-  if (custom.contentCategory) data.content_category = custom.contentCategory;
-  if (custom.contentIds) data.content_ids = custom.contentIds;
-  if (custom.contentType) data.content_type = custom.contentType;
-  if (custom.numItems !== undefined) data.num_items = custom.numItems;
-  if (custom.orderId) data.order_id = custom.orderId;
+  // Accept both camelCase (internal) and snake_case (sent from browser pixel via /api/track)
+  const contentName = custom.contentName || custom.content_name;
+  if (contentName) data.content_name = contentName;
+  const contentCategory = custom.contentCategory || custom.content_category;
+  if (contentCategory) data.content_category = contentCategory;
+  const contentIds = custom.contentIds || custom.content_ids;
+  if (contentIds) data.content_ids = contentIds;
+  const contentType = custom.contentType || custom.content_type;
+  if (contentType) data.content_type = contentType;
+  const numItems = custom.numItems ?? custom.num_items;
+  if (numItems !== undefined) data.num_items = numItems;
+  const orderId = custom.orderId || custom.order_id;
+  if (orderId) data.order_id = orderId;
 
   return data;
 }

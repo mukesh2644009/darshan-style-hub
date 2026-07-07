@@ -164,7 +164,8 @@ export default function CheckoutPage() {
       fbInitiateCheckout(
         items.map(item => ({ productId: item.product.id, size: item.selectedSize, totalSizes: item.product.sizes?.length ?? 1 })),
         getTotalPrice(),
-        items.reduce((sum, item) => sum + item.quantity, 0)
+        items.reduce((sum, item) => sum + item.quantity, 0),
+        { email: user?.email, phone: user?.phone, id: user?.id }
       );
       
       // Google Analytics - begin checkout

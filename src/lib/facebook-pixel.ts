@@ -98,7 +98,8 @@ export function fbAddToCart(productId: string, name: string, category: string, p
 export function fbInitiateCheckout(
   cartItems: { productId: string; size: string; totalSizes: number }[],
   totalValue: number,
-  numItems: number
+  numItems: number,
+  user?: { email?: string; phone?: string; id?: string }
 ) {
   const contentIds = cartItems.map(item =>
     item.totalSizes > 1 ? `${item.productId}_${item.size.replace(/\s+/g, '_')}` : item.productId
@@ -109,7 +110,7 @@ export function fbInitiateCheckout(
     value: totalValue,
     currency: 'INR',
     num_items: numItems,
-  });
+  }, { email: user?.email, phone: user?.phone, externalId: user?.id });
 }
 
 export function fbPurchase(

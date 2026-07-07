@@ -35,6 +35,31 @@ export function trackPixelEvent(eventName: string, params?: Record<string, unkno
   }
 }
 
+// Waits up to 2s for _fbp cookie to be set by the pixel script,
+// then sends the CAPI event with both _fbp and _fbc included.
+// Without this delay, CAPI fires before the pixel script sets _fbp,
+// causing Meta to report "empty fbc/fbp" on most CAPI events.
+function sendCapiWhenReady(payload: Record<string, unknown>, maxWaitMs = 2000) {
+  const start = Date.now();
+  const attempt = () => {
+    const { fbc, fbp } = getMetaCookies();
+    if (fbp || Date.now() - start > maxWaitMs) {
+      fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payload,
+          ...(fbc && { fbc }),
+          ...(fbp && { fbp }),
+        }),
+      }).catch(() => {});
+    } else {
+      setTimeout(attempt, 100);
+    }
+  };
+  attempt();
+}
+
 export function trackServerEvent(
   eventName: string,
   customData?: Record<string, unknown>,
@@ -44,26 +69,15 @@ export function trackServerEvent(
 
   trackPixelEvent(eventName, customData, eventId);
 
-  // Always include _fbc and _fbp cookies — they are the primary signal
-  // Meta CAPI uses for identity matching. Without them, event match quality drops
-  // from "Excellent" to "Poor" and ROAS reporting becomes unreliable.
-  const { fbc, fbp } = getMetaCookies();
-
-  fetch('/api/track', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      eventName,
-      eventSourceUrl: window.location.href,
-      customData,
-      eventId,
-      ...(extra?.email && { email: extra.email }),
-      ...(extra?.phone && { phone: extra.phone }),
-      ...(extra?.externalId && { externalId: extra.externalId }),
-      ...(fbc && { fbc }),
-      ...(fbp && { fbp }),
-    }),
-  }).catch(() => {});
+  sendCapiWhenReady({
+    eventName,
+    eventSourceUrl: window.location.href,
+    customData,
+    eventId,
+    ...(extra?.email && { email: extra.email }),
+    ...(extra?.phone && { phone: extra.phone }),
+    ...(extra?.externalId && { externalId: extra.externalId }),
+  });
 }
 
 export function fbViewContent(productId: string, name: string, category: string, price: number, user?: { email?: string; phone?: string; id?: string }) {

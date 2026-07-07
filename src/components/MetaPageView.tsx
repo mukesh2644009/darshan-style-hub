@@ -40,17 +40,27 @@ export default function MetaPageView() {
   return null;
 }
 
-function sendCapiPageView(eventId: string, url: string) {
-  const { fbc, fbp } = getMetaCookies();
-  fetch('/api/track', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      eventName: 'PageView',
-      eventSourceUrl: url,
-      eventId,
-      ...(fbc && { fbc }),
-      ...(fbp && { fbp }),
-    }),
-  }).catch(() => {});
+// Wait for _fbp cookie before sending — pixel sets _fbp async,
+// so reading immediately after fbq init gives empty string.
+function sendCapiPageView(eventId: string, url: string, maxWaitMs = 2000) {
+  const start = Date.now();
+  const attempt = () => {
+    const { fbc, fbp } = getMetaCookies();
+    if (fbp || Date.now() - start > maxWaitMs) {
+      fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventName: 'PageView',
+          eventSourceUrl: url,
+          eventId,
+          ...(fbc && { fbc }),
+          ...(fbp && { fbp }),
+        }),
+      }).catch(() => {});
+    } else {
+      setTimeout(attempt, 100);
+    }
+  };
+  attempt();
 }

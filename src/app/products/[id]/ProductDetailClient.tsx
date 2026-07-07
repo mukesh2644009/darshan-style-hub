@@ -201,7 +201,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       category: product.category,
       price: product.price,
     });
-    fbViewContent(product.id, product.name, product.category, product.price, { email: user?.email, phone: user?.phone });
+    fbViewContent(product.id, product.name, product.category, product.price, { email: user?.email, phone: user?.phone, id: user?.id });
     addToRecentlyViewed(product);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id]);
@@ -214,7 +214,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
       price: product.price,
       quantity: quantity,
     });
-    fbAddToCart(product.id, product.name, product.category, product.price, product.category === 'Sarees' ? 'Free Size' : selectedSize, product.sizes.length, { email: user?.email, phone: user?.phone });
+    fbAddToCart(product.id, product.name, product.category, product.price, product.category === 'Sarees' ? 'Free Size' : selectedSize, product.sizes.length, { email: user?.email, phone: user?.phone, id: user?.id });
 
     // For sarees, use 'Free Size' so inventory is tracked and decremented correctly
     const sizeToUse = product.category === 'Sarees' ? 'Free Size' : selectedSize;

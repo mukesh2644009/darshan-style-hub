@@ -10,19 +10,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'eventName required' }, { status: 400 });
     }
 
-    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '';
+    // Real client IP — Vercel sets x-forwarded-for
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim()
+      || request.headers.get('x-real-ip')
+      || '';
     const ua = request.headers.get('user-agent') || '';
 
+    // _fbc and _fbp cookies are critical for CAPI match quality.
+    // The client reads them from document.cookie and sends them in the POST body.
+    // Without these, Meta can only match on hashed email/phone.
     const userData = {
       clientIpAddress: ip,
       clientUserAgent: ua,
       ...(body.email && { email: body.email }),
       ...(body.phone && { phone: body.phone }),
+      ...(body.fbc && { fbc: body.fbc }),
+      ...(body.fbp && { fbp: body.fbp }),
+      ...(body.externalId && { externalId: body.externalId }),
     };
 
     sendConversionEvent(
       eventName,
-      eventSourceUrl || 'https://darshanstylehub.com',
+      eventSourceUrl || 'https://www.darshanstylehub.com',
       userData,
       customData,
       eventId

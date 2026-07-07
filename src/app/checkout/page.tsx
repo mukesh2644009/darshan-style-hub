@@ -299,7 +299,8 @@ export default function CheckoutPage() {
             data.total || total,
             items.reduce((sum, item) => sum + item.quantity, 0),
             formData.email,
-            formData.phone
+            formData.phone,
+            user?.id
           );
 
           // Google Analytics - purchase
@@ -383,7 +384,8 @@ export default function CheckoutPage() {
               amount,
               items.reduce((sum, item) => sum + item.quantity, 0),
               formData.email,
-              formData.phone
+              formData.phone,
+              user?.id
             );
 
             // Google Analytics - purchase

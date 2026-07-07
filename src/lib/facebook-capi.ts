@@ -21,6 +21,7 @@ interface UserData {
   clientUserAgent?: string;
   fbc?: string;
   fbp?: string;
+  externalId?: string;
 }
 
 interface CustomData {
@@ -57,6 +58,7 @@ function buildUserData(user: UserData) {
   if (user.clientUserAgent) data.client_user_agent = user.clientUserAgent;
   if (user.fbc) data.fbc = user.fbc;
   if (user.fbp) data.fbp = user.fbp;
+  if (user.externalId) data.external_id = hashData(user.externalId);
 
   return data;
 }

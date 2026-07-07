@@ -38,7 +38,7 @@ export function trackPixelEvent(eventName: string, params?: Record<string, unkno
 export function trackServerEvent(
   eventName: string,
   customData?: Record<string, unknown>,
-  extra?: { email?: string; phone?: string; eventId?: string }
+  extra?: { email?: string; phone?: string; externalId?: string; eventId?: string }
 ) {
   const eventId = extra?.eventId || `${eventName}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
@@ -59,13 +59,14 @@ export function trackServerEvent(
       eventId,
       ...(extra?.email && { email: extra.email }),
       ...(extra?.phone && { phone: extra.phone }),
+      ...(extra?.externalId && { externalId: extra.externalId }),
       ...(fbc && { fbc }),
       ...(fbp && { fbp }),
     }),
   }).catch(() => {});
 }
 
-export function fbViewContent(productId: string, name: string, category: string, price: number, user?: { email?: string; phone?: string }) {
+export function fbViewContent(productId: string, name: string, category: string, price: number, user?: { email?: string; phone?: string; id?: string }) {
   trackServerEvent('ViewContent', {
     content_ids: [productId],
     content_name: name,
@@ -73,10 +74,10 @@ export function fbViewContent(productId: string, name: string, category: string,
     content_type: 'product',
     value: price,
     currency: 'INR',
-  }, { email: user?.email, phone: user?.phone });
+  }, { email: user?.email, phone: user?.phone, externalId: user?.id });
 }
 
-export function fbAddToCart(productId: string, name: string, category: string, price: number, size?: string, totalSizes?: number, user?: { email?: string; phone?: string }) {
+export function fbAddToCart(productId: string, name: string, category: string, price: number, size?: string, totalSizes?: number, user?: { email?: string; phone?: string; id?: string }) {
   // Match the catalog variant ID format: productId_Size for multi-size products
   const contentId = (totalSizes && totalSizes > 1 && size)
     ? `${productId}_${size.replace(/\s+/g, '_')}`
@@ -90,7 +91,7 @@ export function fbAddToCart(productId: string, name: string, category: string, p
     value: price,
     currency: 'INR',
     num_items: 1,
-  }, { email: user?.email, phone: user?.phone });
+  }, { email: user?.email, phone: user?.phone, externalId: user?.id });
 }
 
 // cartItems format: { productId, size, totalSizes }
@@ -117,7 +118,8 @@ export function fbPurchase(
   totalValue: number,
   numItems: number,
   email?: string,
-  phone?: string
+  phone?: string,
+  externalId?: string
 ) {
   const contentIds = cartItems.map(item =>
     item.totalSizes > 1 ? `${item.productId}_${item.size.replace(/\s+/g, '_')}` : item.productId
@@ -129,5 +131,5 @@ export function fbPurchase(
     currency: 'INR',
     num_items: numItems,
     order_id: orderId,
-  }, { email, phone });
+  }, { email, phone, externalId });
 }

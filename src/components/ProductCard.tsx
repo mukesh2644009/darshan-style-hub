@@ -11,6 +11,7 @@ import { useCompareStore } from '@/store/compareStore';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fbAddToCart } from '@/lib/facebook-pixel';
+import { useAuthStore } from '@/store/authStore';
 
 interface ProductCardProps {
   product: Product;
@@ -20,6 +21,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const { addItem, openCart } = useCartStore();
   const { toggleItem, isInWishlist } = useWishlistStore();
   const { toggleItem: toggleCompare, isInCompare, isFull } = useCompareStore();
+  const { user } = useAuthStore();
   const [isHovered, setIsHovered] = useState(false);
   const [showSizePicker, setShowSizePicker] = useState(false);
   const [selectedSize, setSelectedSize] = useState('');
@@ -45,7 +47,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     if (product.category === 'Sarees') {
       addItem(product, 'Free Size', product.colors[0]?.name || '');
       openCart();
-      fbAddToCart(product.id, product.name, product.category, product.price, 'Free Size', 1);
+      fbAddToCart(product.id, product.name, product.category, product.price, 'Free Size', 1, { email: user?.email, phone: user?.phone, id: user?.id });
       return;
     }
     setSelectedSize('');
@@ -60,7 +62,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     addItem(product, selectedSize, selectedColor || product.colors[0]?.name || '');
     setShowSizePicker(false);
     openCart();
-    fbAddToCart(product.id, product.name, product.category, product.price, selectedSize, product.sizes.length);
+    fbAddToCart(product.id, product.name, product.category, product.price, selectedSize, product.sizes.length, { email: user?.email, phone: user?.phone, id: user?.id });
   };
 
   const handleWishlist = (e: React.MouseEvent) => {

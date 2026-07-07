@@ -4,6 +4,7 @@ import Script from 'next/script';
 import './globals.css';
 import StoreShell from '@/components/StoreShell';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
+import MetaPageView from '@/components/MetaPageView';
 
 const outfit = Outfit({ 
   subsets: ['latin'],
@@ -93,7 +94,7 @@ export default function RootLayout({
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
             fbq('init', '3141261462728297');
-            fbq('track', 'PageView');
+            // PageView is fired by MetaPageView component with a matching eventId for CAPI deduplication
           `}
         </Script>
         <noscript>
@@ -102,6 +103,7 @@ export default function RootLayout({
             alt=""
           />
         </noscript>
+        <MetaPageView />
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         <GoogleAnalytics />
         <script

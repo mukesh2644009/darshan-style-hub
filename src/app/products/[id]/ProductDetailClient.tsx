@@ -492,8 +492,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                 <FiTruck size={13} />
                 {product.price >= 999 ? 'Free Shipping on this order!' : `Free shipping above ₹999 — add ₹${(999 - product.price).toLocaleString()} more`}
               </span>
-              <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full">
-                Cash on Delivery Available
+              <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full whitespace-nowrap">
+                COD Available
               </span>
             </div>
 

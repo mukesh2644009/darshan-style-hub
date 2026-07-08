@@ -486,11 +486,32 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
               )}
             </div>
 
-            {/* Scarcity + Sale countdown */}
+            {/* Free shipping banner */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full">
+                <FiTruck size={13} />
+                {product.price >= 999 ? 'Free Shipping on this order!' : `Free shipping above ₹999 — add ₹${(999 - product.price).toLocaleString()} more`}
+              </span>
+              <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full">
+                Cash on Delivery Available
+              </span>
+            </div>
+
+            {/* Scarcity */}
             <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-6">
-              {product.stock > 0 && product.stock <= 5 && (
-                <span className="text-sm font-semibold text-orange-600 bg-orange-50 border border-orange-200 px-3 py-1 rounded-full">
-                  Only {product.stock} left in stock!
+              {product.stock > 0 && product.stock <= 10 && (
+                <span className={`text-sm font-semibold px-3 py-1 rounded-full border ${
+                  product.stock <= 3
+                    ? 'text-red-600 bg-red-50 border-red-200'
+                    : product.stock <= 5
+                    ? 'text-orange-600 bg-orange-50 border-orange-200'
+                    : 'text-amber-600 bg-amber-50 border-amber-200'
+                }`}>
+                  {product.stock <= 3
+                    ? `⚡ Only ${product.stock} left — selling fast!`
+                    : product.stock <= 5
+                    ? `Only ${product.stock} left in stock!`
+                    : `Hurry! Only ${product.stock} pieces remaining`}
                 </span>
               )}
             </div>

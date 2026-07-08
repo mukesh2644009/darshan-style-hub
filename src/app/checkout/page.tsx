@@ -946,12 +946,15 @@ export default function CheckoutPage() {
                 </label>
 
                 <label
-                  className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all ${
+                  className={`relative flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border-2 cursor-pointer transition-all ${
                     paymentMethod === 'cod'
                       ? 'border-primary-600 bg-primary-50'
-                      : 'border-accent-200 hover:border-primary-300'
+                      : 'border-primary-300 hover:border-primary-400'
                   }`}
                 >
+                  <span className="absolute -top-2.5 left-3 bg-primary-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    MOST POPULAR
+                  </span>
                   <input
                     type="radio"
                     name="payment"
@@ -963,7 +966,7 @@ export default function CheckoutPage() {
                   <FiTruck size={20} className="text-primary-600 flex-shrink-0" />
                   <div className="min-w-0">
                     <p className="font-medium text-gray-900 text-sm sm:text-base">Cash on Delivery</p>
-                    <p className="text-xs sm:text-sm text-gray-500">Pay when you receive</p>
+                    <p className="text-xs sm:text-sm text-gray-500">Pay when you receive · No advance payment</p>
                   </div>
                 </label>
 

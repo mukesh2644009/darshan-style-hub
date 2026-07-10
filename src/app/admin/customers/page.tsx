@@ -35,13 +35,13 @@ export default async function CustomersPage() {
         <div className="bg-white rounded-lg shadow-sm p-4">
           <p className="text-sm text-gray-500">With Orders</p>
           <p className="text-2xl font-bold text-green-600">
-            {customers.filter(c => c.orders.length > 0).length}
+            {customers.filter(c => c.orders.some((o: any) => o.status !== 'CANCELLED')).length}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm p-4">
           <p className="text-sm text-gray-500">Total Orders</p>
           <p className="text-2xl font-bold text-blue-600">
-            {customers.reduce((sum, c) => sum + c.orders.length, 0)}
+            {customers.reduce((sum, c) => sum + c.orders.filter((o: any) => o.status !== 'CANCELLED').length, 0)}
           </p>
         </div>
       </div>
@@ -87,7 +87,8 @@ export default async function CustomersPage() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {customers.map((customer) => {
-                  const totalSpent = customer.orders.reduce((sum: number, order: any) => sum + order.total, 0);
+                  const activeOrders = customer.orders.filter((o: any) => o.status !== 'CANCELLED');
+                  const totalSpent = activeOrders.reduce((sum: number, order: any) => sum + order.total, 0);
                   const defaultAddress = customer.addresses.find((a: any) => a.isDefault) || customer.addresses[0];
                   
                   return (
@@ -122,7 +123,7 @@ export default async function CustomersPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <FiShoppingBag className="w-4 h-4 text-gray-400" />
-                          <span className="font-medium text-gray-900">{customer.orders.length}</span>
+                          <span className="font-medium text-gray-900">{activeOrders.length}</span>
                           <span className="text-gray-500">orders</span>
                         </div>
                       </td>

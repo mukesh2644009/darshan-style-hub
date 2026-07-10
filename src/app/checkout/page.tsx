@@ -1065,6 +1065,34 @@ export default function CheckoutPage() {
                     <FiTag size={14} className="text-primary-600" />
                     Have a coupon?
                   </p>
+
+                  {/* Available coupons */}
+                  {!couponApplied && (
+                    <div className="mb-3">
+                      <p className="text-xs text-gray-500 mb-1.5">Available offers:</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCouponCode('DSH10');
+                          setCouponError('');
+                          const discount = Math.round(subtotal * 0.10);
+                          setCouponDiscount(discount);
+                          setCouponApplied(true);
+                        }}
+                        className="w-full flex items-center justify-between px-3 py-2.5 border border-dashed border-primary-400 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors group"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2 py-0.5 bg-primary-600 text-white text-xs font-bold rounded tracking-wider">DSH10</span>
+                          <div className="text-left">
+                            <p className="text-sm font-semibold text-primary-700">10% off on your order</p>
+                            <p className="text-xs text-gray-500">Valid on all prepaid orders</p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-semibold text-primary-600 group-hover:underline">APPLY</span>
+                      </button>
+                    </div>
+                  )}
+
                   {couponApplied ? (
                     <div className="flex items-center justify-between p-2.5 bg-green-50 border border-green-200 rounded-lg">
                       <div className="flex items-center gap-2">

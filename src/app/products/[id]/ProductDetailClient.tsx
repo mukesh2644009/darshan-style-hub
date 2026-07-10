@@ -193,7 +193,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  // Track product view in Google Analytics + recently viewed
+  // Track product view in Google Analytics + recently viewed + DB view count
   useEffect(() => {
     gaViewItem({
       id: product.id,
@@ -203,6 +203,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
     });
     fbViewContent(product.id, product.name, product.category, product.price, { email: user?.email, phone: user?.phone, id: user?.id });
     addToRecentlyViewed(product);
+    fetch(`/api/products/${product.id}/view`, { method: 'POST' }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product.id]);
 

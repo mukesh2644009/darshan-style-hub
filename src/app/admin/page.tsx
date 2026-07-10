@@ -23,7 +23,7 @@ const STATUS_META: Record<string, { label: string; dot: string; bg: string; text
 };
 
 async function getData() {
-  const [orders, productsCount, customersCount, allProducts, pendingReturns] = await Promise.all([
+  const [orders, productsCount, customersCount, allProducts, pendingReturns, topViewed] = await Promise.all([
     prisma.order.findMany({
       take: 5, orderBy: { createdAt: 'desc' },
       include: { user: true, items: { include: { product: true } } },
@@ -32,6 +32,12 @@ async function getData() {
     prisma.user.count({ where: { role: 'CUSTOMER' } }),
     prisma.product.findMany({ select: { category: true } }),
     prisma.returnRequest.count({ where: { status: 'PENDING' } }),
+    prisma.product.findMany({
+      where: { viewCount: { gt: 0 } },
+      orderBy: { viewCount: 'desc' },
+      take: 5,
+      select: { id: true, name: true, category: true, price: true, viewCount: true, slug: true },
+    }),
   ]);
 
   // Dynamic category counts
@@ -54,7 +60,7 @@ async function getData() {
 
   const pending = allOrders.filter(o => o.status === 'PENDING').length;
 
-  return { orders, productsCount, customersCount, revenue, categoryCounts, pendingReturns, pending, totalOrders: allOrders.length };
+  return { orders, productsCount, customersCount, revenue, categoryCounts, pendingReturns, pending, totalOrders: allOrders.length, topViewed };
 }
 
 export default async function AdminDashboard() {
@@ -181,6 +187,36 @@ export default async function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* Top Viewed Products */}
+      {d.topViewed.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FiTrendingUp className="w-4 h-4 text-gray-400" />
+              <h2 className="font-semibold text-gray-900">Most Viewed Products</h2>
+            </div>
+            <Link href="/admin/products" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors">
+              All products <FiArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {d.topViewed.map((p, i) => (
+              <Link key={p.id} href={`/admin/products/${p.id}`} className="flex items-center gap-4 px-6 py-3.5 hover:bg-gray-50/60 transition-colors group">
+                <span className="text-xl font-black text-gray-200 w-7 text-center shrink-0">#{i + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-primary-600 transition-colors">{p.name}</p>
+                  <p className="text-xs text-gray-400">{p.category} · ₹{p.price.toLocaleString('en-IN')}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-lg font-bold text-primary-600">{p.viewCount.toLocaleString()}</p>
+                  <p className="text-xs text-gray-400">views</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Category cards — dynamic */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

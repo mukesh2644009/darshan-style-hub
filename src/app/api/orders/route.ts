@@ -363,29 +363,9 @@ export async function POST(request: Request) {
         }
       }
 
-      // Award loyalty points for COD orders (1 point per ₹10 spent)
-      loyaltyPointsEarned = user ? Math.floor(total / 10) : 0;
-      if (user && loyaltyPointsEarned > 0) {
-        try {
-          await (prisma as any).$transaction([
-            (prisma as any).user.update({
-              where: { id: user.id },
-              data: { loyaltyPoints: { increment: loyaltyPointsEarned } },
-            }),
-            (prisma as any).loyaltyTransaction.create({
-              data: {
-                userId: user.id,
-                points: loyaltyPointsEarned,
-                type: 'EARN_ORDER',
-                description: `Earned for order #${order.id.slice(-8).toUpperCase()}`,
-                orderId: order.id,
-              },
-            }),
-          ]);
-        } catch (loyaltyError) {
-          console.error('Loyalty points award failed (non-critical):', loyaltyError);
-        }
-      }
+      // COD loyalty points are awarded at delivery (not at order placement)
+      // to ensure customer has actually paid before earning rewards.
+      loyaltyPointsEarned = 0;
     }
     // UPI orders: no emails, no loyalty points — all deferred to /api/razorpay/verify
 

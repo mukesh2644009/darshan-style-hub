@@ -117,9 +117,12 @@ export default async function OrdersPage() {
               <tbody className="divide-y divide-gray-50">
                 {orders.map((order) => {
                   const sm = STATUS_META[order.status] ?? STATUS_META['PENDING'];
-                  const pm = PAYMENT_META[order.paymentStatus] ?? PAYMENT_META['PENDING'];
+                  const isCancelled = order.status === 'CANCELLED';
+                  const pm = isCancelled
+                    ? { label: 'N/A', bg: 'bg-gray-100', text: 'text-gray-500' }
+                    : (PAYMENT_META[order.paymentStatus] ?? PAYMENT_META['PENDING']);
                   const isReturnFlow = ['RETURN_REQUESTED','EXCHANGE_REQUESTED'].includes(order.status);
-                  const isFailedPayment = order.paymentMethod !== 'COD' &&
+                  const isFailedPayment = !isCancelled && order.paymentMethod !== 'COD' &&
                     (order.paymentStatus === 'FAILED' || order.paymentStatus === 'PENDING');
 
                   return (

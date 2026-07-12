@@ -1075,9 +1075,6 @@ export default function CheckoutPage() {
                         onClick={() => {
                           setCouponCode('DSH10');
                           setCouponError('');
-                          const discount = Math.round(subtotal * 0.10);
-                          setCouponDiscount(discount);
-                          setCouponApplied(true);
                         }}
                         className="w-full flex items-center justify-between px-3 py-2.5 border border-dashed border-primary-400 rounded-lg bg-primary-50 hover:bg-primary-100 transition-colors group"
                       >

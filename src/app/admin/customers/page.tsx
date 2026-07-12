@@ -7,12 +7,23 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 async function getCustomers(): Promise<any[]> {
-  return (prisma as any).user.findMany({
+  const customers = await (prisma as any).user.findMany({
     orderBy: { createdAt: 'desc' },
     include: {
-      orders: true,
-      addresses: true,
+      orders: {
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true, total: true, status: true, paymentMethod: true, paymentStatus: true,
+          shippingAddress: true, shippingCity: true, shippingState: true, shippingPincode: true,
+        },
+      },
     },
+  });
+  // Customers with active (non-cancelled) orders come first
+  return customers.sort((a: any, b: any) => {
+    const aHasOrder = a.orders.some((o: any) => o.status !== 'CANCELLED') ? 1 : 0;
+    const bHasOrder = b.orders.some((o: any) => o.status !== 'CANCELLED') ? 1 : 0;
+    return bHasOrder - aHasOrder;
   });
 }
 
@@ -88,18 +99,25 @@ export default async function CustomersPage() {
               <tbody className="divide-y divide-gray-100">
                 {customers.map((customer) => {
                   const activeOrders = customer.orders.filter((o: any) => o.status !== 'CANCELLED');
+                  const hasActiveOrder = activeOrders.length > 0;
                   const totalSpent = activeOrders.reduce((sum: number, order: any) => sum + order.total, 0);
-                  const defaultAddress = customer.addresses.find((a: any) => a.isDefault) || customer.addresses[0];
+                  const lastOrder = customer.orders[0];
+                  const defaultAddress = lastOrder?.shippingCity ? lastOrder : null;
                   
                   return (
-                    <tr key={customer.id} className="hover:bg-gray-50">
+                    <tr key={customer.id} className={`hover:bg-gray-50 ${hasActiveOrder ? 'border-l-4 border-l-green-500 bg-green-50/30' : ''}`}>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold">
                             {customer.name?.charAt(0).toUpperCase() || 'U'}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-900">{customer.name || 'Unnamed'}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-gray-900">{customer.name || 'Unnamed'}</p>
+                              {hasActiveOrder && (
+                                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-green-100 text-green-700 rounded-full">BUYER</span>
+                              )}
+                            </div>
                             <p className="text-sm text-gray-500">ID: {customer.id.slice(0, 8)}</p>
                           </div>
                         </div>
@@ -146,9 +164,12 @@ export default async function CustomersPage() {
                       </td>
                       <td className="px-6 py-4">
                         {defaultAddress ? (
-                          <div className="text-sm text-gray-600 max-w-xs">
-                            <p className="truncate">{defaultAddress.city}, {defaultAddress.state}</p>
-                            <p className="text-gray-400">{defaultAddress.pincode}</p>
+                          <div className="text-sm text-gray-600 max-w-[200px]" title={[defaultAddress.shippingAddress, defaultAddress.shippingCity, defaultAddress.shippingState, defaultAddress.shippingPincode].filter(Boolean).join(', ')}>
+                            {defaultAddress.shippingAddress && (
+                              <p className="truncate text-gray-700">{defaultAddress.shippingAddress}</p>
+                            )}
+                            <p className="truncate">{defaultAddress.shippingCity}, {defaultAddress.shippingState}</p>
+                            <p className="text-gray-400">{defaultAddress.shippingPincode}</p>
                           </div>
                         ) : (
                           <span className="text-gray-400 text-sm">No address</span>

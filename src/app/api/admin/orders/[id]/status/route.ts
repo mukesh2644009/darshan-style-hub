@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/auth';
 import { sendOrderShippedEmail, sendOrderDeliveredEmail } from '@/lib/email';
 import { restoreInventory } from '@/lib/inventory';
 import { createNimbusReversePickup } from '@/lib/nimbuspost';
+import { getRazorpay } from '@/lib/razorpay-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +53,7 @@ export async function PATCH(
         shippingPhone: true, shippingAddress: true, shippingCity: true,
         shippingState: true, shippingPincode: true,
         awbNumber: true, reverseAwb: true,
+        paymentStatus: true, razorpayPaymentId: true, paymentMethod: true,
         user: { select: { email: true, name: true } },
         items: { select: { productId: true, size: true, quantity: true, price: true, color: true, product: { select: { name: true } } } },
       },
@@ -68,6 +70,10 @@ export async function PATCH(
     if (paymentStatus) updateData.paymentStatus = paymentStatus;
     if (status === 'SHIPPED') updateData.shippedAt = new Date();
     if (status === 'DELIVERED') updateData.deliveredAt = new Date();
+    // When cancelling a COD/unpaid order, mark payment as FAILED (no payment was collected)
+    if (status === 'CANCELLED' && existing?.paymentStatus === 'PENDING') {
+      updateData.paymentStatus = 'FAILED';
+    }
 
     const order = await prisma.order.update({
       where: { id: params.id },
@@ -81,6 +87,31 @@ export async function PATCH(
         size: i.size ?? null,
         quantity: i.quantity,
       }))).catch(() => {});
+    }
+
+    // Auto-refund via Razorpay when cancelling a paid online order
+    if (
+      status === 'CANCELLED' &&
+      existing?.paymentStatus === 'PAID' &&
+      existing?.razorpayPaymentId
+    ) {
+      try {
+        const razorpay = getRazorpay();
+        if (razorpay) {
+          const amountPaise = Math.round((existing.total) * 100);
+          const refund = (await razorpay.payments.refund(existing.razorpayPaymentId, {
+            amount: amountPaise,
+            speed: 'normal',
+          })) as { id: string };
+          await prisma.order.update({
+            where: { id: params.id },
+            data: { paymentStatus: 'REFUNDED', razorpayRefundId: refund.id },
+          });
+        }
+      } catch (refundErr) {
+        // Log but don't block the cancellation
+        console.error('Auto-refund failed on cancellation:', refundErr);
+      }
     }
 
     // Send shipped email to customer
@@ -138,6 +169,35 @@ export async function PATCH(
           color: i.color,
         })),
       }).catch(() => {});
+    }
+
+    // Award loyalty points on delivery for ALL payment methods (1 point per ₹10 spent)
+    if (status === 'DELIVERED') {
+      const orderId = params.id;
+      const orderWithUser = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { total: true, userId: true },
+      });
+      if (orderWithUser?.userId) {
+        const pointsToEarn = Math.floor(orderWithUser.total / 10);
+        if (pointsToEarn > 0) {
+          (prisma as any).$transaction([
+            (prisma as any).user.update({
+              where: { id: orderWithUser.userId },
+              data: { loyaltyPoints: { increment: pointsToEarn } },
+            }),
+            (prisma as any).loyaltyTransaction.create({
+              data: {
+                userId: orderWithUser.userId,
+                points: pointsToEarn,
+                type: 'EARN_ORDER',
+                description: `Earned for COD order #${orderId.slice(-8).toUpperCase()} (delivered)`,
+                orderId,
+              },
+            }),
+          ]).catch((e: unknown) => console.error('Loyalty points award failed:', e));
+        }
+      }
     }
 
     return NextResponse.json({ success: true, order });

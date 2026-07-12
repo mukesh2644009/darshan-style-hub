@@ -131,32 +131,9 @@ export async function POST(request: Request) {
         console.error('Email/WhatsApp service error:', emailError);
       }
 
-      // Award loyalty points now that payment is confirmed (1 point per ₹10)
-      const orderUser = updatedOrder.user;
-      if (orderUser) {
-        loyaltyPointsEarned = Math.floor(updatedOrder.total / 10);
-        if (loyaltyPointsEarned > 0) {
-          try {
-            await (prisma as any).$transaction([
-              (prisma as any).user.update({
-                where: { id: orderUser.id },
-                data: { loyaltyPoints: { increment: loyaltyPointsEarned } },
-              }),
-              (prisma as any).loyaltyTransaction.create({
-                data: {
-                  userId: orderUser.id,
-                  points: loyaltyPointsEarned,
-                  type: 'EARN_ORDER',
-                  description: `Earned for order #${orderId.slice(-8).toUpperCase()}`,
-                  orderId: orderId,
-                },
-              }),
-            ]);
-          } catch (loyaltyError) {
-            console.error('Loyalty points award failed (non-critical):', loyaltyError);
-          }
-        }
-      }
+      // Loyalty points for UPI orders are awarded at delivery (not at payment)
+      // to ensure the order is fulfilled before rewarding the customer.
+      loyaltyPointsEarned = 0;
     }
 
     return NextResponse.json({

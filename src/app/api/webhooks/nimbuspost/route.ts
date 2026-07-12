@@ -78,18 +78,34 @@ function verifyWebhookSecret(request: Request, rawBody: string): boolean {
     return safeEqual(sharedSecretHeaderValue, secret);
   }
 
-  // 2) HMAC signature mode (Nimbus/account specific)
-  const signatureHeaderName = (process.env.NIMBUSPOST_WEBHOOK_SIGNATURE_HEADER || 'x-nimbuspost-signature').toLowerCase();
-  const receivedSignatureRaw = request.headers.get(signatureHeaderName);
+  // 2) HMAC signature mode.
+  // NimbusPost sends a base64-encoded HMAC-SHA256 of the raw body in the
+  // "X-Hmac-SHA256" header. Check that plus common alternates and any custom
+  // header configured via env, so verification works regardless of tenant.
+  const candidateHeaderNames = [
+    (process.env.NIMBUSPOST_WEBHOOK_SIGNATURE_HEADER || '').toLowerCase(),
+    'x-hmac-sha256',
+    'x-nimbuspost-signature',
+    'x-nimbus-signature',
+  ].filter(Boolean);
+
+  let receivedSignatureRaw: string | null = null;
+  for (const name of candidateHeaderNames) {
+    const value = request.headers.get(name);
+    if (value) {
+      receivedSignatureRaw = value;
+      break;
+    }
+  }
   if (!receivedSignatureRaw) return false;
 
   const receivedSignature = receivedSignatureRaw.replace(/^sha256=/i, '').trim();
-  const computedHex = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
-  if (safeEqual(receivedSignature, computedHex)) return true;
-
-  // Optional base64 compatibility
   const computedBase64 = crypto.createHmac('sha256', secret).update(rawBody).digest('base64');
-  return safeEqual(receivedSignature, computedBase64);
+  if (safeEqual(receivedSignature, computedBase64)) return true;
+
+  // Hex compatibility for other tenants
+  const computedHex = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');
+  return safeEqual(receivedSignature, computedHex);
 }
 
 export async function POST(request: Request) {
@@ -153,6 +169,38 @@ export async function POST(request: Request) {
         nimbusWebhookPayload: payload as Prisma.InputJsonValue,
       },
     });
+
+    // When NimbusPost confirms delivery, award loyalty points (1 point per ₹10)
+    if (mappedStatus === 'DELIVERED') {
+      try {
+        const orderForLoyalty = await prisma.order.findFirst({
+          where: shipmentId ? { shipmentId } : { awbNumber: awbNumber! },
+          select: { id: true, total: true, userId: true },
+        });
+        if (orderForLoyalty?.userId) {
+          const pointsToEarn = Math.floor(orderForLoyalty.total / 10);
+          if (pointsToEarn > 0) {
+            await (prisma as any).$transaction([
+              (prisma as any).user.update({
+                where: { id: orderForLoyalty.userId },
+                data: { loyaltyPoints: { increment: pointsToEarn } },
+              }),
+              (prisma as any).loyaltyTransaction.create({
+                data: {
+                  userId: orderForLoyalty.userId,
+                  points: pointsToEarn,
+                  type: 'EARN_ORDER',
+                  description: `Earned for order #${orderForLoyalty.id.slice(-8).toUpperCase()} (delivered)`,
+                  orderId: orderForLoyalty.id,
+                },
+              }),
+            ]);
+          }
+        }
+      } catch (loyaltyErr) {
+        console.error('Loyalty points award failed (non-critical):', loyaltyErr);
+      }
+    }
 
     // When NimbusPost confirms delivery, email the customer
     if (mappedStatus === 'DELIVERED') {

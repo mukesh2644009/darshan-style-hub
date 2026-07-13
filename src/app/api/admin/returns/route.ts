@@ -29,6 +29,8 @@ export async function GET() {
             paymentStatus: true,
             razorpayPaymentId: true,
             razorpayRefundId: true,
+            reverseAwb: true,
+            reverseLabelUrl: true,
             shippingName: true,
             shippingPhone: true,
             createdAt: true,

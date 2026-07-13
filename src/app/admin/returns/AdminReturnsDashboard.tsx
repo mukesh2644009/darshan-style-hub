@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FiLoader, FiRefreshCw, FiExternalLink, FiCheck, FiX, FiDollarSign, FiPackage } from 'react-icons/fi';
+import { FiLoader, FiRefreshCw, FiExternalLink, FiCheck, FiX, FiDollarSign, FiPackage, FiTruck } from 'react-icons/fi';
 import { RETURN_REASONS } from '@/lib/return-reasons';
 
 type ReturnRow = {
@@ -32,6 +32,8 @@ type ReturnRow = {
     paymentStatus: string;
     razorpayPaymentId: string | null;
     razorpayRefundId: string | null;
+    reverseAwb: string | null;
+    reverseLabelUrl: string | null;
     shippingName: string;
     shippingPhone: string;
     createdAt: string;
@@ -112,6 +114,30 @@ export default function AdminReturnsDashboard({ initialReturns }: Props) {
       alert(`Replacement order DSH${data.replacementOrderId.slice(0, 8).toUpperCase()} created — ship it like a normal order.`);
     } catch {
       setError('Request failed');
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const scheduleReversePickup = async (rowId: string, orderId: string) => {
+    if (!confirm('Schedule a NimbusPost reverse pickup?\n\nThe courier will collect the item from the customer\'s address. A return AWB will be generated.')) return;
+    setLoadingId(rowId);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/shipping/nimbuspost/reverse-pickup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || 'Failed to schedule reverse pickup');
+        return;
+      }
+      await refresh();
+      alert(data.message || 'Reverse pickup scheduled.');
+    } catch {
+      setError('Reverse pickup request failed');
     } finally {
       setLoadingId(null);
     }
@@ -279,6 +305,34 @@ export default function AdminReturnsDashboard({ initialReturns }: Props) {
                             <span className="inline-flex items-center gap-2 text-sm text-gray-500">
                               <FiLoader className="animate-spin w-4 h-4" /> Working…
                             </span>
+                          )}
+                          {/* Reverse pickup — once the return/exchange is approved */}
+                          {!busy && canRefund && (
+                            row.order.reverseAwb ? (
+                              <div className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2">
+                                <p className="text-[11px] font-bold text-orange-700 uppercase tracking-wide">Reverse Pickup</p>
+                                <p className="text-xs font-mono text-orange-800 mt-0.5">AWB: {row.order.reverseAwb}</p>
+                                {row.order.reverseLabelUrl && (
+                                  <a
+                                    href={row.order.reverseLabelUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 mt-1 text-xs font-semibold text-orange-700 hover:underline"
+                                  >
+                                    <FiExternalLink className="w-3 h-3" /> Return Label
+                                  </a>
+                                )}
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => scheduleReversePickup(row.id, row.order.id)}
+                                className="inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg border border-orange-300 bg-orange-50 text-orange-700 text-sm hover:bg-orange-100"
+                              >
+                                <FiTruck className="w-4 h-4" />
+                                Schedule Reverse Pickup
+                              </button>
+                            )
                           )}
                           {!busy && canApproveReject && (
                             <div className="flex flex-wrap gap-2">

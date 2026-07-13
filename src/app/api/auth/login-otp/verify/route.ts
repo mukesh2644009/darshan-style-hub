@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const verified = verifyLoginOtp(normalizedPhone, String(otp).trim());
+    const verified = await verifyLoginOtp(normalizedPhone, String(otp).trim());
     if (!verified.ok) {
       return NextResponse.json({ success: false, error: verified.reason || 'Verification failed.' }, { status: 400 });
     }

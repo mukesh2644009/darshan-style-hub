@@ -1,3 +1,5 @@
+import { prisma } from '@/lib/prisma';
+
 type PendingProfile = {
   name: string;
   phone: string;
@@ -65,37 +67,34 @@ export function verifyOtp(phone: string, code: string): { ok: boolean; reason?: 
   return { ok: true, profile: record.profile };
 }
 
-// --- Lightweight OTP store for returning-user LOGIN (no profile needed) ---
-type LoginOtpRecord = { code: string; expiresAt: number; attempts: number };
-
-const globalForLoginOtp = global as typeof globalThis & { loginOtpStore?: Map<string, LoginOtpRecord> };
-const loginOtpStore: Map<string, LoginOtpRecord> =
-  globalForLoginOtp.loginOtpStore ?? (globalForLoginOtp.loginOtpStore = new Map<string, LoginOtpRecord>());
-
-export function saveLoginOtp(phone: string, code: string): void {
-  loginOtpStore.set(phone, {
-    code,
-    expiresAt: Date.now() + OTP_TTL_MS,
-    attempts: 0,
+// --- DB-backed OTP for returning-user LOGIN ---
+// Persisted in the PhoneOtp table so codes survive across serverless instances
+// (in-memory maps don't work on Vercel because each request may hit a new lambda).
+export async function saveLoginOtp(phone: string, code: string): Promise<void> {
+  const expiresAt = new Date(Date.now() + OTP_TTL_MS);
+  await prisma.phoneOtp.upsert({
+    where: { phone },
+    create: { phone, code, expiresAt, attempts: 0 },
+    update: { code, expiresAt, attempts: 0 },
   });
 }
 
-export function verifyLoginOtp(phone: string, code: string): { ok: boolean; reason?: string } {
-  const record = loginOtpStore.get(phone);
+export async function verifyLoginOtp(phone: string, code: string): Promise<{ ok: boolean; reason?: string }> {
+  const record = await prisma.phoneOtp.findUnique({ where: { phone } });
   if (!record) return { ok: false, reason: 'No OTP request found. Please request a new code.' };
-  if (record.expiresAt < Date.now()) {
-    loginOtpStore.delete(phone);
+  if (record.expiresAt.getTime() < Date.now()) {
+    await prisma.phoneOtp.delete({ where: { phone } }).catch(() => {});
     return { ok: false, reason: 'OTP expired. Please request a new code.' };
   }
   if (record.attempts >= MAX_VERIFY_ATTEMPTS) {
-    loginOtpStore.delete(phone);
+    await prisma.phoneOtp.delete({ where: { phone } }).catch(() => {});
     return { ok: false, reason: 'Too many invalid attempts. Please request a new OTP.' };
   }
   if (record.code !== code) {
-    record.attempts += 1;
+    await prisma.phoneOtp.update({ where: { phone }, data: { attempts: { increment: 1 } } }).catch(() => {});
     return { ok: false, reason: 'Invalid OTP code.' };
   }
-  loginOtpStore.delete(phone);
+  await prisma.phoneOtp.delete({ where: { phone } }).catch(() => {});
   return { ok: true };
 }
 

@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     }
 
     const otp = createOtpCode();
-    saveLoginOtp(normalizedPhone, otp);
+    await saveLoginOtp(normalizedPhone, otp);
 
     const delivery = await sendLoginOtpEmail({ to: user.email, customerName: user.name, otp });
     if (!delivery.success) {

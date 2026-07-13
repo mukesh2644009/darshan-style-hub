@@ -299,6 +299,18 @@ model PasswordReset {
   @@index([email])
 }
 
+// Phone login OTP codes (persisted so they survive across serverless instances)
+model PhoneOtp {
+  id          String    @id @default(cuid())
+  phone       String    @unique
+  code        String
+  attempts    Int       @default(0)
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  @@index([phone])
+}
+
 // Customer return / exchange requests (one per order)
 model ReturnRequest {
   id        String   @id @default(cuid())

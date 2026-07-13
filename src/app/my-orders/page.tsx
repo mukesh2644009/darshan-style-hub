@@ -37,6 +37,7 @@ interface Order {
   total: number;
   createdAt: string;
   updatedAt: string;
+  deliveredAt?: string | null;
   orderType?: string;
   parentOrderId?: string | null;
   shippingName: string;
@@ -322,14 +323,20 @@ export default function MyOrdersPage() {
               const isFailedPayment =
                 order.paymentMethod !== 'COD' &&
                 (order.paymentStatus === 'FAILED' || order.paymentStatus === 'PENDING');
+              // Allow retrying an unpaid prepaid order (PENDING or FAILED payment)
+              // as long as the order itself is still active (not cancelled/shipped).
               const canRetryPayment =
-                order.paymentMethod?.includes('Razorpay') &&
-                order.paymentStatus === 'PENDING' &&
+                !!order.paymentMethod?.includes('Razorpay') &&
+                (order.paymentStatus === 'PENDING' || order.paymentStatus === 'FAILED') &&
                 order.status === 'PENDING';
               const canCancel = !isReplacement && !isFailedPayment && ['PENDING', 'CONFIRMED'].includes(order.status);
-              const daysSinceUpdate = (Date.now() - new Date(order.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
-              // Return window: at least 1 day after delivery (item in hand), and within 7 days
-              const withinReturnWindow = daysSinceUpdate >= 1 && daysSinceUpdate <= 7;
+              // Prefer the actual delivery timestamp; fall back to updatedAt for older orders.
+              const deliveredTime = order.deliveredAt
+                ? new Date(order.deliveredAt).getTime()
+                : new Date(order.updatedAt).getTime();
+              const daysSinceDelivery = (Date.now() - deliveredTime) / (1000 * 60 * 60 * 24);
+              // Return window: available from delivery up to 7 days after.
+              const withinReturnWindow = daysSinceDelivery <= 7;
               const returnFlowStatuses = ['RETURN_REQUESTED','RETURN_APPROVED','RETURNED','EXCHANGE_REQUESTED','EXCHANGE_APPROVED','EXCHANGED'];
               const inReturnFlow = returnFlowStatuses.includes(order.status);
               const canReturn = !isReplacement && order.status === 'DELIVERED' && !order.returnRequest && !inReturnFlow && withinReturnWindow;
@@ -367,7 +374,7 @@ export default function MyOrdersPage() {
                         </p>
                       </div>
                     </div>
-                    {isFailedPayment ? (
+                    {isFailedPayment && !canRetryPayment ? (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 bg-red-50 text-red-600">
                         <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
                         Transaction Cancelled
@@ -611,13 +618,11 @@ export default function MyOrdersPage() {
                     </div>
                   )}
 
-                  {/* Return window expired or not yet open notice */}
+                  {/* Return window expired notice */}
                   {order.status === 'DELIVERED' && !order.returnRequest && !inReturnFlow && !withinReturnWindow && (
                     <div className="px-5 py-3 border-t border-gray-100 bg-gray-50 flex items-center gap-2">
                       <span className="text-xs text-gray-400">
-                        {daysSinceUpdate < 1
-                          ? 'Return & exchange will be available once your delivery is confirmed (within 24 hrs)'
-                          : 'Return & exchange window closed (7-day policy)'}
+                        Return &amp; exchange window closed (7-day policy)
                       </span>
                     </div>
                   )}

@@ -65,6 +65,50 @@ export function verifyOtp(phone: string, code: string): { ok: boolean; reason?: 
   return { ok: true, profile: record.profile };
 }
 
+// --- Lightweight OTP store for returning-user LOGIN (no profile needed) ---
+type LoginOtpRecord = { code: string; expiresAt: number; attempts: number };
+
+const globalForLoginOtp = global as typeof globalThis & { loginOtpStore?: Map<string, LoginOtpRecord> };
+const loginOtpStore: Map<string, LoginOtpRecord> =
+  globalForLoginOtp.loginOtpStore ?? (globalForLoginOtp.loginOtpStore = new Map<string, LoginOtpRecord>());
+
+export function saveLoginOtp(phone: string, code: string): void {
+  loginOtpStore.set(phone, {
+    code,
+    expiresAt: Date.now() + OTP_TTL_MS,
+    attempts: 0,
+  });
+}
+
+export function verifyLoginOtp(phone: string, code: string): { ok: boolean; reason?: string } {
+  const record = loginOtpStore.get(phone);
+  if (!record) return { ok: false, reason: 'No OTP request found. Please request a new code.' };
+  if (record.expiresAt < Date.now()) {
+    loginOtpStore.delete(phone);
+    return { ok: false, reason: 'OTP expired. Please request a new code.' };
+  }
+  if (record.attempts >= MAX_VERIFY_ATTEMPTS) {
+    loginOtpStore.delete(phone);
+    return { ok: false, reason: 'Too many invalid attempts. Please request a new OTP.' };
+  }
+  if (record.code !== code) {
+    record.attempts += 1;
+    return { ok: false, reason: 'Invalid OTP code.' };
+  }
+  loginOtpStore.delete(phone);
+  return { ok: true };
+}
+
+/** Mask an email for display: priyanka693@gmail.com -> pr******3@gmail.com */
+export function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  if (local.length <= 2) return `${local[0] ?? ''}*@${domain}`;
+  const first = local.slice(0, 2);
+  const last = local.slice(-1);
+  return `${first}${'*'.repeat(Math.max(3, local.length - 3))}${last}@${domain}`;
+}
+
 function toWhatsAppRecipient(phone: string): string {
   return phone.replace(/\D/g, '');
 }

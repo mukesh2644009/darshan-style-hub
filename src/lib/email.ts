@@ -1455,6 +1455,37 @@ export async function sendOrderDeliveredEmail(props: OrderDeliveredProps) {
 
 // Generic email sender that uses the same Resend → Gmail fallback as all other emails.
 // Used by abandoned cart recovery and other transactional emails.
+export async function sendLoginOtpEmail({ to, customerName, otp }: { to: string; customerName?: string | null; otp: string }) {
+  const name = (customerName || 'there').trim();
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background:#f6f4f0;font-family:Arial,Helvetica,sans-serif;">
+  <div style="max-width:480px;margin:0 auto;padding:32px 24px;">
+    <div style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #ececec;">
+      <div style="background:linear-gradient(135deg,#b45309,#92400e);padding:24px;text-align:center;">
+        <h1 style="margin:0;color:#ffffff;font-size:20px;">${SHOP_NAME}</h1>
+      </div>
+      <div style="padding:28px 24px;text-align:center;">
+        <p style="margin:0 0 8px;color:#111827;font-size:16px;">Hi ${name},</p>
+        <p style="margin:0 0 20px;color:#6b7280;font-size:14px;">Use this code to sign in to your account. It expires in 10 minutes.</p>
+        <div style="display:inline-block;background:#fff7ed;border:1px dashed #f59e0b;border-radius:12px;padding:16px 28px;margin-bottom:20px;">
+          <span style="font-size:32px;font-weight:800;letter-spacing:8px;color:#b45309;">${otp}</span>
+        </div>
+        <p style="margin:0;color:#9ca3af;font-size:12px;">If you didn't try to sign in, you can safely ignore this email. Never share this code with anyone.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+  return sendTransactionalEmail({
+    to,
+    subject: `${otp} is your ${SHOP_NAME} login code`,
+    html,
+  });
+}
+
 export async function sendTransactionalEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
   const service = getEmailService();
   if (!service || !to) return { success: false, error: 'Email not configured' };

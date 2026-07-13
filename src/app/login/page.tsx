@@ -26,6 +26,12 @@ function LoginContent() {
   const [name, setName] = useState('');
   const [needsName, setNeedsName] = useState(false);
 
+  // Email OTP step for phone login
+  const [otpStep, setOtpStep] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [info, setInfo] = useState('');
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -58,39 +64,111 @@ function LoginContent() {
     setLoading(false);
   };
 
+  const doGuestLogin = async () => {
+    const res = await fetch('/api/auth/guest-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, name: name.trim() || undefined }),
+    });
+    return res.json();
+  };
+
   const handlePhoneSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/guest-login', {
+      // Step 3 — verify the email OTP
+      if (otpStep) {
+        const res = await fetch('/api/auth/login-otp/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, otp: otp.trim() }),
+        });
+        const data = await res.json();
+        if (!data.success) {
+          setError(data.error || 'Invalid code. Please try again.');
+          setLoading(false);
+          return;
+        }
+        await checkAuth();
+        setLoading(false);
+        return;
+      }
+
+      // Step 2 — brand new account (no email yet): create with name, no OTP
+      if (needsName) {
+        const data = await doGuestLogin();
+        if (!data.success) {
+          setError(data.error === 'new_user' ? 'Please enter your name.' : data.error || 'Login failed');
+          setLoading(false);
+          return;
+        }
+        await checkAuth();
+        setLoading(false);
+        return;
+      }
+
+      // Step 1 — request an OTP to the account's registered email
+      const reqRes = await fetch('/api/auth/login-otp/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, name: name.trim() || undefined }),
+        body: JSON.stringify({ phone }),
       });
-      const data = await res.json();
+      const req = await reqRes.json();
 
-      if (data.error === 'new_user' && data.newUser) {
-        // Phone not registered — ask for name
+      if (req.success) {
+        setMaskedEmail(req.maskedEmail || '');
+        setOtpStep(true);
+        setInfo(
+          `We've sent a 6-digit code to ${req.maskedEmail || 'your email'}. Enter it below to sign in.` +
+            (req.devOtp ? ` (dev code: ${req.devOtp})` : '')
+        );
+        setLoading(false);
+        return;
+      }
+
+      if (req.error === 'no_account') {
         setNeedsName(true);
         setError('Phone not found. Enter your name to create an account.');
         setLoading(false);
         return;
       }
 
-      if (!data.success) {
-        setError(data.error || 'Login failed');
+      if (req.error === 'no_email') {
+        // No email on file — can't send an OTP, fall back to direct phone login
+        const g = await doGuestLogin();
+        if (!g.success) {
+          if (g.error === 'new_user') {
+            setNeedsName(true);
+            setError('Enter your name to create an account.');
+          } else {
+            setError(g.error || 'Login failed');
+          }
+          setLoading(false);
+          return;
+        }
+        await checkAuth();
         setLoading(false);
         return;
       }
 
-      // Reload auth state
-      await checkAuth();
+      setError(req.error || 'Something went wrong. Please try again.');
     } catch {
       setError('Something went wrong. Please try again.');
     }
     setLoading(false);
+  };
+
+  const resetPhoneFlow = () => {
+    setOtpStep(false);
+    setOtp('');
+    setMaskedEmail('');
+    setNeedsName(false);
+    setError('');
+    setInfo('');
   };
 
   return (
@@ -130,7 +208,7 @@ function LoginContent() {
         <div className="flex rounded-xl border border-gray-200 p-1 mb-6 gap-1">
           <button
             type="button"
-            onClick={() => { setTab('phone'); setError(''); setNeedsName(false); }}
+            onClick={() => { setTab('phone'); resetPhoneFlow(); }}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
               tab === 'phone'
                 ? 'bg-primary-600 text-white shadow-sm'
@@ -141,7 +219,7 @@ function LoginContent() {
           </button>
           <button
             type="button"
-            onClick={() => { setTab('email'); setError(''); setNeedsName(false); }}
+            onClick={() => { setTab('email'); setError(''); setInfo(''); }}
             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
               tab === 'email'
                 ? 'bg-primary-600 text-white shadow-sm'
@@ -159,38 +237,74 @@ function LoginContent() {
           </div>
         )}
 
+        {info && !error && (
+          <div className="mb-5 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3 text-green-700 text-sm">
+            <FiMail className="flex-shrink-0" />
+            <span>{info}</span>
+          </div>
+        )}
+
         {/* Phone login */}
         {tab === 'phone' && (
           <form onSubmit={handlePhoneSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Mobile Number</label>
-              <div className="relative">
-                <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={e => { setPhone(e.target.value); setNeedsName(false); setError(''); }}
-                  required
-                  placeholder="91XXXXXXXXXX or 10-digit number"
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                />
-              </div>
-              <p className="text-xs text-gray-400 mt-1">Enter the number you used when placing your order</p>
-            </div>
+            {!otpStep ? (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Mobile Number</label>
+                  <div className="relative">
+                    <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={e => { setPhone(e.target.value); setNeedsName(false); setError(''); }}
+                      required
+                      placeholder="91XXXXXXXXXX or 10-digit number"
+                      className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Enter the number you used when placing your order</p>
+                </div>
 
-            {needsName && (
+                {needsName && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
+                    <div className="relative">
+                      <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        required
+                        placeholder="Enter your full name"
+                        className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Your Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Enter Verification Code</label>
                 <div className="relative">
-                  <FiUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <FiShield className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    value={otp}
+                    onChange={e => { setOtp(e.target.value.replace(/\D/g, '')); setError(''); }}
                     required
-                    placeholder="Enter your full name"
-                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    autoFocus
+                    placeholder="6-digit code"
+                    className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg tracking-[0.4em] text-center text-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   />
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <button type="button" onClick={resetPhoneFlow} className="text-xs text-gray-500 hover:text-gray-700">
+                    ← Change number
+                  </button>
+                  {maskedEmail && <span className="text-xs text-gray-400">Sent to {maskedEmail}</span>}
                 </div>
               </div>
             )}
@@ -200,7 +314,15 @@ function LoginContent() {
               disabled={loading}
               className="w-full py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? <><FiLoader className="animate-spin" /> Please wait…</> : 'Continue with Phone'}
+              {loading ? (
+                <><FiLoader className="animate-spin" /> Please wait…</>
+              ) : otpStep ? (
+                'Verify & Sign In'
+              ) : needsName ? (
+                'Create Account'
+              ) : (
+                'Continue with Phone'
+              )}
             </button>
           </form>
         )}

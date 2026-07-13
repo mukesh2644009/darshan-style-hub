@@ -20,12 +20,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
-    // Verify the order belongs to this user and is still pending payment
+    // Verify the order belongs to this user, is still unpaid (PENDING or FAILED),
+    // and the order itself is still active (not cancelled/shipped/delivered).
     const order = await prisma.order.findFirst({
       where: {
         id: orderId,
         userId: user.id,
-        paymentStatus: 'PENDING',
+        paymentStatus: { in: ['PENDING', 'FAILED'] },
+        status: 'PENDING',
         paymentMethod: { contains: 'Razorpay' },
       },
       select: { id: true, total: true, shippingName: true },
@@ -33,7 +35,7 @@ export async function POST(request: Request) {
 
     if (!order) {
       return NextResponse.json(
-        { error: 'Order not found or already paid' },
+        { error: 'Order not found, already paid, or no longer eligible for payment' },
         { status: 404 }
       );
     }

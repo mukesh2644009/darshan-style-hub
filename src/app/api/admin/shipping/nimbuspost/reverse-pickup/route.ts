@@ -15,7 +15,9 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const orderId     = typeof body.orderId === 'string' ? body.orderId : '';
-    const enableQc    = body.enableQc === true;
+    // Reverse QC ON by default — courier inspects the item at the customer's door
+    // (right product, undamaged, properly packed) before accepting the pickup.
+    const enableQc    = body.enableQc !== false;
     const weightGrams = typeof body.weightGrams === 'number' ? body.weightGrams : 500;
 
     if (!orderId) {

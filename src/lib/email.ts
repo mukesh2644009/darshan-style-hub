@@ -957,7 +957,8 @@ export async function sendCustomerReversePickupEmail(props: CustomerReversePicku
             <td style="padding:10px 14px;color:#111;font-weight:600;">${courierName}</td></tr>` : ''}
       </table>
       <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px;margin-bottom:20px;">
-        <p style="margin:0;color:#9a3412;font-size:14px;">📦 Please keep the item packed and ready. Hand it over to the courier when they arrive. Your refund/exchange will be processed after we receive and inspect the item.</p>
+        <p style="margin:0 0 8px;color:#9a3412;font-size:14px;">📦 Please pack the item securely — ideally in its <strong>original packaging</strong> with tags intact — and keep it ready for the courier.</p>
+        <p style="margin:0;color:#9a3412;font-size:14px;">Our courier will <strong>inspect the item at pickup</strong>, so make sure it's unused and in original condition. Your refund/exchange is processed after we receive and verify the item.</p>
       </div>
       <p style="color:#6b7280;font-size:14px;margin:0;">Questions? Reach us on WhatsApp at <strong>+91 90190 76335</strong>.</p>
     </td></tr>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
 import { createNimbusReversePickup } from '@/lib/nimbuspost';
+import { sendCustomerReversePickupEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,8 @@ export async function POST(request: Request) {
         shippingPincode: true,
         awbNumber: true,
         reverseAwb: true,
+        user: { select: { email: true, name: true } },
+        returnRequest: { select: { requestType: true } },
       },
     });
 
@@ -77,6 +80,21 @@ export async function POST(request: Request) {
         reverseLabelUrl: result.labelUrl || null,
       },
     });
+
+    // Notify the customer that a pickup has been scheduled (skip guest placeholder emails)
+    const customerEmail =
+      order.user?.email && !order.user.email.endsWith('@darshan.local') ? order.user.email : null;
+    if (customerEmail) {
+      const requestType = order.returnRequest?.requestType === 'EXCHANGE' ? 'EXCHANGE' : 'RETURN';
+      sendCustomerReversePickupEmail({
+        to: customerEmail,
+        customerName: order.shippingName || order.user?.name || 'Customer',
+        orderId: order.id,
+        requestType,
+        reverseAwb: result.awbNumber || null,
+        courierName: result.courierName || null,
+      }).catch(() => {});
+    }
 
     return NextResponse.json({
       success: true,

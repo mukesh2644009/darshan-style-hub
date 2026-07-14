@@ -918,6 +918,79 @@ export async function sendCustomerReturnNotification(props: CustomerReturnEmailP
   return { success: false };
 }
 
+// ─── Customer: Reverse pickup scheduled ─────────────────────────────────────
+interface CustomerReversePickupProps {
+  to: string;
+  customerName: string;
+  orderId: string;
+  requestType: 'RETURN' | 'EXCHANGE';
+  reverseAwb?: string | null;
+  courierName?: string | null;
+}
+
+export async function sendCustomerReversePickupEmail(props: CustomerReversePickupProps) {
+  const service = getEmailService();
+  if (!service) return { success: false };
+
+  const { to, customerName, orderId, requestType, reverseAwb, courierName } = props;
+  const typeLabel = requestType === 'EXCHANGE' ? 'Exchange' : 'Return';
+
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f8f4f0;margin:0;padding:0;">
+  <table style="width:100%;"><tr><td align="center" style="padding:40px 0;">
+  <table style="width:560px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);">
+    <tr><td style="background:linear-gradient(135deg,#ea580c,#f97316);padding:32px;text-align:center;">
+      <p style="font-size:40px;margin:0 0 8px;">🚚</p>
+      <h1 style="color:#fff;margin:0;font-size:22px;">Pickup Scheduled for Your ${typeLabel}</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+      <p style="color:#4b5563;font-size:15px;margin:0 0 20px;">Hi ${customerName},</p>
+      <p style="color:#4b5563;font-size:15px;margin:0 0 24px;">
+        Good news! We've scheduled a courier pickup for your ${typeLabel.toLowerCase()} of Order
+        <strong>DSH${orderId.slice(0,8).toUpperCase()}</strong>. Our delivery partner will visit your address to collect the item.
+      </p>
+      <table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;margin-bottom:20px;">
+        <tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Order ID</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">DSH${orderId.slice(0,8).toUpperCase()}</td></tr>
+        ${reverseAwb ? `<tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Return Tracking (AWB)</td>
+            <td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">${reverseAwb}</td></tr>` : ''}
+        ${courierName ? `<tr><td style="padding:10px 14px;color:#6b7280;font-size:14px;">Courier</td>
+            <td style="padding:10px 14px;color:#111;font-weight:600;">${courierName}</td></tr>` : ''}
+      </table>
+      <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:14px;margin-bottom:20px;">
+        <p style="margin:0;color:#9a3412;font-size:14px;">📦 Please keep the item packed and ready. Hand it over to the courier when they arrive. Your refund/exchange will be processed after we receive and inspect the item.</p>
+      </div>
+      <p style="color:#6b7280;font-size:14px;margin:0;">Questions? Reach us on WhatsApp at <strong>+91 90190 76335</strong>.</p>
+    </td></tr>
+    <tr><td style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb;">
+      <p style="color:#9ca3af;margin:0;font-size:12px;">${SHOP_NAME} | ${SHOP_WEBSITE}</p>
+    </td></tr>
+  </table></td></tr></table>
+</body></html>`;
+
+  const subject = `🚚 Pickup Scheduled for your ${typeLabel} — Order DSH${orderId.slice(0,8).toUpperCase()}`;
+
+  try {
+    if (service === 'resend') {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const { error } = await resend.emails.send({ from: `${SHOP_NAME} <info@darshanstylehub.com>`, to: [to], subject, html });
+      if (error) {
+        console.error('Resend reverse pickup email error, falling through to Gmail:', error);
+      } else {
+        return { success: true, via: 'resend' };
+      }
+    }
+    if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+      const transporter = createGmailTransporter();
+      await transporter.sendMail({ from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`, to, subject, html });
+      return { success: true, via: 'gmail' };
+    }
+  } catch (e) {
+    console.error('Customer reverse pickup email failed:', e);
+  }
+  return { success: false };
+}
+
 // ─── Admin: Order cancelled notification ─────────────────────────────────────
 interface CancelNotificationProps {
   orderId: string;

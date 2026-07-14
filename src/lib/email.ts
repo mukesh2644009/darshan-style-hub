@@ -1495,9 +1495,12 @@ export async function sendOrderDeliveredEmail(props: OrderDeliveredProps) {
         <strong style="color:#78350f;font-size:20px;">₹${total.toLocaleString('en-IN')}</strong>
       </div>
       <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 16px;margin-bottom:20px;">
-        <p style="margin:0;color:#1e40af;font-size:14px;">
+        <p style="margin:0 0 8px;color:#1e40af;font-size:14px;">
           📦 Not happy with your order? You can request a <strong>return or exchange within 7 days</strong> from today.
           <a href="${SHOP_WEBSITE}/my-orders" style="color:#9f1239;font-weight:600;">Go to My Orders →</a>
+        </p>
+        <p style="margin:0;color:#1e40af;font-size:13px;">
+          💡 Tip: Please <strong>keep the original packaging</strong> (and tags) until you're sure — it makes returns &amp; exchanges quick and easy.
         </p>
       </div>
       <p style="color:#6b7280;font-size:14px;margin:0;">Need help? Call us at <a href="tel:+919019076335" style="color:#9f1239;">+91 90190 76335</a> or WhatsApp us anytime.</p>

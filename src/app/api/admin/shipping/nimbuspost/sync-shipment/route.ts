@@ -70,8 +70,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Order not found' }, { status: 404 });
     }
 
-    // If admin provides AWB manually (from Nimbus app), save it directly
+    // If admin provides AWB manually (from Nimbus app), save it directly.
+    // Clear stale label/tracking from the previous (cancelled) courier so they
+    // regenerate for the new AWB.
     if (manualAwb) {
+      const awbChanged = order.awbNumber && order.awbNumber !== manualAwb;
       const updated = await prisma.order.update({
         where: { id: orderId },
         data: {
@@ -79,10 +82,16 @@ export async function POST(request: Request) {
           courierName: manualCourier || undefined,
           nimbusStatus: 'SHIPMENT_BOOKED',
           shippingPartner: 'NIMBUSPOST',
+          ...(awbChanged ? { labelUrl: null, trackingUrl: null } : {}),
         },
         select: { id: true, awbNumber: true, courierName: true, nimbusStatus: true },
       });
-      return NextResponse.json({ success: true, order: updated, awbFound: true, message: `AWB saved: ${manualAwb}` });
+      return NextResponse.json({
+        success: true,
+        order: updated,
+        awbFound: true,
+        message: awbChanged ? `AWB updated to ${manualAwb} (old label/tracking cleared)` : `AWB saved: ${manualAwb}`,
+      });
     }
 
     const apiKey = process.env.NIMBUSPOST_API_KEY;

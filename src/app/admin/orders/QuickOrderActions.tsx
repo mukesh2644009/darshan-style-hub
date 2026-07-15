@@ -188,7 +188,7 @@ export default function QuickOrderActions({
   if (currentStatus === 'SHIPPED') {
     if (trackingUrl) menuItems.push({ label: 'Track Shipment', icon: FiTruck, onClick: () => { window.open(trackingUrl, '_blank'); setOpen(false); }, color: 'text-sky-600' });
     if (awbNumber) menuItems.push({ label: 'Print Label', icon: FiExternalLink, onClick: () => { window.open(labelUrl || `/api/admin/shipping/nimbuspost/label?orderId=${orderId}`, '_blank'); setOpen(false); }, color: 'text-indigo-600' });
-    if (shippingPartner === 'NIMBUSPOST' && !awbNumber) menuItems.push({ label: 'Sync AWB', icon: FiRefreshCw, onClick: handleSyncAwb, color: 'text-amber-600' });
+    if (shippingPartner === 'NIMBUSPOST') menuItems.push({ label: awbNumber ? 'Update AWB' : 'Sync AWB', icon: FiRefreshCw, onClick: handleSyncAwb, color: 'text-amber-600' });
     if (awbNumber) menuItems.push({ label: 'Cancel Shipment', icon: FiSlash, onClick: handleCancelShipment, danger: true });
     menuItems.push({ label: 'Cancel Order', icon: FiX, onClick: handleCancel, danger: true });
   }

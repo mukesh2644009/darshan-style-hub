@@ -61,9 +61,7 @@ export default async function Home() {
   try {
     [featuredProducts, allProducts] = await Promise.all([
       getFeaturedProducts(),
-      // Limit to 12 on the homepage — avoids a full-table scan on every render.
-      // The /products page does its own full query with filters + pagination.
-      getProducts({ take: 12 }),
+      getProducts(),
     ]);
   } catch (err) {
     console.error(

@@ -5,17 +5,28 @@ import { getCurrentUser } from '@/lib/auth';
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Please login to continue' }, { status: 401 });
-    }
-
     const {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
       orderId,
     } = await request.json();
+
+    if (!orderId) {
+      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+    }
+
+    // Guest checkout is allowed — payment is tied to the order, not a login session.
+    const existingOrder = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!existingOrder) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    // If the order was placed while logged in, only that account may confirm payment for it.
+    const user = await getCurrentUser();
+    if (existingOrder.userId && existingOrder.userId !== user?.id) {
+      return NextResponse.json({ error: 'Not authorized for this order' }, { status: 403 });
+    }
 
     const body = razorpay_order_id + '|' + razorpay_payment_id;
     const expectedSignature = crypto
@@ -29,7 +40,7 @@ export async function POST(request: Request) {
 
     let loyaltyPointsEarned = 0;
 
-    if (orderId) {
+    {
       // Update order: mark as CONFIRMED + PAID
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
@@ -49,7 +60,7 @@ export async function POST(request: Request) {
         },
       });
 
-      const customerEmail = user.email || updatedOrder.user?.email;
+      const customerEmail = user?.email || updatedOrder.user?.email;
       const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub.business@gmail.com';
       const fullAddress = `${updatedOrder.shippingAddress}, ${updatedOrder.shippingCity}, ${updatedOrder.shippingState} - ${updatedOrder.shippingPincode}`;
       const emailItems = updatedOrder.items.map((item) => ({

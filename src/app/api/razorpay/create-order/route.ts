@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
+import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/auth';
 
 const razorpay = new Razorpay({
@@ -9,24 +10,34 @@ const razorpay = new Razorpay({
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Please login to continue' }, { status: 401 });
+    const { orderId } = await request.json();
+
+    if (!orderId) {
+      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
     }
 
-    const { amount, orderId } = await request.json();
+    // Guest checkout is allowed — payment is tied to the order, not a login session.
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+    if (order.paymentStatus === 'PAID') {
+      return NextResponse.json({ error: 'Order already paid' }, { status: 400 });
+    }
 
-    if (!amount || amount <= 0) {
-      return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
+    // If the order was placed while logged in, only that account may pay for it.
+    const user = await getCurrentUser();
+    if (order.userId && order.userId !== user?.id) {
+      return NextResponse.json({ error: 'Not authorized for this order' }, { status: 403 });
     }
 
     const options = {
-      amount: Math.round(amount * 100),
+      amount: Math.round(order.total * 100),
       currency: 'INR',
-      receipt: orderId || `receipt_${Date.now()}`,
+      receipt: orderId,
       notes: {
-        userId: user.id,
-        orderId: orderId || '',
+        userId: user?.id || '',
+        orderId,
       },
     };
 

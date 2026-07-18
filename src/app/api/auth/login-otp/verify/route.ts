@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 /** Verify the email OTP for phone login and create a session. */
 export async function POST(request: Request) {
   try {
-    const { phone, otp } = (await request.json()) ?? {};
+    const { phone, otp, addressLine1, addressLine2, city, state, pincode } = (await request.json()) ?? {};
     if (!phone || !otp) {
       return NextResponse.json({ success: false, error: 'Phone and code are required.' }, { status: 400 });
     }
@@ -39,6 +39,27 @@ export async function POST(request: Request) {
     });
     if (!user) {
       return NextResponse.json({ success: false, error: 'Account not found.' }, { status: 404 });
+    }
+
+    // Update delivery address if provided — verified, so safe to trust.
+    if (addressLine1?.trim() && city?.trim() && state?.trim() && pincode?.trim()) {
+      await prisma.address.updateMany({
+        where: { userId: user.id },
+        data: { isDefault: false },
+      });
+      await prisma.address.create({
+        data: {
+          userId: user.id,
+          name: user.name || 'Customer',
+          phone: normalizedPhone,
+          addressLine1: addressLine1.trim(),
+          addressLine2: addressLine2?.trim() || null,
+          city: city.trim(),
+          state: state.trim(),
+          pincode: pincode.trim(),
+          isDefault: true,
+        },
+      });
     }
 
     await prisma.session.deleteMany({ where: { userId: user.id } });

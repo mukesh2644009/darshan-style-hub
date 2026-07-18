@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { normalizeIndianPhone } from '@/lib/otpAuth';
+import { normalizeIndianPhone, maskEmail } from '@/lib/otpAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +31,21 @@ export async function GET(request: Request) {
 
     if (!user) {
       return NextResponse.json({ success: true, exists: false });
+    }
+
+    // Security: a phone number alone doesn't prove identity. Only auto-fill
+    // saved details for accounts that have no real email on file (nothing of
+    // real value to protect there). For accounts with a real email, don't
+    // leak their name/address to whoever typed the phone number — tell the
+    // client verification is required instead.
+    const hasRealEmail = user.email && !user.email.endsWith('@darshan.local');
+    if (hasRealEmail) {
+      return NextResponse.json({
+        success: true,
+        exists: true,
+        requiresVerification: true,
+        maskedEmail: maskEmail(user.email as string),
+      });
     }
 
     const address = user.addresses[0] || null;

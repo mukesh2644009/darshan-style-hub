@@ -62,6 +62,14 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
   const [profileLookupLoading, setProfileLookupLoading] = useState(false);
   const [existingProfile, setExistingProfile] = useState<ExistingProfile | null>(null);
 
+  // Verified-account flow — a phone number matching an existing real account
+  // must prove ownership via an emailed OTP before we log in as that account.
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+
   const resetForm = () => {
     setName('');
     setEmail('');
@@ -77,6 +85,11 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
     setLoading(false);
     setPincodeLoading(false);
     setPincodeError('');
+    setNeedsVerification(false);
+    setOtpStep(false);
+    setOtpCode('');
+    setMaskedEmail('');
+    setOtpLoading(false);
   };
 
   const handlePincodeChange = async (val: string) => {
@@ -111,6 +124,7 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
 
   const handlePhoneBlur = async () => {
     setExistingProfile(null);
+    setNeedsVerification(false);
     if (!phone.trim()) return;
     setProfileLookupLoading(true);
     try {
@@ -118,7 +132,10 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
         credentials: 'include',
       });
       const data = await res.json();
-      if (data.success && data.exists && data.profile) {
+      if (data.success && data.exists && data.requiresVerification) {
+        setNeedsVerification(true);
+        setMaskedEmail(data.maskedEmail || '');
+      } else if (data.success && data.exists && data.profile) {
         const profile = data.profile as ExistingProfile;
         setExistingProfile(profile);
         setName(profile.name || name);
@@ -142,12 +159,46 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
     onClose();
   };
 
+  const requestVerificationOtp = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/login-otp/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ phone: phone.trim() }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(
+          data.error === 'no_email'
+            ? 'This account has no email on file to verify with. Please contact support.'
+            : 'Could not send a verification code. Please try again.'
+        );
+        return;
+      }
+      setMaskedEmail(data.maskedEmail || maskedEmail);
+      setOtpStep(true);
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
     if (!name.trim() || !phone.trim()) {
       setError('Please fill your name and mobile number.');
+      return;
+    }
+
+    // This phone belongs to a verified account — prove ownership via email OTP
+    // instead of logging straight in.
+    if (needsVerification) {
+      await requestVerificationOtp();
       return;
     }
 
@@ -182,6 +233,14 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
         }),
       });
       const data = await res.json();
+      if (!data.success && data.error === 'verification_required') {
+        // Server caught it even though the blur check didn't (e.g. autofill without blur firing)
+        setNeedsVerification(true);
+        setMaskedEmail(data.maskedEmail || '');
+        setLoading(false);
+        await requestVerificationOtp();
+        return;
+      }
       if (!data.success) {
         setError(data.error || 'Failed to continue. Please try again.');
       } else {
@@ -193,6 +252,44 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
       setError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!/^\d{6}$/.test(otpCode.trim())) {
+      setError('Enter the 6-digit code from your email.');
+      return;
+    }
+    setOtpLoading(true);
+    try {
+      const res = await fetch('/api/auth/login-otp/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          phone: phone.trim(),
+          otp: otpCode.trim(),
+          addressLine1: addressLine1.trim() || undefined,
+          addressLine2: addressLine2.trim() || undefined,
+          city: city.trim() || undefined,
+          state: state.trim() || undefined,
+          pincode: pincode.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || 'Invalid code. Please try again.');
+        return;
+      }
+      await checkAuth();
+      resetForm();
+      onSuccess();
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setOtpLoading(false);
     }
   };
 
@@ -235,6 +332,45 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
                 </div>
               )}
 
+              {otpStep ? (
+                <form onSubmit={handleOtpSubmit} className="space-y-3">
+                  <p className="text-sm text-gray-600">
+                    We emailed a 6-digit code to <strong>{maskedEmail}</strong> to confirm it&apos;s you.
+                  </p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="6-digit code"
+                    className="w-full rounded-lg border border-gray-300 py-2.5 px-4 text-center text-lg tracking-[0.5em] focus:border-primary-500 focus:ring-2 focus:ring-primary-500"
+                    autoFocus
+                  />
+                  <button
+                    type="submit"
+                    disabled={otpLoading}
+                    className="w-full rounded-lg bg-primary-600 py-3 font-medium text-white transition hover:bg-primary-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                  >
+                    {otpLoading ? (
+                      <span className="inline-flex items-center gap-2 justify-center">
+                        <FiLoader className="animate-spin" size={16} />
+                        Verifying...
+                      </span>
+                    ) : (
+                      'Verify & Continue'
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={requestVerificationOtp}
+                    disabled={loading}
+                    className="w-full text-center text-xs text-gray-500 hover:text-primary-600"
+                  >
+                    Didn&apos;t get the code? Resend
+                  </button>
+                </form>
+              ) : (
               <form onSubmit={handleSubmit} className="space-y-3">
                 <div className="relative">
                   <FiUser className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
@@ -271,6 +407,12 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
 
                 {profileLookupLoading && (
                   <p className="text-xs text-gray-500">Checking your saved details...</p>
+                )}
+
+                {needsVerification && (
+                  <p className="rounded-lg border border-blue-200 bg-blue-50 p-2 text-xs text-blue-700">
+                    This number is linked to an existing account. We&apos;ll email a code to {maskedEmail || 'your registered email'} to confirm it&apos;s you.
+                  </p>
                 )}
 
                 {existingProfile ? (
@@ -352,13 +494,16 @@ export default function QuickSignupModal({ isOpen, onClose, onSuccess, cartItems
                   {loading ? (
                     <span className="inline-flex items-center gap-2">
                       <FiLoader className="animate-spin" size={16} />
-                      Saving...
+                      {needsVerification ? 'Sending code...' : 'Saving...'}
                     </span>
+                  ) : needsVerification ? (
+                    'Send Verification Code'
                   ) : (
                     'Continue Shopping'
                   )}
                 </button>
               </form>
+              )}
             </div>
           </motion.div>
         </motion.div>

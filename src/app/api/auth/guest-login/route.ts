@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/auth';
-import { normalizeIndianPhone } from '@/lib/otpAuth';
+import { normalizeIndianPhone, createOtpCode, saveLoginOtp, maskEmail } from '@/lib/otpAuth';
+import { sendLoginOtpEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,28 @@ export async function POST(request: Request) {
       where: { phone: normalizedPhone },
       orderBy: { updatedAt: 'desc' },
     });
+
+    // Security: a phone number alone is not proof of identity. If this phone
+    // belongs to an account with a real (verified-capable) email, refuse to
+    // log into it — send an email OTP instead and require verification via
+    // /api/auth/login-otp/verify. Without this check, anyone who knows or
+    // guesses a customer's phone number could be logged into their account.
+    if (user && user.email && !user.email.endsWith('@darshan.local')) {
+      const otp = createOtpCode();
+      await saveLoginOtp(normalizedPhone, otp);
+      const delivery = await sendLoginOtpEmail({ to: user.email, customerName: user.name, otp });
+      if (!delivery.success) {
+        return NextResponse.json(
+          { success: false, error: 'Unable to send a verification code right now. Please try again.' },
+          { status: 500 }
+        );
+      }
+      return NextResponse.json({
+        success: false,
+        error: 'verification_required',
+        maskedEmail: maskEmail(user.email),
+      }, { status: 200 });
+    }
 
     let isNewUser = false;
     const realEmail = email?.trim()?.toLowerCase() || null;

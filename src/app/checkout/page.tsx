@@ -358,17 +358,28 @@ export default function CheckoutPage() {
         },
         theme: { color: '#9F580A' },
         handler: async function (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) {
-          const verifyRes = await fetch('/api/razorpay/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              orderId: orderDbId,
-            }),
-          });
-          const verifyData = await verifyRes.json();
+          let verifyData: { success?: boolean; error?: string; loyaltyPointsEarned?: number } = {};
+          try {
+            const verifyRes = await fetch('/api/razorpay/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                orderId: orderDbId,
+              }),
+            });
+            verifyData = await verifyRes.json();
+          } catch (verifyError) {
+            // Network/parse failure here doesn't mean the payment failed — Razorpay already
+            // has it, and our webhook (api/webhooks/razorpay) will confirm the order
+            // server-side shortly regardless of whether this browser tab is still around.
+            setErrors({
+              form: "Payment received — we're confirming your order now. You'll get an email/WhatsApp confirmation shortly. If you don't hear back within 15 minutes, please contact support with your payment ID: " + response.razorpay_payment_id,
+            });
+            return;
+          }
           if (verifyData.success) {
             setOrderId(orderDbId);
             setOrderTotal(amount);

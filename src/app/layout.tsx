@@ -104,7 +104,7 @@ export default function RootLayout({
           />
         </noscript>
         <MetaPageView />
-        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
         <GoogleAnalytics />
         <script
           type="application/ld+json"

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
-import { sendOrderShippedEmail, sendOrderDeliveredEmail } from '@/lib/email';
+import { sendOrderShippedEmail, sendOrderDeliveredEmail, sendOrderCancelledEmail } from '@/lib/email';
 import { restoreInventory } from '@/lib/inventory';
 import { createNimbusReversePickup } from '@/lib/nimbuspost';
 import { getRazorpay } from '@/lib/razorpay-server';
@@ -50,7 +50,7 @@ export async function PATCH(
       where: { id: params.id },
       select: {
         status: true, shippingName: true, total: true,
-        shippingPhone: true, shippingAddress: true, shippingCity: true,
+        shippingPhone: true, shippingEmail: true, shippingAddress: true, shippingCity: true,
         shippingState: true, shippingPincode: true,
         awbNumber: true, reverseAwb: true,
         paymentStatus: true, razorpayPaymentId: true, paymentMethod: true,
@@ -90,6 +90,7 @@ export async function PATCH(
     }
 
     // Auto-refund via Razorpay when cancelling a paid online order
+    let wasRefunded = false;
     if (
       status === 'CANCELLED' &&
       existing?.paymentStatus === 'PAID' &&
@@ -107,11 +108,38 @@ export async function PATCH(
             where: { id: params.id },
             data: { paymentStatus: 'REFUNDED', razorpayRefundId: refund.id },
           });
+          wasRefunded = true;
         }
       } catch (refundErr) {
         // Log but don't block the cancellation
         console.error('Auto-refund failed on cancellation:', refundErr);
       }
+    }
+
+    // Notify customer + admin on cancellation
+    if (status === 'CANCELLED' && existing) {
+      const rawEmail = existing.shippingEmail || existing.user?.email;
+      const customerEmail = rawEmail && !rawEmail.endsWith('@darshan.local') ? rawEmail : undefined;
+      const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub.business@gmail.com';
+
+      if (customerEmail) {
+        sendOrderCancelledEmail({
+          to: customerEmail,
+          customerName: existing.shippingName,
+          orderId: params.id,
+          total: existing.total,
+          wasRefunded,
+        }).catch(() => {});
+      }
+
+      sendOrderCancelledEmail({
+        to: adminEmail,
+        customerName: existing.shippingName,
+        orderId: params.id,
+        total: existing.total,
+        wasRefunded,
+        isAdminCopy: true,
+      }).catch(() => {});
     }
 
     // Send shipped email to customer

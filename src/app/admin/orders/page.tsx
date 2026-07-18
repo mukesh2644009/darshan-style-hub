@@ -118,7 +118,7 @@ export default async function OrdersPage() {
                 {orders.map((order) => {
                   const sm = STATUS_META[order.status] ?? STATUS_META['PENDING'];
                   const isCancelled = order.status === 'CANCELLED';
-                  const pm = isCancelled
+                  const pm = isCancelled && order.paymentStatus !== 'REFUNDED'
                     ? { label: 'N/A', bg: 'bg-gray-100', text: 'text-gray-500' }
                     : (PAYMENT_META[order.paymentStatus] ?? PAYMENT_META['PENDING']);
                   const isReturnFlow = ['RETURN_REQUESTED','EXCHANGE_REQUESTED'].includes(order.status);

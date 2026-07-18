@@ -1530,6 +1530,51 @@ export async function sendOrderDeliveredEmail(props: OrderDeliveredProps) {
   }
 }
 
+// ─── Order Cancelled notification (customer + admin) ──────────────────────────
+interface OrderCancelledProps {
+  to: string;
+  customerName: string;
+  orderId: string;
+  total: number;
+  wasRefunded: boolean;
+  isAdminCopy?: boolean;
+}
+
+export async function sendOrderCancelledEmail(props: OrderCancelledProps) {
+  const service = getEmailService();
+  if (!service || !props.to) return { success: false };
+
+  const { to, customerName, orderId, total, wasRefunded, isAdminCopy } = props;
+  const shortId = orderId.slice(0, 8).toUpperCase();
+
+  const refundNote = wasRefunded
+    ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 16px;margin-bottom:20px;"><p style="margin:0;color:#1e40af;font-size:14px;">💳 A refund of <strong>₹${total.toLocaleString('en-IN')}</strong> has been initiated to your original payment method. It typically takes 5-7 business days to reflect.</p></div>`
+    : '';
+
+  const introMsg = isAdminCopy
+    ? `Order <strong>DSH${shortId}</strong> placed by <strong>${customerName}</strong> has been cancelled.`
+    : `Hi ${customerName},<br><br>Your order <strong>DSH${shortId}</strong> has been cancelled as requested.`;
+
+  const html = `<!DOCTYPE html><html><body style="font-family:sans-serif;background:#f8f4f0;margin:0;padding:0;"><table style="width:100%;"><tr><td align="center" style="padding:40px 0;"><table style="width:560px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.1);"><tr><td style="background:linear-gradient(135deg,#6b7280,#4b5563);padding:32px;text-align:center;"><p style="font-size:40px;margin:0 0 8px;">❌</p><h1 style="color:#fff;margin:0;font-size:22px;">${isAdminCopy ? 'Order Cancelled' : 'Your Order was Cancelled'}</h1></td></tr><tr><td style="padding:30px;"><p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">${introMsg}</p>${refundNote}<table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;"><tr><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-size:14px;">Order</td><td style="padding:10px 14px;border-bottom:1px solid #e5e7eb;color:#111;font-weight:600;">DSH${shortId}</td></tr><tr><td style="padding:10px 14px;color:#6b7280;font-size:14px;">Amount</td><td style="padding:10px 14px;color:#111;font-weight:600;">₹${total.toLocaleString('en-IN')}</td></tr></table><p style="color:#6b7280;font-size:14px;margin:20px 0 0;">Questions? Call us at <a href="tel:+919019076335" style="color:#9f1239;">+91 90190 76335</a> or WhatsApp us.</p></td></tr><tr><td style="background:#f9fafb;padding:20px;text-align:center;border-top:1px solid #e5e7eb;"><p style="color:#9ca3af;margin:0;font-size:12px;">${SHOP_NAME} · ${SHOP_WEBSITE}</p></td></tr></table></td></tr></table></body></html>`;
+
+  const subject = `${isAdminCopy ? '[CANCELLED] ' : ''}Order DSH${shortId} Cancelled${wasRefunded ? ' — Refund Initiated' : ''}`;
+
+  try {
+    if (service === 'resend') {
+      const { Resend } = await import('resend');
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      await resend.emails.send({ from: `${SHOP_NAME} <info@darshanstylehub.com>`, to: [to], subject, html });
+    } else {
+      const transporter = createGmailTransporter();
+      await transporter.sendMail({ from: `"${SHOP_NAME}" <${process.env.GMAIL_USER}>`, to, subject, html });
+    }
+    return { success: true };
+  } catch (e) {
+    console.error('Order cancelled email failed:', e);
+    return { success: false };
+  }
+}
+
 // Generic email sender that uses the same Resend → Gmail fallback as all other emails.
 // Used by abandoned cart recovery and other transactional emails.
 export async function sendLoginOtpEmail({ to, customerName, otp }: { to: string; customerName?: string | null; otp: string }) {

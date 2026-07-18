@@ -33,7 +33,13 @@ export async function confirmRazorpayPayment(orderId: string, paymentId: string)
     },
   });
 
-  const customerEmail = updatedOrder.user?.email;
+  // Prefer the email typed at checkout — the account's own email may still be
+  // a @darshan.local placeholder if it couldn't be promoted (e.g. that real
+  // email already belongs to a different account).
+  const rawCustomerEmail = updatedOrder.shippingEmail || updatedOrder.user?.email;
+  const customerEmail = rawCustomerEmail && !rawCustomerEmail.endsWith('@darshan.local')
+    ? rawCustomerEmail
+    : undefined;
   const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'darshanstylehub.business@gmail.com';
   const fullAddress = `${updatedOrder.shippingAddress}, ${updatedOrder.shippingCity}, ${updatedOrder.shippingState} - ${updatedOrder.shippingPincode}`;
   const emailItems = updatedOrder.items.map((item) => ({
@@ -50,7 +56,7 @@ export async function confirmRazorpayPayment(orderId: string, paymentId: string)
 
     const emailPromises: Promise<unknown>[] = [];
 
-    if (customerEmail && !customerEmail.endsWith('@darshan.local')) {
+    if (customerEmail) {
       emailPromises.push(
         sendOrderConfirmationEmail({
           to: customerEmail,
@@ -84,7 +90,7 @@ export async function confirmRazorpayPayment(orderId: string, paymentId: string)
         items: emailItems,
         shippingAddress: fullAddress,
         shippingPhone: updatedOrder.shippingPhone,
-        shippingEmail: (customerEmail && !customerEmail.endsWith('@darshan.local')) ? customerEmail : undefined,
+        shippingEmail: customerEmail,
         paymentMethod: 'UPI (Razorpay)',
         paymentStatus: 'PAID',
         isAdminCopy: true,
@@ -99,7 +105,7 @@ export async function confirmRazorpayPayment(orderId: string, paymentId: string)
         orderId: orderId,
         customerName: updatedOrder.shippingName,
         customerPhone: updatedOrder.shippingPhone,
-        customerEmail: (customerEmail && !customerEmail.endsWith('@darshan.local')) ? customerEmail : undefined,
+        customerEmail,
         items: emailItems,
         total: updatedOrder.total,
         paymentMethod: 'UPI (Razorpay)',

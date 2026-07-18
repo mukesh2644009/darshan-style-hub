@@ -209,6 +209,7 @@ export async function POST(request: Request) {
         total,
         shippingName: shippingName.trim(),
         shippingPhone: shippingPhone.trim(),
+        shippingEmail: shippingEmail ? shippingEmail.toLowerCase().trim() : null,
         shippingAddress: shippingAddress.trim(),
         shippingCity: shippingCity.trim(),
         shippingState: shippingState.trim(),

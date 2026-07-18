@@ -201,6 +201,8 @@ model Order {
   // Shipping details
   shippingName    String
   shippingPhone   String
+  shippingEmail   String?     // Email typed at checkout — source of truth for order emails,
+                              // independent of whether it could be saved onto the account.
   shippingAddress String
   shippingCity    String
   shippingState   String

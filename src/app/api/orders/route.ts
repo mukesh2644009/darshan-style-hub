@@ -264,6 +264,7 @@ export async function POST(request: Request) {
       price: item.price,
       size: item.size,
       color: item.color,
+      category: order.items[index].product.category,
     }));
 
     let loyaltyPointsEarned = 0;

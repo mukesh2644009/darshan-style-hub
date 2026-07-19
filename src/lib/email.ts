@@ -497,6 +497,7 @@ interface OrderEmailProps {
     price: number;
     size?: string | null;
     color?: string | null;
+    category?: string | null;
   }>;
   shippingAddress?: string;
   shippingPhone?: string;

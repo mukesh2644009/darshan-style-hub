@@ -25,7 +25,7 @@ export async function confirmRazorpayPayment(orderId: string, paymentId: string)
     },
     include: {
       items: {
-        include: { product: { select: { name: true } } },
+        include: { product: { select: { name: true, category: true } } },
       },
       user: {
         select: { id: true, email: true, loyaltyPoints: true },
@@ -48,6 +48,7 @@ export async function confirmRazorpayPayment(orderId: string, paymentId: string)
     price: item.price,
     size: item.size,
     color: item.color,
+    category: item.product.category,
   }));
 
   try {

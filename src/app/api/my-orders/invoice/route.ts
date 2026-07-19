@@ -62,6 +62,7 @@ export async function GET(request: Request) {
         price: item.price,
         size: item.size,
         color: item.color,
+        category: item.product?.category,
       })),
       subtotal,
       shipping,

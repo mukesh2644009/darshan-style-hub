@@ -7,6 +7,7 @@ interface InvoiceItem {
   price: number;
   size?: string | null;
   color?: string | null;
+  category?: string | null;
 }
 
 interface InvoiceData {
@@ -187,7 +188,14 @@ export async function generateOrderInvoicePDF(data: InvoiceData): Promise<Buffer
            .font('Helvetica-Bold')
            .text(`Rs.${itemTotal.toLocaleString('en-IN')}`, 460, itemY, { width: 75, align: 'right' });
 
-        itemY += 25;
+        if (item.category) {
+          doc.fontSize(8)
+             .fillColor(grayColor)
+             .font('Helvetica')
+             .text(`Category: ${item.category}`, margin + 10, itemY + 12, { width: 210 });
+        }
+
+        itemY += item.category ? 33 : 25;
       });
 
       // Divider before totals

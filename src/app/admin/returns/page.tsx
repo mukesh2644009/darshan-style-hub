@@ -27,6 +27,13 @@ export default async function AdminReturnsPage() {
           createdAt: true,
         },
       },
+      items: {
+        include: {
+          orderItem: {
+            include: { product: { select: { name: true } } },
+          },
+        },
+      },
     },
   });
 

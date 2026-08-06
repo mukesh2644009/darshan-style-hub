@@ -83,7 +83,7 @@ export async function POST(request: Request) {
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: { returnRequest: true },
+      include: { returnRequest: true, items: { select: { id: true } } },
     });
     if (!order) {
       return NextResponse.json(
@@ -130,6 +130,30 @@ export async function POST(request: Request) {
       );
     }
 
+    // Which order item(s) this request applies to — never trust client-supplied
+    // orderItemIds blindly, only accept ones that actually belong to this order.
+    const validOrderItemIds = new Set(order.items.map((i) => i.id));
+    const rawItems: unknown[] = Array.isArray(body.items) ? body.items : [];
+    const seenItemIds = new Set<string>();
+    const items: Array<{ orderItemId: string; exchangeSize: string | null; exchangeColor: string | null }> = [];
+    for (const raw of rawItems) {
+      if (typeof raw !== 'object' || raw === null) continue;
+      const r = raw as Record<string, unknown>;
+      const orderItemId = typeof r.orderItemId === 'string' ? r.orderItemId.trim() : '';
+      if (!orderItemId || !validOrderItemIds.has(orderItemId) || seenItemIds.has(orderItemId)) continue;
+      seenItemIds.add(orderItemId);
+      const itemSize  = requestType === 'EXCHANGE' && typeof r.exchangeSize  === 'string' && r.exchangeSize.trim()  ? r.exchangeSize.trim().slice(0, 32)  : null;
+      const itemColor = requestType === 'EXCHANGE' && typeof r.exchangeColor === 'string' && r.exchangeColor.trim() ? r.exchangeColor.trim().slice(0, 64) : null;
+      items.push({ orderItemId, exchangeSize: itemSize, exchangeColor: itemColor });
+    }
+
+    if (items.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Select at least one item to return/exchange' },
+        { status: 400 }
+      );
+    }
+
     // Returns: ₹99 flat pickup fee. Exchanges: free.
     const pickupFee = requestType === 'RETURN' ? 99 : 0;
 
@@ -146,6 +170,13 @@ export async function POST(request: Request) {
           pickupFee,
           exchangeSize,
           exchangeColor,
+          items: {
+            create: items.map((it) => ({
+              orderItemId: it.orderItemId,
+              exchangeSize: it.exchangeSize,
+              exchangeColor: it.exchangeColor,
+            })),
+          },
         },
       });
       await tx.order.update({

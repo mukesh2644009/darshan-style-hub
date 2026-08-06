@@ -251,6 +251,8 @@ model OrderItem {
   size          String?
   color         String?
 
+  returnRequestItems ReturnRequestItem[]
+
   @@index([orderId])
 }
 
@@ -327,11 +329,15 @@ model ReturnRequest {
   status      String   @default("PENDING") // PENDING, APPROVED, REJECTED, COMPLETED
   pickupFee   Int      @default(0) // ₹99 flat pickup for returns, 0 for exchanges
 
-  // For EXCHANGE requests — desired replacement attributes
+  // For EXCHANGE requests — desired replacement attributes (legacy order-wide fields,
+  // kept for requests submitted before per-item selection existed)
   exchangeSize  String?
   exchangeColor String?
   // Set when admin marks the exchange completed and creates a replacement order
   replacementOrderId String?
+
+  // Which specific order item(s) this request applies to (empty for legacy rows)
+  items     ReturnRequestItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -339,6 +345,23 @@ model ReturnRequest {
   @@index([userId])
   @@index([status])
   @@index([createdAt])
+}
+
+// Which order item(s) a return/exchange request applies to, with per-item
+// desired replacement size/colour (EXCHANGE only).
+model ReturnRequestItem {
+  id              String        @id @default(cuid())
+  returnRequestId String
+  returnRequest   ReturnRequest @relation(fields: [returnRequestId], references: [id], onDelete: Cascade)
+  orderItemId     String
+  orderItem       OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  exchangeSize    String?
+  exchangeColor   String?
+  createdAt       DateTime      @default(now())
+
+  @@unique([returnRequestId, orderItemId])
+  @@index([returnRequestId])
+  @@index([orderItemId])
 }
 
 // Contact messages from customers

@@ -16,6 +16,12 @@ type ReturnRow = {
   exchangeSize: string | null;
   exchangeColor: string | null;
   replacementOrderId: string | null;
+  items: Array<{
+    id: string;
+    exchangeSize: string | null;
+    exchangeColor: string | null;
+    orderItem: { size: string | null; color: string | null; product: { name: string } };
+  }>;
   createdAt: string;
   updatedAt: string;
   user: {
@@ -253,19 +259,34 @@ export default function AdminReturnsDashboard({ initialReturns }: Props) {
                           {row.requestType === 'EXCHANGE' ? '🔄 Exchange' : '↩ Return'}
                         </span>
                         <p>{reasonLabel(row.reason)}</p>
-                        {row.requestType === 'EXCHANGE' && (row.exchangeSize || row.exchangeColor) && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {row.exchangeSize && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-medium">
-                                Size: {row.exchangeSize}
-                              </span>
-                            )}
-                            {row.exchangeColor && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-medium">
-                                Colour: {row.exchangeColor}
-                              </span>
-                            )}
+                        {row.items.length > 0 ? (
+                          <div className="mt-2 space-y-1.5">
+                            {row.items.map((it) => (
+                              <div key={it.id} className="rounded-md bg-blue-50 border border-blue-200 px-2 py-1 text-[11px] text-blue-800">
+                                <span className="font-medium">{it.orderItem.product.name}</span>
+                                {row.requestType === 'EXCHANGE' && (it.exchangeSize || it.exchangeColor) && (
+                                  <span className="ml-1 text-blue-700">
+                                    → {[it.exchangeSize && `Size: ${it.exchangeSize}`, it.exchangeColor && `Colour: ${it.exchangeColor}`].filter(Boolean).join(' · ')}
+                                  </span>
+                                )}
+                              </div>
+                            ))}
                           </div>
+                        ) : (
+                          row.requestType === 'EXCHANGE' && (row.exchangeSize || row.exchangeColor) && (
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {row.exchangeSize && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-medium">
+                                  Size: {row.exchangeSize}
+                                </span>
+                              )}
+                              {row.exchangeColor && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200 text-blue-800 text-[11px] font-medium">
+                                  Colour: {row.exchangeColor}
+                                </span>
+                              )}
+                            </div>
+                          )
                         )}
                         {row.details && (
                           <p className="text-gray-500 text-xs mt-1 line-clamp-3">{row.details}</p>

@@ -9,6 +9,7 @@ interface OrderForReturn {
   id: string;
   paymentMethod: string;
   items: Array<{
+    id: string;
     product: {
       name: string;
       sizes: Array<{ size: string; quantity?: number }>;
@@ -39,30 +40,40 @@ export default function ReturnRequestModal({ order, requestType, onClose, onSucc
 
   const [reason, setReason] = useState<string>(RETURN_REASONS[0].value);
   const [details, setDetails] = useState('');
-  const [exchangeSize, setExchangeSize] = useState<string>('');
-  const [exchangeColor, setExchangeColor] = useState<string>('');
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(
+    () => new Set(order.items.map(i => i.id))
+  );
+  const [itemExchange, setItemExchange] = useState<Record<string, { size: string; color: string }>>({});
   const [checked, setChecked] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Collect unique sizes and colors across all items (dedup by string value)
-  const allSizes: string[] = Array.from(
-    new Set(order.items.flatMap(i => (i.product.sizes ?? []).map(s => s.size).filter(Boolean)))
-  );
-  const colorMap = new Map<string, string | undefined>();
-  order.items.forEach(i => {
-    (i.product.colors ?? []).forEach(c => {
-      if (c?.name && !colorMap.has(c.name)) colorMap.set(c.name, c.hex);
-    });
-  });
-  const allColors: Array<{ name: string; hex?: string }> = Array.from(colorMap.entries()).map(([name, hex]) => ({ name, hex }));
 
   const allChecked = CONDITIONS.every(c => checked[c.id]);
 
   const toggle = (id: string) => setChecked(prev => ({ ...prev, [id]: !prev[id] }));
 
+  const toggleItem = (id: string) => setSelectedItemIds(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+
+  const setItemSize = (id: string, size: string) => setItemExchange(prev => ({
+    ...prev,
+    [id]: { size: prev[id]?.size === size ? '' : size, color: prev[id]?.color || '' },
+  }));
+
+  const setItemColor = (id: string, color: string) => setItemExchange(prev => ({
+    ...prev,
+    [id]: { size: prev[id]?.size || '', color: prev[id]?.color === color ? '' : color },
+  }));
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedItemIds.size === 0) {
+      setError('Please select at least one item.');
+      return;
+    }
     if (!allChecked) {
       setError('Please confirm all conditions before submitting.');
       return;
@@ -71,10 +82,11 @@ export default function ReturnRequestModal({ order, requestType, onClose, onSucc
     setLoading(true);
 
     try {
-      const exchangeDetails = isExchange
-        ? [exchangeSize && `Size: ${exchangeSize}`, exchangeColor && `Colour: ${exchangeColor}`, details.trim()]
-            .filter(Boolean).join(' · ')
-        : details.trim();
+      const items = Array.from(selectedItemIds).map(id => ({
+        orderItemId: id,
+        exchangeSize: isExchange ? (itemExchange[id]?.size || undefined) : undefined,
+        exchangeColor: isExchange ? (itemExchange[id]?.color || undefined) : undefined,
+      }));
 
       const res = await fetch('/api/returns', {
         method: 'POST',
@@ -82,10 +94,9 @@ export default function ReturnRequestModal({ order, requestType, onClose, onSucc
         body: JSON.stringify({
           orderId: order.id,
           reason,
-          details: exchangeDetails || undefined,
+          details: details.trim() || undefined,
           requestType,
-          exchangeSize: exchangeSize || undefined,
-          exchangeColor: exchangeColor || undefined,
+          items,
         }),
       });
       const data = await res.json();
@@ -133,18 +144,90 @@ export default function ReturnRequestModal({ order, requestType, onClose, onSucc
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-5">
-          {/* Items summary */}
-          <ul className="text-sm text-gray-700 space-y-1 border border-gray-100 rounded-xl p-3 bg-gray-50 max-h-28 overflow-y-auto">
-            {order.items.map((item, i) => (
-              <li key={i} className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary-400 shrink-0" />
-                {item.product.name}
-                {item.size ? ` · ${item.size}` : ''}
-                {item.color ? ` · ${item.color}` : ''}
-                {' × '}{item.quantity}
-              </li>
-            ))}
-          </ul>
+          {/* Items — select which item(s) this request applies to */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Which item{order.items.length > 1 ? 's' : ''} would you like to {isExchange ? 'exchange' : 'return'}?
+            </label>
+            <ul className="space-y-2 border border-gray-100 rounded-xl p-3 bg-gray-50 max-h-72 overflow-y-auto">
+              {order.items.map((item) => {
+                const isSelected = selectedItemIds.has(item.id);
+                const ex = itemExchange[item.id] || { size: '', color: '' };
+                return (
+                  <li key={item.id} className="border-b last:border-0 border-gray-100 pb-2 last:pb-0">
+                    <label className="flex items-start gap-2 cursor-pointer text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5"
+                        checked={isSelected}
+                        onChange={() => toggleItem(item.id)}
+                      />
+                      <span>
+                        {item.product.name}
+                        {item.size ? ` · ${item.size}` : ''}
+                        {item.color ? ` · ${item.color}` : ''}
+                        {' × '}{item.quantity}
+                      </span>
+                    </label>
+
+                    {isSelected && isExchange && (
+                      <div className="mt-2 pl-6 space-y-2">
+                        {(item.product.sizes ?? []).length > 0 && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Preferred size</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {item.product.sizes.map(s => (
+                                <button
+                                  key={s.size}
+                                  type="button"
+                                  onClick={() => setItemSize(item.id, s.size)}
+                                  className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+                                    ex.size === s.size
+                                      ? 'bg-primary-600 border-primary-600 text-white'
+                                      : 'bg-white border-gray-300 text-gray-700 hover:border-primary-400'
+                                  }`}
+                                >
+                                  {s.size}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {(item.product.colors ?? []).length > 0 && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Preferred colour</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {item.product.colors.map(c => (
+                                <button
+                                  key={c.name}
+                                  type="button"
+                                  onClick={() => setItemColor(item.id, c.name)}
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+                                    ex.color === c.name
+                                      ? 'bg-primary-600 border-primary-600 text-white'
+                                      : 'bg-white border-gray-300 text-gray-700 hover:border-primary-400'
+                                  }`}
+                                >
+                                  {c.hex && (
+                                    <span
+                                      className="w-3 h-3 rounded-full border border-gray-300"
+                                      style={{ backgroundColor: c.hex }}
+                                    />
+                                  )}
+                                  {c.name}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
 
           {/* Reason */}
           <div>
@@ -162,65 +245,6 @@ export default function ReturnRequestModal({ order, requestType, onClose, onSucc
               ))}
             </select>
           </div>
-
-          {/* Exchange: size + color pickers */}
-          {isExchange && (
-            <div className="space-y-4">
-              {allSizes.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Preferred size <span className="font-normal text-gray-400">(for exchange)</span>
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {allSizes.map(s => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setExchangeSize(exchangeSize === s ? '' : s)}
-                        className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
-                          exchangeSize === s
-                            ? 'bg-primary-600 border-primary-600 text-white'
-                            : 'bg-white border-gray-300 text-gray-700 hover:border-primary-400'
-                        }`}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {allColors.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Preferred colour <span className="font-normal text-gray-400">(for exchange)</span>
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {allColors.map(c => (
-                      <button
-                        key={c.name}
-                        type="button"
-                        onClick={() => setExchangeColor(exchangeColor === c.name ? '' : c.name)}
-                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
-                          exchangeColor === c.name
-                            ? 'bg-primary-600 border-primary-600 text-white'
-                            : 'bg-white border-gray-300 text-gray-700 hover:border-primary-400'
-                        }`}
-                      >
-                        {c.hex && (
-                          <span
-                            className="w-3.5 h-3.5 rounded-full border border-gray-300"
-                            style={{ backgroundColor: c.hex }}
-                          />
-                        )}
-                        {c.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Details / additional notes */}
           <div>

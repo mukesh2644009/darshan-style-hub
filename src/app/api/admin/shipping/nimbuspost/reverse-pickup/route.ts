@@ -29,6 +29,7 @@ export async function POST(request: Request) {
       select: {
         id: true,
         status: true,
+        total: true,
         shippingName: true,
         shippingPhone: true,
         shippingAddress: true,
@@ -72,6 +73,7 @@ export async function POST(request: Request) {
       customerPincode: order.shippingPincode || '',
       weightGrams,
       enableQc,
+      amount: order.total,
     });
 
     // Save reverse AWB to the order

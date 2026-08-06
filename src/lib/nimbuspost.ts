@@ -541,6 +541,7 @@ export type NimbusReversePickupInput = {
   customerPincode: string;
   weightGrams?: number;
   enableQc?: boolean;            // Reverse QC — courier checks item before pickup
+  amount?: number;               // Declared value of the returned goods — NimbusPost requires > 0
 };
 
 export type NimbusReversePickupResult = {
@@ -558,6 +559,7 @@ export async function createNimbusReversePickup(
   const url = joinUrl(getBaseUrl(), getCreateShipmentPath());
 
   const pickupContactName = process.env.NIMBUSPOST_PICKUP_CONTACT_NAME || 'Darshan Style Hub';
+  const pickupWarehouseName = process.env.NIMBUSPOST_PICKUP_WAREHOUSE_NAME || 'Primary Warehouse';
   const pickupAddress    = process.env.NIMBUSPOST_PICKUP_ADDRESS    || 'DARSHAN STYLE HUB, Plot No. B-11, Shri Ram Vihar-B, Shri Kishanpura, Sanganer';
   const pickupCity       = process.env.NIMBUSPOST_PICKUP_CITY       || 'Jaipur';
   const pickupState      = process.env.NIMBUSPOST_PICKUP_STATE      || 'Rajasthan';
@@ -574,15 +576,18 @@ export async function createNimbusReversePickup(
   const courierId = process.env.NIMBUSPOST_COURIER_ID ? Number(process.env.NIMBUSPOST_COURIER_ID) : null;
 
   // Reverse shipment: consignee = YOUR warehouse, pickup = customer address
+  // NimbusPost's "shipment_type" is a delivery-speed enum (regular/sdd/ndd),
+  // not a forward/reverse flag — reverse-ness is conveyed via order_type/is_reverse below.
+  const declaredAmount = input.amount && input.amount > 0 ? input.amount : 1;
   const basePayload = {
     order_number: shortRef,
     order_type: 'reverse',
-    shipment_type: 'reverse',
+    shipment_type: 'regular',
     type: 'reverse',
     is_reverse: true,
     reverse: true,
     payment_type: 'prepaid',
-    order_amount: 0,
+    order_amount: declaredAmount,
     package_weight: weightG,
     package_length: packageLength,
     package_breadth: packageBreadth,
@@ -602,6 +607,7 @@ export async function createNimbusReversePickup(
     },
     // Pickup = customer's address
     pickup: {
+      warehouse_name: pickupWarehouseName,
       name: input.customerName,
       address: addressLine1,
       address_2: addressLine2 || '',
@@ -610,7 +616,7 @@ export async function createNimbusReversePickup(
       pincode: input.customerPincode,
       phone: normalizePhone(input.customerPhone),
     },
-    order_items: [{ name: 'Returned item', qty: '1', price: '0', sku: '' }],
+    order_items: [{ name: 'Returned item', qty: '1', price: String(declaredAmount), sku: '' }],
     weight: weightKg,
   };
 

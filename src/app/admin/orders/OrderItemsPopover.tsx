@@ -45,7 +45,7 @@ export default function OrderItemsPopover({ items }: { items: OrderItem[] }) {
     <div className="inline-block" ref={ref}>
       <div className="flex items-center gap-2">
         {/* Stacked thumbnail previews */}
-        <div className="flex -space-x-2">
+        <div className="flex -space-x-2 shrink-0">
           {items.slice(0, 3).map((item, idx) => {
             const imgUrl = item.product?.images?.[0]?.url
               ? normalizeProductImageUrl(item.product.images[0].url)

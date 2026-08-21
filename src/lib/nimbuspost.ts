@@ -18,6 +18,7 @@ type NimbusCreateShipmentInput = {
     sku?: string;
   }>;
   deadWeightGrams: number;
+  courierId?: number;
 };
 
 type NimbusLoginResponse = {
@@ -334,7 +335,8 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
   const shippingCharges = input.shippingCharges ?? Number(process.env.NIMBUSPOST_SHIPPING_CHARGES || 0);
   const discount = Number(process.env.NIMBUSPOST_DEFAULT_DISCOUNT || 0);
   const codCharges = input.codCharges ?? Number(process.env.NIMBUSPOST_COD_CHARGES || 0);
-  const courierId = process.env.NIMBUSPOST_COURIER_ID ? Number(process.env.NIMBUSPOST_COURIER_ID) : null;
+  // Per-order courier override takes precedence over the account-wide default.
+  const courierId = input.courierId ?? (process.env.NIMBUSPOST_COURIER_ID ? Number(process.env.NIMBUSPOST_COURIER_ID) : null);
   // NimbusPost requires a positive declared order value even for ₹0 exchange replacement orders.
   const declaredAmount = input.amount > 0 ? input.amount : 1;
   const declaredItems = input.items.map((item) => ({

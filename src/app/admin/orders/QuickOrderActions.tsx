@@ -108,13 +108,19 @@ export default function QuickOrderActions({
   };
 
   const handleCreateShipment = async () => {
+    const courierInput = window.prompt('Force a specific NimbusPost courier ID? (leave blank to let Nimbus auto-allocate)') || '';
+    const courierId = courierInput.trim() ? Number(courierInput.trim()) : undefined;
+    if (courierInput.trim() && (!courierId || Number.isNaN(courierId))) {
+      alert('Courier ID must be a number');
+      return;
+    }
     setLoading('CREATE_SHIPMENT');
     setOpen(false);
     try {
       const res = await fetch('/api/admin/shipping/nimbuspost/create-shipment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId }),
+        body: JSON.stringify({ orderId, courierId }),
       });
       const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string; awbFound?: boolean };
       alert(res.ok

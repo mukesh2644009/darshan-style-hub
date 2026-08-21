@@ -16,6 +16,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const orderId = typeof body.orderId === 'string' ? body.orderId : '';
     const deadWeightGrams = typeof body.deadWeightGrams === 'number' ? body.deadWeightGrams : 500;
+    const courierId = typeof body.courierId === 'number' && body.courierId > 0 ? body.courierId : undefined;
 
     if (!orderId) {
       return NextResponse.json({ success: false, error: 'orderId is required' }, { status: 400 });
@@ -95,6 +96,7 @@ export async function POST(request: Request) {
       state: order.shippingState,
       pincode: order.shippingPincode,
       deadWeightGrams,
+      courierId,
       items: order.items.map((item) => ({
         name: item.product?.name || 'Product',
         quantity: item.quantity,

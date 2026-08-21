@@ -40,7 +40,8 @@ export async function POST(request: Request) {
     if (!order.shippingState?.trim()) missingOrderFields.push('shippingState');
     if (!order.shippingPincode?.trim()) missingOrderFields.push('shippingPincode');
     if (!order.shippingPhone?.trim()) missingOrderFields.push('shippingPhone');
-    if (!order.total || Number(order.total) <= 0) missingOrderFields.push('total');
+    const isFreeReplacement = order.orderType === 'REPLACEMENT' || order.paymentMethod === 'EXCHANGE';
+    if (order.total == null || (Number(order.total) <= 0 && !isFreeReplacement)) missingOrderFields.push('total');
     if (!order.items?.length) missingOrderFields.push('items');
 
     if (missingOrderFields.length > 0) {

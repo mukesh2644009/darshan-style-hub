@@ -335,6 +335,12 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
   const discount = Number(process.env.NIMBUSPOST_DEFAULT_DISCOUNT || 0);
   const codCharges = input.codCharges ?? Number(process.env.NIMBUSPOST_COD_CHARGES || 0);
   const courierId = process.env.NIMBUSPOST_COURIER_ID ? Number(process.env.NIMBUSPOST_COURIER_ID) : null;
+  // NimbusPost requires a positive declared order value even for ₹0 exchange replacement orders.
+  const declaredAmount = input.amount > 0 ? input.amount : 1;
+  const declaredItems = input.items.map((item) => ({
+    ...item,
+    price: item.price > 0 ? item.price : 1,
+  }));
 
   const nimbusDocPayload = {
     order_number: input.orderNumber,
@@ -342,7 +348,7 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
     discount,
     cod_charges: input.paymentMode === 'COD' ? codCharges : 0,
     payment_type: paymentType,
-    order_amount: input.amount,
+    order_amount: declaredAmount,
     package_weight: packageWeight,
     package_length: packageLength,
     package_breadth: packageBreadth,
@@ -367,7 +373,7 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
       pincode: pickupPincode,
       phone: pickupPhone,
     },
-    order_items: input.items.map((item) => ({
+    order_items: declaredItems.map((item) => ({
       name: item.name,
       qty: String(item.quantity),
       price: String(item.price),
@@ -389,8 +395,8 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
     order_number: input.orderNumber,
     payment_type: paymentType,
     payment_method: paymentType,
-    order_total: input.amount,
-    order_value: input.amount,
+    order_total: declaredAmount,
+    order_value: declaredAmount,
     pickup_warehouse_name: pickupWarehouseName,
     pickup_contact_name: pickupContactName,
     pickup_address: pickupAddress,
@@ -399,14 +405,14 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
     pickup_pincode: pickupPincode,
     pickup_phone: pickupPhone,
     weight: weightKg,
-    order_items: input.items.map((item) => ({
+    order_items: declaredItems.map((item) => ({
       name: item.name,
       qty: item.quantity,
       quantity: item.quantity,
       price: item.price,
       sku: item.sku || '',
     })),
-    products: input.items.map((item) => ({
+    products: declaredItems.map((item) => ({
       name: item.name,
       quantity: item.quantity,
       price: item.price,
@@ -418,7 +424,7 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
   const modernFields = {
     orderNumber: input.orderNumber,
     paymentMode: input.paymentMode,
-    amount: input.amount,
+    amount: declaredAmount,
     customer: {
       name: input.customerName,
       phone: normalizePhone(input.customerPhone),
@@ -434,7 +440,7 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
     parcel: {
       deadWeightKg: weightKg,
     },
-    items: input.items,
+    items: declaredItems,
   };
 
   const camelCaseFields = {
@@ -447,7 +453,7 @@ export async function createNimbusShipment(input: NimbusCreateShipmentInput): Pr
     consigneeEmail: input.customerEmail || '',
     orderNumber: input.orderNumber,
     paymentType: paymentType,
-    orderTotal: input.amount,
+    orderTotal: declaredAmount,
     pickupWarehouseName: pickupWarehouseName,
     pickupContactName: pickupContactName,
     pickupAddress: pickupAddress,

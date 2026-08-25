@@ -26,20 +26,12 @@ const nextConfig = {
   },
 
   images: {
-    // AVIF = ~50% smaller than WebP; WebP = ~30% smaller than JPEG.
-    // Next.js tries AVIF first (via Accept header), falls back to WebP.
-    formats: ['image/avif', 'image/webp'],
-    // Trimmed to actual responsive breakpoints used in sizes="" attributes.
-    deviceSizes: [640, 828, 1080, 1200, 1920],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    // Cache optimised images on Vercel CDN for 30 days.
-    minimumCacheTTL: 2592000,
-    remotePatterns: [
-      { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: 'images.pexels.com' },
-      { protocol: 'https', hostname: 'via.placeholder.com' },
-      { protocol: 'https', hostname: 'res.cloudinary.com' },
-    ],
+    // Custom loader offloads resizing/format-conversion to Cloudinary (which
+    // already optimizes uploaded images) instead of Vercel's Image
+    // Optimization, which has a hard monthly transformation quota on the
+    // Hobby plan.
+    loader: 'custom',
+    loaderFile: './src/lib/cloudinaryImageLoader.ts',
   },
 
   async headers() {

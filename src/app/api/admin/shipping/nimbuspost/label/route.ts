@@ -19,6 +19,29 @@ async function getNimbusLoginToken(baseUrl: string): Promise<string | null> {
   return null;
 }
 
+function deepFindStringByKeys(value: unknown, keys: string[], maxDepth = 6): string | undefined {
+  if (maxDepth < 0 || value == null) return undefined;
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const obj = value as Record<string, unknown>;
+    for (const key of keys) {
+      const candidate = obj[key];
+      if (typeof candidate === 'string' && candidate.trim()) return candidate;
+    }
+    for (const nested of Object.values(obj)) {
+      const found = deepFindStringByKeys(nested, keys, maxDepth - 1);
+      if (found) return found;
+    }
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (typeof item === 'string' && item.trim()) return item;
+      const found = deepFindStringByKeys(item, keys, maxDepth - 1);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
 export async function GET(request: Request) {
   try {
     const authResult = await requireAdmin();
@@ -51,14 +74,39 @@ export async function GET(request: Request) {
       'Authorization': `Bearer ${apiKey}`,
     };
 
-    // NimbusPost label endpoint
-    let res = await fetch(`${baseUrl}/shipments/label?awb=${awb}`, { headers });
+    const applyLoginFallback = async () => {
+      const token = await getNimbusLoginToken(baseUrl);
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      return Boolean(token);
+    };
+
+    // NimbusPost's documented print-label endpoint: POST /shipments/print
+    // with { awb: [awb] }, matching the POST-with-body convention used by
+    // every other endpoint in this codebase (create, cancel, track).
+    const printPath = process.env.NIMBUSPOST_LABEL_PATH || '/shipments/print';
+    let res = await fetch(`${baseUrl}${printPath}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ awb: [awb] }),
+    });
 
     if (!res.ok && (res.status === 401 || res.status === 403)) {
-      const token = await getNimbusLoginToken(baseUrl);
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-        res = await fetch(`${baseUrl}/shipments/label?awb=${awb}`, { headers });
+      if (await applyLoginFallback()) {
+        res = await fetch(`${baseUrl}${printPath}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ awb: [awb] }),
+        });
+      }
+    }
+
+    // Fall back to the older GET-with-query-param shape some Nimbus tenants use.
+    if (!res.ok) {
+      res = await fetch(`${baseUrl}/shipments/label?awb=${awb}`, { headers });
+      if (!res.ok && (res.status === 401 || res.status === 403) && headers['Authorization'] === `Bearer ${apiKey}`) {
+        if (await applyLoginFallback()) {
+          res = await fetch(`${baseUrl}/shipments/label?awb=${awb}`, { headers });
+        }
       }
     }
 
@@ -79,10 +127,8 @@ export async function GET(request: Request) {
       });
     }
 
-    // Some Nimbus tenants return a JSON with a label URL
-    const json = await res.json() as { data?: { label_url?: string; url?: string }; label_url?: string; url?: string };
-    const labelUrl =
-      json?.data?.label_url || json?.data?.url || json?.label_url || json?.url;
+    const json = await res.json().catch(() => null) as Record<string, unknown> | null;
+    const labelUrl = json ? deepFindStringByKeys(json, ['label_url', 'labelUrl', 'url', 'label', 'label_link']) : undefined;
 
     if (labelUrl) {
       // Save the label URL so next time it loads directly
@@ -90,7 +136,10 @@ export async function GET(request: Request) {
       return NextResponse.redirect(labelUrl);
     }
 
-    return NextResponse.json({ success: false, error: 'Could not retrieve label from NimbusPost' }, { status: 502 });
+    return NextResponse.json(
+      { success: false, error: 'Could not retrieve label from NimbusPost', raw: json },
+      { status: 502 }
+    );
   } catch (error) {
     console.error('Label fetch error:', error);
     return NextResponse.json({ success: false, error: 'Failed to fetch label' }, { status: 500 });

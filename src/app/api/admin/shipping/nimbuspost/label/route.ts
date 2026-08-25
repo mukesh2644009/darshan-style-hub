@@ -4,6 +4,21 @@ import { requireAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+async function getNimbusLoginToken(baseUrl: string): Promise<string | null> {
+  const email = process.env.NIMBUSPOST_EMAIL;
+  const password = process.env.NIMBUSPOST_PASSWORD;
+  if (!email || !password) return null;
+  const res = await fetch(`${baseUrl}/users/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const json = await res.json().catch(() => null) as Record<string, unknown> | null;
+  if (!json) return null;
+  if (typeof json.data === 'string') return json.data;
+  return null;
+}
+
 export async function GET(request: Request) {
   try {
     const authResult = await requireAdmin();
@@ -37,7 +52,15 @@ export async function GET(request: Request) {
     };
 
     // NimbusPost label endpoint
-    const res = await fetch(`${baseUrl}/shipments/label?awb=${awb}`, { headers });
+    let res = await fetch(`${baseUrl}/shipments/label?awb=${awb}`, { headers });
+
+    if (!res.ok && (res.status === 401 || res.status === 403)) {
+      const token = await getNimbusLoginToken(baseUrl);
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        res = await fetch(`${baseUrl}/shipments/label?awb=${awb}`, { headers });
+      }
+    }
 
     if (!res.ok) {
       return NextResponse.json({ success: false, error: `NimbusPost returned ${res.status}` }, { status: 502 });

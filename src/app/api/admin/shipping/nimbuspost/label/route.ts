@@ -111,7 +111,12 @@ export async function GET(request: Request) {
     }
 
     if (!res.ok) {
-      return NextResponse.json({ success: false, error: `NimbusPost returned ${res.status}` }, { status: 502 });
+      const bodyText = await res.text().catch(() => '');
+      console.error(`NimbusPost label fetch failed (${res.status}):`, bodyText);
+      return NextResponse.json(
+        { success: false, error: `NimbusPost returned ${res.status}`, nimbusResponse: bodyText.slice(0, 2000) },
+        { status: 502 }
+      );
     }
 
     const contentType = res.headers.get('content-type') || '';

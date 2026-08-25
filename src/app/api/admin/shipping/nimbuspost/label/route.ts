@@ -4,21 +4,6 @@ import { requireAdmin } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-async function getNimbusLoginToken(baseUrl: string): Promise<string | null> {
-  const email = process.env.NIMBUSPOST_EMAIL;
-  const password = process.env.NIMBUSPOST_PASSWORD;
-  if (!email || !password) return null;
-  const res = await fetch(`${baseUrl}/users/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-  const json = await res.json().catch(() => null) as Record<string, unknown> | null;
-  if (!json) return null;
-  if (typeof json.data === 'string') return json.data;
-  return null;
-}
-
 function deepFindStringByKeys(value: unknown, keys: string[], maxDepth = 6): string | undefined {
   if (maxDepth < 0 || value == null) return undefined;
   if (typeof value === 'object' && !Array.isArray(value)) {
@@ -68,16 +53,14 @@ export async function GET(request: Request) {
 
     const apiKey = process.env.NIMBUSPOST_API_KEY || '';
     const baseUrl = (process.env.NIMBUSPOST_API_BASE || 'https://api.nimbuspost.com/v1').replace(/\/+$/, '');
+
+    // NimbusPost's gateway (Kong hmac-auth) tries to parse ANY Authorization
+    // header as an HMAC signature and rejects plain Bearer tokens with a
+    // "missing equal-sign" error. Auth is NP-API-KEY only — no Authorization
+    // header at all — matching what actually works against this gateway.
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'NP-API-KEY': apiKey,
-      'Authorization': `Bearer ${apiKey}`,
-    };
-
-    const applyLoginFallback = async () => {
-      const token = await getNimbusLoginToken(baseUrl);
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      return Boolean(token);
     };
 
     // NimbusPost's documented print-label endpoint: POST /shipments/print
@@ -90,24 +73,9 @@ export async function GET(request: Request) {
       body: JSON.stringify({ awb: [awb] }),
     });
 
-    if (!res.ok && (res.status === 401 || res.status === 403)) {
-      if (await applyLoginFallback()) {
-        res = await fetch(`${baseUrl}${printPath}`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ awb: [awb] }),
-        });
-      }
-    }
-
     // Fall back to the older GET-with-query-param shape some Nimbus tenants use.
     if (!res.ok) {
       res = await fetch(`${baseUrl}/shipments/label?awb=${awb}`, { headers });
-      if (!res.ok && (res.status === 401 || res.status === 403) && headers['Authorization'] === `Bearer ${apiKey}`) {
-        if (await applyLoginFallback()) {
-          res = await fetch(`${baseUrl}/shipments/label?awb=${awb}`, { headers });
-        }
-      }
     }
 
     if (!res.ok) {

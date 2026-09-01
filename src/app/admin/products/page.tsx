@@ -172,6 +172,7 @@ export default async function ProductsPage() {
                         product.category === 'Kurtis' ? 'bg-green-100 text-green-800' :
                         product.category === 'Tops' ? 'bg-blue-100 text-blue-800' :
                         product.category === 'Sarees' ? 'bg-pink-100 text-pink-800' :
+                        product.category === 'Western Dress' ? 'bg-teal-100 text-teal-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
                         {product.category}

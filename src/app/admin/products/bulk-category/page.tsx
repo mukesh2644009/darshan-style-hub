@@ -5,13 +5,14 @@ import Image from 'next/image';
 import { FiSave, FiLoader, FiCheck, FiSearch, FiAlertCircle, FiTag } from 'react-icons/fi';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
 
-const CATEGORIES = ['Suits', 'Kurtis', 'Co Ord Sets', 'Tops'];
+const CATEGORIES = ['Suits', 'Kurtis', 'Co Ord Sets', 'Tops', 'Western Dress'];
 
 const SUBCATEGORIES: Record<string, string[]> = {
   Suits: ['Designer Suits', 'Salwar Suits', 'Party Wear Suits', 'Casual Suits', 'Anarkali Suits', 'Printed Suits'],
   Kurtis: ['Printed Kurti', 'Cotton Kurti', 'Party Wear Kurti', 'Casual Kurti', 'Embroidered Kurti'],
   'Co Ord Sets': ['Casual Co Ord Sets', 'Designer Co Ord Sets', 'Printed Co Ord Sets', 'Party Wear Co Ord Sets'],
   Tops: ['Casual Tops', 'Printed Tops', 'Party Tops'],
+  'Western Dress': ['Bodycon Dress', 'Maxi Dress', 'Party Wear Dress', 'Casual Dress', 'Gown'],
 };
 
 interface ProductRow {

@@ -53,6 +53,12 @@ const shopCategoryCircles = [
     image: '/products/categories/tops.webp',
     alt: 'Trendy tops',
   },
+  {
+    label: 'Western Dress',
+    href: '/products?category=Western Dress',
+    image: '/products/categories/western-dress.webp',
+    alt: 'Stylish western dresses',
+  },
 ] as const;
 
 export default async function Home() {
@@ -142,7 +148,7 @@ export default async function Home() {
               Shop by Category
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base">
-              Sarees, suits, co ord sets, kurtis & tops — pick a style and explore
+              Sarees, suits, co ord sets, kurtis, tops & western dresses — pick a style and explore
             </p>
           </div>
 
@@ -165,8 +171,8 @@ export default async function Home() {
             </Link>
           </div>
 
-          {/* 4 Category Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10 max-w-5xl mx-auto">
+          {/* Category Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-6 sm:gap-8 md:gap-10 max-w-6xl mx-auto">
             {shopCategoryCircles.map((item, index) => (
               // Plain div — no AnimatedSection so images are visible immediately for LCP
               <div key={item.href} className="w-full">

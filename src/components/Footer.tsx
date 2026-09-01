@@ -67,6 +67,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/products?category=Western Dress" className="text-accent-300 hover:text-white transition-colors">
+                  Western Dress
+                </Link>
+              </li>
+              <li>
                 <Link href="/products?newArrival=true" className="text-accent-300 hover:text-white transition-colors">
                   New Arrivals
                 </Link>

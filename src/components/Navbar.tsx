@@ -157,6 +157,14 @@ export default function Navbar() {
                     Co Ord Sets
                   </Link>
                   <Link
+                    href="/products?category=Western Dress"
+                    role="menuitem"
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent-50 hover:text-primary-600 whitespace-nowrap"
+                    onClick={() => setIsShopMenuOpen(false)}
+                  >
+                    Western Dress
+                  </Link>
+                  <Link
                     href="/products?newArrival=true"
                     role="menuitem"
                     className="block px-4 py-2 text-sm text-gray-700 hover:bg-accent-50 hover:text-primary-600 whitespace-nowrap"
@@ -357,6 +365,9 @@ export default function Navbar() {
             </Link>
             <Link href="/products?category=Co Ord Sets" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               Co Ord Sets
+            </Link>
+            <Link href="/products?category=Western Dress" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
+              Western Dress
             </Link>
             <Link href="/products?newArrival=true" onClick={() => setIsMenuOpen(false)} className="block py-2 text-gray-700 hover:text-primary-600 font-medium">
               New Arrivals

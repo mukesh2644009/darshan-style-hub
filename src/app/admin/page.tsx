@@ -2,8 +2,9 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import {
   FiShoppingBag, FiPackage, FiUsers, FiDollarSign,
-  FiArrowRight, FiTrendingUp, FiRotateCcw, FiClock,
+  FiArrowRight, FiTrendingUp, FiRotateCcw, FiClock, FiSearch,
 } from 'react-icons/fi';
+import { getTopProductPagesFromSearchConsole, extractProductKeyFromUrl } from '@/lib/searchConsole';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -23,7 +24,7 @@ const STATUS_META: Record<string, { label: string; dot: string; bg: string; text
 };
 
 async function getData() {
-  const [orders, productsCount, customersCount, allProducts, pendingReturns, topViewed] = await Promise.all([
+  const [orders, productsCount, customersCount, allProducts, pendingReturns, topViewed, searchRows] = await Promise.all([
     prisma.order.findMany({
       take: 5, orderBy: { createdAt: 'desc' },
       include: { user: true, items: { include: { product: true } } },
@@ -38,7 +39,25 @@ async function getData() {
       take: 5,
       select: { id: true, name: true, category: true, price: true, viewCount: true, slug: true },
     }),
+    getTopProductPagesFromSearchConsole(28, 8),
   ]);
+
+  // Match Search Console page URLs back to actual products (by slug or id)
+  let topSearched: Array<{ id: string; name: string; category: string; price: number; slug: string | null; clicks: number; impressions: number }> = [];
+  if (searchRows.length > 0) {
+    const keys = searchRows.map(r => extractProductKeyFromUrl(r.url)).filter((k): k is string => !!k);
+    const matched = await prisma.product.findMany({
+      where: { OR: [{ id: { in: keys } }, { slug: { in: keys } }] },
+      select: { id: true, name: true, category: true, price: true, slug: true },
+    });
+    topSearched = searchRows
+      .map(r => {
+        const key = extractProductKeyFromUrl(r.url);
+        const product = matched.find(p => p.id === key || p.slug === key);
+        return product ? { ...product, clicks: r.clicks, impressions: r.impressions } : null;
+      })
+      .filter((row): row is NonNullable<typeof row> => row !== null);
+  }
 
   // Dynamic category counts
   const categoryCounts: Record<string, number> = {};
@@ -60,7 +79,7 @@ async function getData() {
 
   const pending = allOrders.filter(o => o.status === 'PENDING').length;
 
-  return { orders, productsCount, customersCount, revenue, categoryCounts, pendingReturns, pending, totalOrders: allOrders.length, topViewed };
+  return { orders, productsCount, customersCount, revenue, categoryCounts, pendingReturns, pending, totalOrders: allOrders.length, topViewed, topSearched };
 }
 
 export default async function AdminDashboard() {
@@ -188,33 +207,70 @@ export default async function AdminDashboard() {
         )}
       </div>
 
-      {/* Top Viewed Products */}
-      {d.topViewed.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FiTrendingUp className="w-4 h-4 text-gray-400" />
-              <h2 className="font-semibold text-gray-900">Most Viewed Products</h2>
+      {/* Most Viewed Products (all traffic) + Most Searched Products (Google organic) — side by side */}
+      {(d.topViewed.length > 0 || d.topSearched.length > 0) && (
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Most Viewed Products — internal viewCount, every visit from any source */}
+          {d.topViewed.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FiTrendingUp className="w-4 h-4 text-gray-400" />
+                  <h2 className="font-semibold text-gray-900">Most Viewed Products</h2>
+                </div>
+                <Link href="/admin/products" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors">
+                  All products <FiArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+              <p className="px-6 pt-3 text-xs text-gray-400">Every product page load, any traffic source</p>
+              <div className="divide-y divide-gray-50">
+                {d.topViewed.map((p, i) => (
+                  <Link key={p.id} href={`/admin/products/${p.id}`} className="flex items-center gap-4 px-6 py-3.5 hover:bg-gray-50/60 transition-colors group">
+                    <span className="text-xl font-black text-gray-200 w-7 text-center shrink-0">#{i + 1}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-primary-600 transition-colors">{p.name}</p>
+                      <p className="text-xs text-gray-400">{p.category} · ₹{p.price.toLocaleString('en-IN')}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-lg font-bold text-primary-600">{p.viewCount.toLocaleString()}</p>
+                      <p className="text-xs text-gray-400">views</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
-            <Link href="/admin/products" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors">
-              All products <FiArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {d.topViewed.map((p, i) => (
-              <Link key={p.id} href={`/admin/products/${p.id}`} className="flex items-center gap-4 px-6 py-3.5 hover:bg-gray-50/60 transition-colors group">
-                <span className="text-xl font-black text-gray-200 w-7 text-center shrink-0">#{i + 1}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-primary-600 transition-colors">{p.name}</p>
-                  <p className="text-xs text-gray-400">{p.category} · ₹{p.price.toLocaleString('en-IN')}</p>
+          )}
+
+          {/* Most Visited Products (Google Search) — Search Console clicks, organic only */}
+          {d.topSearched.length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <FiSearch className="w-4 h-4 text-gray-400" />
+                  <h2 className="font-semibold text-gray-900">Most Visited (Google Search)</h2>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-lg font-bold text-primary-600">{p.viewCount.toLocaleString()}</p>
-                  <p className="text-xs text-gray-400">views</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+                <Link href="/admin/seo" className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors">
+                  SEO details <FiArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+              <p className="px-6 pt-3 text-xs text-gray-400">Clicks from Google search results, last 28 days</p>
+              <div className="divide-y divide-gray-50">
+                {d.topSearched.map((p, i) => (
+                  <Link key={p.id} href={`/admin/products/${p.id}`} className="flex items-center gap-4 px-6 py-3.5 hover:bg-gray-50/60 transition-colors group">
+                    <span className="text-xl font-black text-gray-200 w-7 text-center shrink-0">#{i + 1}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-primary-600 transition-colors">{p.name}</p>
+                      <p className="text-xs text-gray-400">{p.category} · ₹{p.price.toLocaleString('en-IN')}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-lg font-bold text-green-600">{p.clicks.toLocaleString()}</p>
+                      <p className="text-xs text-gray-400">{p.impressions.toLocaleString()} shown</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

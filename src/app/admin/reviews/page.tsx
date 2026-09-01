@@ -93,10 +93,10 @@ export default function ReviewsPage() {
 
     setProducts(prev => prev.map(x => x.id === id ? { ...x, _error: '' } : x));
 
-    const res = await fetch(`/api/admin/products/${id}`, {
+    const res = await fetch('/api/admin/products/bulk-ratings', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rating, reviews }),
+      body: JSON.stringify([{ id, rating, reviews }]),
     });
 
     if (res.ok) {

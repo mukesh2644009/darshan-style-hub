@@ -20,7 +20,7 @@ interface ProductRow {
   name: string;
   category: string;
   subcategory: string;
-  images: { url: string }[];
+  images: string[];
   _category: string;
   _subcategory: string;
   _dirty: boolean;
@@ -205,7 +205,7 @@ export default function BulkCategoryPage() {
                   <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                     {row.images?.[0] ? (
                       <Image
-                        src={normalizeProductImageUrl(row.images[0].url)}
+                        src={normalizeProductImageUrl(row.images[0])}
                         alt={row.name}
                         width={40}
                         height={40}

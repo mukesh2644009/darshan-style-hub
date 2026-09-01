@@ -9,7 +9,7 @@ interface ProductRow {
   id: string;
   name: string;
   category: string;
-  images: { url: string }[];
+  images: string[];
   rating: number;
   reviews: number;
   // local edit state
@@ -288,7 +288,7 @@ export default function ReviewsPage() {
                         <div className="relative w-10 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
                           {p.images?.[0] && (
                             <Image
-                              src={normalizeProductImageUrl(p.images[0].url) || ''}
+                              src={normalizeProductImageUrl(p.images[0]) || ''}
                               alt={p.name}
                               fill
                               unoptimized

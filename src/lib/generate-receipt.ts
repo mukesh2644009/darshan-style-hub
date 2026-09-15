@@ -49,7 +49,7 @@ export function generateReceipt(data: ReceiptData) {
   y += 8;
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text('Sitapura Industrial Area, Jaipur, Rajasthan 302022 | +91 90190 76335', 15, y);
+  doc.text('Shri Kishanpura, Sanganer, Jaipur, Rajasthan 302017 | +91 90190 76335', 15, y);
   y += 5;
   doc.text('www.darshanstylehub.com | darshanstylehub.business@gmail.com', 15, y);
 

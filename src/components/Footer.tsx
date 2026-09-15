@@ -143,9 +143,9 @@ export default function Footer() {
               <li className="flex items-start gap-3">
                 <FiMapPin className="mt-1 flex-shrink-0 text-primary-400" />
                 <span className="text-accent-300">
-                  B-312, Near (IIGJ), R.K. Derewala Building,<br />
-                  PN B-11, Shriram Vihar-B, Shrikishanpura,<br />
-                  Sanganer, Jaipur, Rajasthan 302017
+                  Plot No. B-11, Shri Ram Vihar-B,<br />
+                  Shri Kishanpura, Sanganer,<br />
+                  Jaipur, Rajasthan 302017
                 </span>
               </li>
               <li className="flex items-center gap-3">

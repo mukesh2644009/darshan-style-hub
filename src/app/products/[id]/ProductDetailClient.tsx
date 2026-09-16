@@ -148,6 +148,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const [pincodeError, setPincodeError] = useState('');
   const [sizeNudge, setSizeNudge] = useState(false);
   const [cartNudge, setCartNudge] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
   const sizeRef = useRef<HTMLDivElement>(null);
   
   // Swipe handling for mobile
@@ -287,7 +288,26 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
   const handleCopyLink = () => {
     if (typeof window !== 'undefined') {
       navigator.clipboard.writeText(window.location.href);
-      alert('Link copied to clipboard!');
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2500);
+    }
+  };
+
+  const handleNativeShare = async () => {
+    const productUrl = typeof window !== 'undefined' ? window.location.href : '';
+    const shareData = {
+      title: product.name,
+      text: `Check out ${product.name} on Darshan Style Hub — ₹${product.price.toLocaleString('en-IN')}`,
+      url: productUrl,
+    };
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // user cancelled the native share sheet — nothing to do
+      }
+    } else {
+      handleCopyLink();
     }
   };
 
@@ -364,14 +384,23 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
                   {discount}% OFF
                 </span>
               )}
-              <button
-                onClick={() => toggleItem(product)}
-                className={`absolute top-3 sm:top-4 right-3 sm:right-4 p-2 sm:p-3 rounded-full transition-all ${
-                  isWishlisted ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 hover:bg-accent-100'
-                }`}
-              >
-                <FiHeart size={18} fill={isWishlisted ? 'currentColor' : 'none'} />
-              </button>
+              <div className="absolute top-3 sm:top-4 right-3 sm:right-4 flex items-center gap-2">
+                <button
+                  onClick={handleNativeShare}
+                  className="p-2 sm:p-3 rounded-full bg-white text-gray-700 hover:bg-accent-100 transition-all"
+                  title="Share this product"
+                >
+                  <FiShare2 size={18} />
+                </button>
+                <button
+                  onClick={() => toggleItem(product)}
+                  className={`p-2 sm:p-3 rounded-full transition-all ${
+                    isWishlisted ? 'bg-primary-600 text-white' : 'bg-white text-gray-700 hover:bg-accent-100'
+                  }`}
+                >
+                  <FiHeart size={18} fill={isWishlisted ? 'currentColor' : 'none'} />
+                </button>
+              </div>
 
               {/* Navigation Arrows (visible when multiple images) */}
               {product.images.length > 1 && (
@@ -859,6 +888,13 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
         </div>
       )}
 
+      {/* Link copied toast */}
+      {linkCopied && (
+        <div className="fixed bottom-20 sm:bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-gray-900 text-white text-sm px-4 py-2.5 rounded-full shadow-lg">
+          <FiCheck size={14} />
+          Link copied to clipboard!
+        </div>
+      )}
     </div>
 
     {/* Recently Viewed */}

@@ -17,6 +17,7 @@ export async function GET(
         images: true,
         sizes: true,
         colors: true,
+        myntraListingDetail: { include: { sizeMeasurements: true } },
       },
     });
 
@@ -52,7 +53,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival, afNumber, sizes, images, colors, rating, reviews } = body;
+    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival, afNumber, sizes, images, colors, rating, reviews, myntra, myntraSizeMeasurements } = body;
 
     // Validate required fields
     if (!sku || !name || !description || price === undefined) {
@@ -163,6 +164,34 @@ export async function PATCH(
       }
     }
 
+    // Upsert Myntra listing details, if provided
+    if (myntra && typeof myntra === 'object') {
+      const detail = await prisma.myntraListingDetail.upsert({
+        where: { productId: params.id },
+        create: { productId: params.id, ...myntra },
+        update: { ...myntra },
+      });
+
+      if (Array.isArray(myntraSizeMeasurements)) {
+        for (const m of myntraSizeMeasurements) {
+          if (!m.size) continue;
+          const data = {
+            bust: m.bust !== '' && m.bust != null ? parseFloat(m.bust) : null,
+            chest: m.chest !== '' && m.chest != null ? parseFloat(m.chest) : null,
+            frontLength: m.frontLength !== '' && m.frontLength != null ? parseFloat(m.frontLength) : null,
+            garmentWaist: m.garmentWaist !== '' && m.garmentWaist != null ? parseFloat(m.garmentWaist) : null,
+            inseamLength: m.inseamLength !== '' && m.inseamLength != null ? parseFloat(m.inseamLength) : null,
+            toFitWaist: m.toFitWaist !== '' && m.toFitWaist != null ? parseFloat(m.toFitWaist) : null,
+          };
+          await prisma.myntraSizeMeasurement.upsert({
+            where: { myntraListingDetailId_size: { myntraListingDetailId: detail.id, size: m.size } },
+            create: { myntraListingDetailId: detail.id, size: m.size, ...data },
+            update: data,
+          });
+        }
+      }
+    }
+
     // Refetch product with updated sizes
     const updatedProduct = await prisma.product.findUnique({
       where: { id: params.id },
@@ -170,6 +199,7 @@ export async function PATCH(
         images: true,
         sizes: true,
         colors: true,
+        myntraListingDetail: { include: { sizeMeasurements: true } },
       },
     });
 

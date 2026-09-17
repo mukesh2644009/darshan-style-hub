@@ -6,6 +6,12 @@ import Image from 'next/image';
 import { uploadAdminProductImages } from '@/lib/adminUploadClient';
 import { MAX_ADMIN_IMAGE_MB } from '@/lib/uploadLimits';
 import { FiSave, FiLoader, FiCheck, FiPlus, FiX, FiImage, FiUploadCloud, FiTrash2 } from 'react-icons/fi';
+import MyntraListingFields, {
+  EMPTY_MYNTRA_FORM,
+  EMPTY_SIZE_MEASUREMENT,
+  type MyntraFormState,
+  type SizeMeasurementForm,
+} from '../MyntraListingFields';
 
 const DRAFT_KEY = 'product-add-draft';
 
@@ -88,6 +94,15 @@ export default function ProductAddForm() {
   const [uploadedImagePaths, setUploadedImagePaths] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [myntraData, setMyntraData] = useState<MyntraFormState>(EMPTY_MYNTRA_FORM);
+  const [myntraMeasurements, setMyntraMeasurements] = useState<Record<string, SizeMeasurementForm>>({});
+
+  const updateMyntraMeasurement = (size: string, field: keyof SizeMeasurementForm, value: string) => {
+    setMyntraMeasurements(prev => ({
+      ...prev,
+      [size]: { ...(prev[size] || EMPTY_SIZE_MEASUREMENT), [field]: value },
+    }));
+  };
 
   // Check for draft on mount — don't auto-restore, just notify
   useEffect(() => {
@@ -273,6 +288,8 @@ export default function ProductAddForm() {
           images: allImages,
           sizes: sizesWithQuantity,
           colors: selectedColors,
+          myntra: myntraData,
+          myntraSizeMeasurements: Object.entries(myntraMeasurements).map(([size, m]) => ({ size, ...m })),
         }),
       });
 
@@ -287,6 +304,8 @@ export default function ProductAddForm() {
         setImageFiles([]);
         setImagePreviews([]);
         setUploadedImagePaths([]);
+        setMyntraData(EMPTY_MYNTRA_FORM);
+        setMyntraMeasurements({});
         setMessage('Product created successfully!');
         setMessageType('success');
         setTimeout(() => {
@@ -738,6 +757,16 @@ export default function ProductAddForm() {
           </div>
         )}
       </div>
+
+      {/* Myntra Listing Details */}
+      <MyntraListingFields
+        category={formData.category}
+        sizes={Object.keys(sizeQuantities)}
+        value={myntraData}
+        onChange={(patch) => setMyntraData(prev => ({ ...prev, ...patch }))}
+        measurements={myntraMeasurements}
+        onMeasurementChange={updateMyntraMeasurement}
+      />
 
       {/* Status Flags */}
       <div className="bg-white rounded-xl shadow-sm p-6">

@@ -30,7 +30,9 @@ export async function POST(request: Request) {
       afNumber,
       images,
       sizes,
-      colors 
+      colors,
+      myntra,
+      myntraSizeMeasurements,
     } = body;
 
     // Validate required fields
@@ -116,6 +118,34 @@ export async function POST(request: Request) {
         colors: true,
       },
     });
+
+    // Create Myntra listing details, if provided (optional metadata)
+    if (myntra && typeof myntra === 'object' && Object.values(myntra).some((v) => typeof v === 'string' && v.trim())) {
+      const detail = await prisma.myntraListingDetail.create({
+        data: { productId: product.id, ...myntra },
+      });
+
+      if (Array.isArray(myntraSizeMeasurements)) {
+        for (const m of myntraSizeMeasurements) {
+          if (!m.size) continue;
+          const hasAny = ['bust', 'chest', 'frontLength', 'garmentWaist', 'inseamLength', 'toFitWaist']
+            .some((f) => m[f] !== '' && m[f] != null);
+          if (!hasAny) continue;
+          await prisma.myntraSizeMeasurement.create({
+            data: {
+              myntraListingDetailId: detail.id,
+              size: m.size,
+              bust: m.bust !== '' && m.bust != null ? parseFloat(m.bust) : null,
+              chest: m.chest !== '' && m.chest != null ? parseFloat(m.chest) : null,
+              frontLength: m.frontLength !== '' && m.frontLength != null ? parseFloat(m.frontLength) : null,
+              garmentWaist: m.garmentWaist !== '' && m.garmentWaist != null ? parseFloat(m.garmentWaist) : null,
+              inseamLength: m.inseamLength !== '' && m.inseamLength != null ? parseFloat(m.inseamLength) : null,
+              toFitWaist: m.toFitWaist !== '' && m.toFitWaist != null ? parseFloat(m.toFitWaist) : null,
+            },
+          });
+        }
+      }
+    }
 
     return NextResponse.json({ success: true, product }, { status: 201 });
   } catch (error) {

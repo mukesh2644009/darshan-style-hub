@@ -2,9 +2,9 @@
 // To use: Replace schema.prisma with this file and run migrations
 
 generator client {
-  provider        = "prisma-client-js"
+  provider      = "prisma-client-js"
   // `native` = local dev; `rhel-openssl-3.0.x` = Vercel Node 18+ Linux — avoids shipping every OS engine.
-  binaryTargets   = ["native", "rhel-openssl-3.0.x"]
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -15,29 +15,29 @@ datasource db {
 
 // User model for authentication
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String?
-  phone         String?
-  password      String    // bcrypt-hashed; for Google-only users we store a random unguessable hash
-  role          String    @default("CUSTOMER") // ADMIN | CUSTOMER | STAFF
+  id       String  @id @default(cuid())
+  email    String  @unique
+  name     String?
+  phone    String?
+  password String // bcrypt-hashed; for Google-only users we store a random unguessable hash
+  role     String  @default("CUSTOMER") // ADMIN | CUSTOMER | STAFF
 
   // Google OAuth fields (null for users that signed up with email or phone)
-  googleId      String?   @unique
-  image         String?
+  googleId String? @unique
+  image    String?
 
   // Loyalty program
-  loyaltyPoints Int       @default(0)
+  loyaltyPoints Int @default(0)
 
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  addresses     Address[]
-  orders        Order[]
-  cartItems     CartItem[]
-  wishlist      WishlistItem[]
-  sessions      Session[]
-  returnRequests ReturnRequest[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses           Address[]
+  orders              Order[]
+  cartItems           CartItem[]
+  wishlist            WishlistItem[]
+  sessions            Session[]
+  returnRequests      ReturnRequest[]
   loyaltyTransactions LoyaltyTransaction[]
 
   @@index([email])
@@ -45,14 +45,14 @@ model User {
 
 // Loyalty points ledger
 model LoyaltyTransaction {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  points      Int       // positive = earn, negative = redeem
-  type        String    // EARN_ORDER | REDEEM | BONUS | REFUND
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  points      Int // positive = earn, negative = redeem
+  type        String // EARN_ORDER | REDEEM | BONUS | REFUND
   description String
   orderId     String?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime @default(now())
 
   @@index([userId])
   @@index([createdAt])
@@ -60,50 +60,51 @@ model LoyaltyTransaction {
 
 // Address model for shipping
 model Address {
-  id            String    @id @default(cuid())
-  userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name          String
-  phone         String
-  addressLine1  String
-  addressLine2  String?
-  city          String
-  state         String
-  pincode       String
-  isDefault     Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  phone        String
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  pincode      String
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([userId])
 }
 
 // Product model
 model Product {
-  id            String    @id @default(cuid())
-  sku           String    @unique
-  slug          String?   @unique  // SEO-friendly URL: green-embroidered-cotton-suit-set
+  id            String   @id @default(cuid())
+  sku           String   @unique
+  slug          String?  @unique // SEO-friendly URL: green-embroidered-cotton-suit-set
   name          String
   description   String
   price         Float
   originalPrice Float?
   category      String
   subcategory   String
-  inStock       Boolean   @default(true)
-  featured      Boolean   @default(false)
-  newArrival    Boolean   @default(false)
-  rating        Float     @default(0)
-  reviews       Int       @default(0)
-  viewCount     Int       @default(0)
-  afNumber      String?   // Internal saree reference number (AF_Number) — admin only, not shown to customers
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  
-  images        ProductImage[]
-  sizes         ProductSize[]
-  colors        ProductColor[]
-  cartItems     CartItem[]
-  orderItems    OrderItem[]
-  wishlistItems WishlistItem[]
+  inStock       Boolean  @default(true)
+  featured      Boolean  @default(false)
+  newArrival    Boolean  @default(false)
+  rating        Float    @default(0)
+  reviews       Int      @default(0)
+  viewCount     Int      @default(0)
+  afNumber      String? // Internal saree reference number (AF_Number) — admin only, not shown to customers
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  images              ProductImage[]
+  sizes               ProductSize[]
+  colors              ProductColor[]
+  cartItems           CartItem[]
+  orderItems          OrderItem[]
+  wishlistItems       WishlistItem[]
+  myntraListingDetail MyntraListingDetail?
 
   @@index([category])
   @@index([subcategory])
@@ -112,48 +113,48 @@ model Product {
 
 // Product images
 model ProductImage {
-  id          String    @id @default(cuid())
-  url         String
-  productId   String
-  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  url       String
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
 }
 
 // Product sizes with quantity
 model ProductSize {
-  id          String    @id @default(cuid())
-  size        String
-  quantity    Int       @default(0)
-  productId   String
-  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  size      String
+  quantity  Int     @default(0)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
 }
 
 // Product colors
 model ProductColor {
-  id          String    @id @default(cuid())
-  name        String
-  hex         String
-  productId   String
-  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  name      String
+  hex       String
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
 }
 
 // Cart items
 model CartItem {
-  id            String    @id @default(cuid())
+  id            String   @id @default(cuid())
   userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   productId     String
-  product       Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  quantity      Int       @default(1)
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity      Int      @default(1)
   selectedSize  String
   selectedColor String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@unique([userId, productId, selectedSize, selectedColor])
   @@index([userId])
@@ -161,12 +162,12 @@ model CartItem {
 
 // Wishlist items
 model WishlistItem {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  productId   String
-  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 
   @@unique([userId, productId])
   @@index([userId])
@@ -174,61 +175,61 @@ model WishlistItem {
 
 // Order model
 model Order {
-  id              String      @id @default(cuid())
-  userId          String?
-  user            User?       @relation(fields: [userId], references: [id])
-  status          String      @default("PENDING")
-  paymentMethod   String      @default("COD")
-  paymentStatus   String      @default("PENDING")
-  razorpayPaymentId String?   // Razorpay payment_id after successful UPI/card pay
-  razorpayRefundId  String?   // Last Razorpay refund id (audit)
-  subtotal        Float
-  shipping        Float       @default(0)
-  discount        Float       @default(0)
-  total           Float
+  id                String  @id @default(cuid())
+  userId            String?
+  user              User?   @relation(fields: [userId], references: [id])
+  status            String  @default("PENDING")
+  paymentMethod     String  @default("COD")
+  paymentStatus     String  @default("PENDING")
+  razorpayPaymentId String? // Razorpay payment_id after successful UPI/card pay
+  razorpayRefundId  String? // Last Razorpay refund id (audit)
+  subtotal          Float
+  shipping          Float   @default(0)
+  discount          Float   @default(0)
+  total             Float
 
   // Source of order — ONLINE (website) or POS (in-store by staff)
-  source          String      @default("ONLINE")
-  staffId         String?     // staff member who created POS order
+  source  String  @default("ONLINE")
+  staffId String? // staff member who created POS order
 
   // Order classification — STANDARD (paid) or REPLACEMENT (₹0 exchange replacement)
-  orderType       String      @default("STANDARD")
+  orderType     String  @default("STANDARD")
   // For REPLACEMENT orders, points back to the original paid order
-  parentOrderId   String?
-  parentOrder     Order?      @relation("OrderReplacements", fields: [parentOrderId], references: [id], onDelete: SetNull)
-  replacements    Order[]     @relation("OrderReplacements")
-  
+  parentOrderId String?
+  parentOrder   Order?  @relation("OrderReplacements", fields: [parentOrderId], references: [id], onDelete: SetNull)
+  replacements  Order[] @relation("OrderReplacements")
+
   // Shipping details
   shippingName    String
   shippingPhone   String
-  shippingEmail   String?     // Email typed at checkout — source of truth for order emails,
-                              // independent of whether it could be saved onto the account.
+  shippingEmail   String? // Email typed at checkout — source of truth for order emails,
+  // independent of whether it could be saved onto the account.
   shippingAddress String
   shippingCity    String
   shippingState   String
   shippingPincode String
 
   // NimbusPost (or other aggregator) shipping metadata
-  shippingPartner     String?
-  shipmentId          String?
-  awbNumber           String?
-  courierName         String?
-  trackingUrl         String?
-  labelUrl            String?
-  pickupScheduledAt   DateTime?
-  shippedAt           DateTime?
-  deliveredAt         DateTime?
-  nimbusStatus        String?
-  nimbusStatusCode    String?
+  shippingPartner      String?
+  shipmentId           String?
+  awbNumber            String?
+  courierName          String?
+  trackingUrl          String?
+  labelUrl             String?
+  pickupScheduledAt    DateTime?
+  shippedAt            DateTime?
+  deliveredAt          DateTime?
+  nimbusStatus         String?
+  nimbusStatusCode     String?
   nimbusWebhookPayload Json?
-  reverseAwb          String?
-  reverseLabelUrl     String?
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  
-  items           OrderItem[]
-  returnRequest   ReturnRequest?
+  reverseAwb           String?
+  reverseLabelUrl      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items         OrderItem[]
+  returnRequest ReturnRequest?
 
   @@index([userId])
   @@index([status])
@@ -241,15 +242,15 @@ model Order {
 
 // Order items
 model OrderItem {
-  id            String    @id @default(cuid())
-  orderId       String
-  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId     String
-  product       Product   @relation(fields: [productId], references: [id])
-  quantity      Int
-  price         Float
-  size          String?
-  color         String?
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  price     Float
+  size      String?
+  color     String?
 
   returnRequestItems ReturnRequestItem[]
 
@@ -258,19 +259,19 @@ model OrderItem {
 
 // Category model
 model Category {
-  id            String    @id @default(cuid())
-  name          String    @unique
-  createdAt     DateTime  @default(now())
-  
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
   subcategories Subcategory[]
 }
 
 // Subcategory model
 model Subcategory {
-  id          String    @id @default(cuid())
-  name        String
-  categoryId  String
-  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  name       String
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([name, categoryId])
   @@index([categoryId])
@@ -278,12 +279,12 @@ model Subcategory {
 
 // Session model for authentication
 model Session {
-  id          String    @id @default(cuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token       String    @unique
-  expiresAt   DateTime
-  createdAt   DateTime  @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   @@index([token])
   @@index([userId])
@@ -292,12 +293,12 @@ model Session {
 
 // Password reset tokens
 model PasswordReset {
-  id          String    @id @default(cuid())
-  email       String
-  token       String    @unique
-  expiresAt   DateTime
-  used        Boolean   @default(false)
-  createdAt   DateTime  @default(now())
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
 
   @@index([token])
   @@index([email])
@@ -305,39 +306,39 @@ model PasswordReset {
 
 // Phone login OTP codes (persisted so they survive across serverless instances)
 model PhoneOtp {
-  id          String    @id @default(cuid())
-  phone       String    @unique
-  code        String
-  attempts    Int       @default(0)
-  expiresAt   DateTime
-  createdAt   DateTime  @default(now())
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  code      String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
   @@index([phone])
 }
 
 // Customer return / exchange requests (one per order)
 model ReturnRequest {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orderId   String   @unique
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id          String  @id @default(cuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderId     String  @unique
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   reason      String
   details     String?
-  requestType String   @default("RETURN") // RETURN or EXCHANGE
+  requestType String  @default("RETURN") // RETURN or EXCHANGE
   adminNotes  String?
-  status      String   @default("PENDING") // PENDING, APPROVED, REJECTED, COMPLETED
-  pickupFee   Int      @default(0) // ₹99 flat pickup for returns, 0 for exchanges
+  status      String  @default("PENDING") // PENDING, APPROVED, REJECTED, COMPLETED
+  pickupFee   Int     @default(0) // ₹99 flat pickup for returns, 0 for exchanges
 
   // For EXCHANGE requests — desired replacement attributes (legacy order-wide fields,
   // kept for requests submitted before per-item selection existed)
-  exchangeSize  String?
-  exchangeColor String?
+  exchangeSize       String?
+  exchangeColor      String?
   // Set when admin marks the exchange completed and creates a replacement order
   replacementOrderId String?
 
   // Which specific order item(s) this request applies to (empty for legacy rows)
-  items     ReturnRequestItem[]
+  items ReturnRequestItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -366,18 +367,101 @@ model ReturnRequestItem {
 
 // Contact messages from customers
 model ContactMessage {
-  id          String    @id @default(cuid())
-  name        String
-  email       String
-  phone       String?
-  subject     String
-  message     String
-  status      String    @default("NEW") // NEW, READ, REPLIED, CLOSED
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  status    String   @default("NEW") // NEW, READ, REPLIED, CLOSED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([status])
   @@index([createdAt])
+}
+
+// Myntra seller bulk-upload catalog data for a product — optional metadata
+// most products won't need until someone decides to list them on Myntra.
+// Fields map to the MANDATORY columns of Myntra's "Co-Ords" / "Sarees"
+// bulk-upload template sheets (row 3 headers). Optional template columns
+// are filled with derived/blank values at export time and don't need a
+// field here. Store-wide constants (brand, manufacturer/packer address,
+// country of origin) are not stored per-product — see src/lib/myntra.ts.
+model MyntraListingDetail {
+  id        String  @id @default(cuid())
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // Style identity
+  styleName   String? // vendorArticleName
+  articleType String? // e.g. "Co-Ords" or "Sarees"
+
+  // Size & colour
+  sizeLabelPresent String? @default("Yes") // "is Standard Size present on Label"
+  colourRemarks    String? // "Brand Colour (Remarks)"
+  prominentColour  String?
+
+  // Compliance / identifiers
+  gtin    String?
+  hsnCode String?
+
+  // Classification
+  ageGroup    String? @default("Adults-Women")
+  fashionType String? @default("Fashion")
+  year        String?
+  season      String?
+
+  // Care & material
+  materialCareDescription String?
+  washCare                String?
+
+  // Packaging
+  netQuantityUnit String? @default("Pieces")
+  netQuantity     String?
+
+  // Co-Ord Set specific mandatory columns
+  topFabric       String?
+  bottomFabric    String?
+  addOns          String?
+  lining          String?
+  numberOfPockets String?
+  numberOfItems   String?
+  packageContains String?
+
+  // Saree specific mandatory columns
+  sareeType      String? // "Type"
+  sareeFabric    String?
+  blouseFabric   String?
+  blouseIncluded String? // "Blouse"
+  multipackSet   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sizeMeasurements MyntraSizeMeasurement[]
+
+  @@index([productId])
+}
+
+// Per-size body measurements (mandatory for Co-Ords: Bust, Chest, Front
+// Length, Garment Waist, Inseam Length, To Fit Waist). One row per
+// ProductSize.size value on the parent product.
+model MyntraSizeMeasurement {
+  id                    String              @id @default(cuid())
+  myntraListingDetailId String
+  myntraListingDetail   MyntraListingDetail @relation(fields: [myntraListingDetailId], references: [id], onDelete: Cascade)
+  size                  String
+
+  bust         Float?
+  chest        Float?
+  frontLength  Float?
+  garmentWaist Float?
+  inseamLength Float?
+  toFitWaist   Float?
+
+  @@unique([myntraListingDetailId, size])
+  @@index([myntraListingDetailId])
 }
 
 model AbandonedCart {
@@ -385,7 +469,7 @@ model AbandonedCart {
   email          String
   name           String?
   phone          String?
-  items          Json      // Array of cart items
+  items          Json // Array of cart items
   total          Float
   reminderCount  Int       @default(0)
   lastReminderAt DateTime?

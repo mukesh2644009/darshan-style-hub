@@ -4,20 +4,28 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { FiArrowLeft, FiPackage } from 'react-icons/fi';
 import ProductEditForm from './ProductEditForm';
+import MyntraExportButton from '../MyntraExportButton';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+const productInclude = {
+  images: true,
+  sizes: true,
+  colors: true,
+  myntraListingDetail: { include: { sizeMeasurements: true } },
+} as const;
 
 async function getProduct(id: string) {
   // Try by SKU first, then fall back to internal id
   const bySku = await prisma.product.findFirst({
     where: { sku: id },
-    include: { images: true, sizes: true, colors: true },
+    include: productInclude,
   });
   if (bySku) return bySku;
   return prisma.product.findUnique({
     where: { id },
-    include: { images: true, sizes: true, colors: true },
+    include: productInclude,
   });
 }
 
@@ -39,8 +47,13 @@ export default async function ProductEditPage({ params }: { params: { id: string
           <FiArrowLeft />
           Back to Products
         </Link>
-        <h1 className="text-3xl font-bold text-gray-900">Edit Product</h1>
-        <p className="text-gray-600 mt-1">Update product details and pricing</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Edit Product</h1>
+            <p className="text-gray-600 mt-1">Update product details and pricing</p>
+          </div>
+          <MyntraExportButton productId={product.id} />
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">

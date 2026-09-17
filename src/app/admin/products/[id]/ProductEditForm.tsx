@@ -6,6 +6,12 @@ import Image from 'next/image';
 import { uploadAdminProductImages } from '@/lib/adminUploadClient';
 import { MAX_ADMIN_IMAGE_MB } from '@/lib/uploadLimits';
 import { FiSave, FiLoader, FiCheck, FiPlus, FiUploadCloud, FiTrash2, FiImage } from 'react-icons/fi';
+import MyntraListingFields, {
+  EMPTY_MYNTRA_FORM,
+  EMPTY_SIZE_MEASUREMENT,
+  type MyntraFormState,
+  type SizeMeasurementForm,
+} from '../MyntraListingFields';
 
 const SAREE_COLORS = [
   { name: 'Red', hex: '#DC2626' }, { name: 'Maroon', hex: '#7F1D1D' },
@@ -41,6 +47,22 @@ interface ProductColor {
   hex: string;
 }
 
+interface MyntraSizeMeasurementRecord {
+  size: string;
+  bust: number | null;
+  chest: number | null;
+  frontLength: number | null;
+  garmentWaist: number | null;
+  inseamLength: number | null;
+  toFitWaist: number | null;
+}
+
+type MyntraListingDetailRecord = {
+  [K in keyof MyntraFormState]?: string | null;
+} & {
+  sizeMeasurements?: MyntraSizeMeasurementRecord[];
+};
+
 interface Product {
   id: string;
   sku: string;
@@ -56,6 +78,7 @@ interface Product {
   sizes?: ProductSize[];
   images?: ProductImage[];
   colors?: ProductColor[];
+  myntraListingDetail?: MyntraListingDetailRecord | null;
 }
 
 interface Props {
@@ -95,6 +118,38 @@ export default function ProductEditForm({ product }: Props) {
   const [selectedColors, setSelectedColors] = useState<{ name: string; hex: string }[]>(
     (product.colors || []).map(c => ({ name: c.name, hex: c.hex }))
   );
+
+  const [myntraData, setMyntraData] = useState<MyntraFormState>(() => {
+    const d = product.myntraListingDetail;
+    if (!d) return EMPTY_MYNTRA_FORM;
+    const merged = { ...EMPTY_MYNTRA_FORM };
+    (Object.keys(EMPTY_MYNTRA_FORM) as (keyof MyntraFormState)[]).forEach((key) => {
+      const v = d[key];
+      if (v != null) merged[key] = v;
+    });
+    return merged;
+  });
+  const [myntraMeasurements, setMyntraMeasurements] = useState<Record<string, SizeMeasurementForm>>(() => {
+    const rows = product.myntraListingDetail?.sizeMeasurements || [];
+    return rows.reduce((acc, m) => ({
+      ...acc,
+      [m.size]: {
+        bust: m.bust != null ? String(m.bust) : '',
+        chest: m.chest != null ? String(m.chest) : '',
+        frontLength: m.frontLength != null ? String(m.frontLength) : '',
+        garmentWaist: m.garmentWaist != null ? String(m.garmentWaist) : '',
+        inseamLength: m.inseamLength != null ? String(m.inseamLength) : '',
+        toFitWaist: m.toFitWaist != null ? String(m.toFitWaist) : '',
+      },
+    }), {} as Record<string, SizeMeasurementForm>);
+  });
+
+  const updateMyntraMeasurement = (size: string, field: keyof SizeMeasurementForm, value: string) => {
+    setMyntraMeasurements(prev => ({
+      ...prev,
+      [size]: { ...(prev[size] || EMPTY_SIZE_MEASUREMENT), [field]: value },
+    }));
+  };
 
   const toggleColor = (color: { name: string; hex: string }) => {
     setSelectedColors(prev =>
@@ -234,6 +289,8 @@ export default function ProductEditForm({ product }: Props) {
           sizes: sizesData,
           images: allImageUrls,
           colors: selectedColors,
+          myntra: myntraData,
+          myntraSizeMeasurements: Object.entries(myntraMeasurements).map(([size, m]) => ({ size, ...m })),
         }),
       });
 
@@ -657,6 +714,16 @@ export default function ProductEditForm({ product }: Props) {
           </div>
         </div>
       )}
+
+      {/* Myntra Listing Details */}
+      <MyntraListingFields
+        category={formData.category}
+        sizes={Object.keys(sizeQuantities)}
+        value={myntraData}
+        onChange={(patch) => setMyntraData(prev => ({ ...prev, ...patch }))}
+        measurements={myntraMeasurements}
+        onMeasurementChange={updateMyntraMeasurement}
+      />
 
       {/* Status Flags */}
       <div className="bg-white rounded-xl shadow-sm p-6">

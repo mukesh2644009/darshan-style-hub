@@ -53,7 +53,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival, afNumber, sizes, images, colors, rating, reviews, myntra, myntraSizeMeasurements } = body;
+    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival, visibleOnSite, afNumber, sizes, images, colors, rating, reviews, myntra, myntraSizeMeasurements } = body;
 
     // Validate required fields
     if (!sku || !name || !description || price === undefined) {
@@ -84,6 +84,7 @@ export async function PATCH(
         subcategory,
         featured: Boolean(featured),
         newArrival: Boolean(newArrival),
+        ...(visibleOnSite !== undefined && { visibleOnSite: Boolean(visibleOnSite) }),
         afNumber: afNumber !== undefined ? (afNumber || null) : undefined,
         ...(rating   !== undefined && { rating:  parseFloat(rating.toString())  }),
         ...(reviews  !== undefined && { reviews: parseInt(reviews.toString(), 10) }),

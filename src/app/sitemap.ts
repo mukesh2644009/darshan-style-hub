@@ -22,6 +22,7 @@ const STATIC: MetadataRoute.Sitemap = [
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const products = await prisma.product.findMany({
+      where: { visibleOnSite: true },
       select: { id: true, slug: true, updatedAt: true },
     });
 

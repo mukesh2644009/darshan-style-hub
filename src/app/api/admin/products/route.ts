@@ -25,8 +25,9 @@ export async function POST(request: Request) {
       originalPrice, 
       category, 
       subcategory, 
-      featured, 
+      featured,
       newArrival,
+      visibleOnSite,
       afNumber,
       images,
       sizes,
@@ -92,6 +93,8 @@ export async function POST(request: Request) {
         subcategory: subcategory || '',
         featured: Boolean(featured),
         newArrival: Boolean(newArrival),
+        // Defaults to visible so omitting this in a request never silently hides a product.
+        visibleOnSite: visibleOnSite === undefined ? true : Boolean(visibleOnSite),
         afNumber: afNumber || null,
         inStock: totalQtyFromSizes > 0,
         images: images && images.length > 0 ? {

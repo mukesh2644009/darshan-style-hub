@@ -52,7 +52,10 @@ export function validateMyntraListing(product: ProductWithMyntra): MissingMyntra
   req(d?.articleType, 'articleType', 'articleType');
   req(d?.colourRemarks, 'colourRemarks', 'Brand Colour (Remarks)');
   req(d?.prominentColour, 'prominentColour', 'Prominent Colour');
-  req(d?.gtin, 'gtin', 'GTIN');
+  // GTIN: Myntra's template marks this yellow/mandatory, but a real submitted listing
+  // (DSH_CS_03) went through with it blank — not enforcing it here to match that
+  // confirmed real-world precedent. Left blank rather than defaulted, since a wrong
+  // barcode is worse than an empty one.
   req(d?.hsnCode, 'hsnCode', 'HSN');
   req(d?.ageGroup, 'ageGroup', 'AgeGroup');
   req(d?.fashionType, 'fashionType', 'FashionType');

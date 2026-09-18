@@ -22,7 +22,7 @@ export default async function ProductsLayout({
   let itemListSchema = null;
   try {
     const products = await prisma.product.findMany({
-      where: { inStock: true },
+      where: { inStock: true, visibleOnSite: true },
       select: { id: true, slug: true, name: true, price: true, images: { take: 1 } },
       orderBy: { featured: 'desc' },
       take: 50,

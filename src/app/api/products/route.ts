@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const search = searchParams.get('search')?.trim();
     const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
 
-    const where: any = {};
+    const where: any = { visibleOnSite: true };
 
     if (category) {
       where.category = category;

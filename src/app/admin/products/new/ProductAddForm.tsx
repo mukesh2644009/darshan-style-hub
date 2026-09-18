@@ -84,6 +84,7 @@ export default function ProductAddForm() {
     subcategory: '',
     featured: false,
     newArrival: true,
+    visibleOnSite: true,
     afNumber: '',
   });
 
@@ -120,7 +121,9 @@ export default function ProductAddForm() {
       const saved = localStorage.getItem(DRAFT_KEY);
       if (!saved) return;
       const draft = JSON.parse(saved);
-      if (draft.formData) setFormData(draft.formData);
+      // Merge over current defaults so a draft saved before a new field existed
+      // (e.g. visibleOnSite) doesn't leave that field undefined.
+      if (draft.formData) setFormData((prev) => ({ ...prev, ...draft.formData }));
       if (draft.sizeQuantities) setSizeQuantities(draft.sizeQuantities);
       if (draft.selectedColors) setSelectedColors(draft.selectedColors);
       setHasDraft(false);
@@ -298,7 +301,7 @@ export default function ProductAddForm() {
       if (response.ok) {
         clearDraft();
         // Reset all form fields so navigating back shows a blank form
-        setFormData({ sku: '', name: '', description: '', price: 0, originalPrice: 0, category: 'Co Ord Sets', subcategory: '', featured: false, newArrival: true, afNumber: '' });
+        setFormData({ sku: '', name: '', description: '', price: 0, originalPrice: 0, category: 'Co Ord Sets', subcategory: '', featured: false, newArrival: true, visibleOnSite: true, afNumber: '' });
         setSizeQuantities({});
         setSelectedColors([]);
         setImageFiles([]);
@@ -761,12 +764,39 @@ export default function ProductAddForm() {
       {/* Myntra Listing Details */}
       <MyntraListingFields
         category={formData.category}
+        subcategory={formData.subcategory}
+        productName={formData.name}
+        productDescription={formData.description}
+        colors={selectedColors}
         sizes={Object.keys(sizeQuantities)}
         value={myntraData}
         onChange={(patch) => setMyntraData(prev => ({ ...prev, ...patch }))}
         measurements={myntraMeasurements}
         onMeasurementChange={updateMyntraMeasurement}
       />
+
+      {/* Visibility */}
+      <div className="bg-white rounded-xl shadow-sm p-6 border border-amber-200">
+        <h2 className="text-lg font-bold text-gray-900 mb-1">Visibility</h2>
+        <label className="flex items-center gap-3 cursor-pointer mt-3">
+          <input
+            type="checkbox"
+            name="visibleOnSite"
+            checked={formData.visibleOnSite}
+            onChange={handleChange}
+            className="w-5 h-5 text-primary-600 rounded focus:ring-primary-500"
+          />
+          <div>
+            <span className="font-medium text-gray-900">Show on our website &amp; ads</span>
+            <p className="text-xs text-gray-500">
+              Turn this off for products meant only for other marketplaces (e.g. Myntra) that
+              aren&apos;t ready for darshanstylehub.com yet. While off, this product is hidden from
+              the site, sitemap, and the Google Shopping/Meta ad feeds — but stays fully editable
+              here, including its Myntra listing fields. Turn it back on any time.
+            </p>
+          </div>
+        </label>
+      </div>
 
       {/* Status Flags */}
       <div className="bg-white rounded-xl shadow-sm p-6">

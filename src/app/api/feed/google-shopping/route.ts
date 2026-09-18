@@ -26,7 +26,7 @@ function stripHtml(text: string): string {
 export async function GET() {
   try {
     const products = await prisma.product.findMany({
-      where: { inStock: true },
+      where: { inStock: true, visibleOnSite: true },
       include: {
         images: true,
         sizes: true,

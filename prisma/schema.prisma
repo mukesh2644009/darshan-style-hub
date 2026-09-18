@@ -91,6 +91,11 @@ model Product {
   inStock       Boolean  @default(true)
   featured      Boolean  @default(false)
   newArrival    Boolean  @default(false)
+  // Off-site products (e.g. Myntra-only listings not yet ready for our own storefront/ads):
+  // hides the product from the public site, sitemap, and Google Shopping/Meta feeds while
+  // still allowing full admin management (Myntra fields, export, staff POS). Defaults to
+  // true so every existing product keeps its current visibility unchanged.
+  visibleOnSite Boolean  @default(true)
   rating        Float    @default(0)
   reviews       Int      @default(0)
   viewCount     Int      @default(0)

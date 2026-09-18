@@ -74,6 +74,7 @@ interface Product {
   subcategory: string | null;
   featured: boolean;
   newArrival: boolean;
+  visibleOnSite?: boolean;
   afNumber?: string | null;
   sizes?: ProductSize[];
   images?: ProductImage[];
@@ -100,6 +101,7 @@ export default function ProductEditForm({ product }: Props) {
     subcategory: product.subcategory || '',
     featured: product.featured,
     newArrival: product.newArrival,
+    visibleOnSite: product.visibleOnSite ?? true,
     afNumber: product.afNumber || '',
   });
 
@@ -718,12 +720,39 @@ export default function ProductEditForm({ product }: Props) {
       {/* Myntra Listing Details */}
       <MyntraListingFields
         category={formData.category}
+        subcategory={formData.subcategory}
+        productName={formData.name}
+        productDescription={formData.description}
+        colors={selectedColors}
         sizes={Object.keys(sizeQuantities)}
         value={myntraData}
         onChange={(patch) => setMyntraData(prev => ({ ...prev, ...patch }))}
         measurements={myntraMeasurements}
         onMeasurementChange={updateMyntraMeasurement}
       />
+
+      {/* Visibility */}
+      <div className="bg-white rounded-xl shadow-sm p-6 border border-amber-200">
+        <h2 className="text-lg font-bold text-gray-900 mb-1">Visibility</h2>
+        <label className="flex items-center gap-3 cursor-pointer mt-3">
+          <input
+            type="checkbox"
+            name="visibleOnSite"
+            checked={formData.visibleOnSite}
+            onChange={handleChange}
+            className="w-5 h-5 text-primary-600 rounded focus:ring-primary-500"
+          />
+          <div>
+            <span className="font-medium text-gray-900">Show on our website &amp; ads</span>
+            <p className="text-xs text-gray-500">
+              Turn this off for products meant only for other marketplaces (e.g. Myntra) that
+              aren&apos;t ready for darshanstylehub.com yet. While off, this product is hidden from
+              the site, sitemap, and the Google Shopping/Meta ad feeds — but stays fully editable
+              here, including its Myntra listing fields. Turn it back on any time.
+            </p>
+          </div>
+        </label>
+      </div>
 
       {/* Status Flags */}
       <div className="bg-white rounded-xl shadow-sm p-6">

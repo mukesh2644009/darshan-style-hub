@@ -60,7 +60,7 @@ export async function getProducts(filters?: {
   /** Max rows to return — always set this on the homepage to avoid full-table scans */
   take?: number;
 }): Promise<Product[]> {
-  const where: any = {};
+  const where: any = { visibleOnSite: true };
 
   if (filters?.category) {
     where.category = filters.category;
@@ -100,8 +100,8 @@ export async function getProducts(filters?: {
 
 // Get single product by ID
 export async function getProductById(id: string): Promise<Product | null> {
-  const product = await prisma.product.findUnique({
-    where: { id },
+  const product = await prisma.product.findFirst({
+    where: { id, visibleOnSite: true },
     include: {
       images: true,
       sizes: true,
@@ -129,6 +129,7 @@ export async function getProductBySlugOrId(slugOrId: string): Promise<Product | 
 
   const product = await prisma.product.findFirst({
     where: {
+      visibleOnSite: true,
       OR: [
         { id: key },
         { slug: { equals: key, mode: 'insensitive' } },
@@ -178,6 +179,7 @@ export async function getRelatedProducts(productId: string, category: string, li
     where: {
       category,
       id: { not: productId },
+      visibleOnSite: true,
     },
     include: {
       images: true,

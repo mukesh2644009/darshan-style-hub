@@ -7,9 +7,11 @@ import { FiTrash2, FiLoader, FiAlertTriangle, FiX } from 'react-icons/fi';
 interface Props {
   productId: string;
   productName: string;
+  /** Render the trigger as a full-width menu row instead of a standalone icon button. */
+  asMenuItem?: boolean;
 }
 
-export default function DeleteProductButton({ productId, productName }: Props) {
+export default function DeleteProductButton({ productId, productName, asMenuItem }: Props) {
   const router = useRouter();
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -41,10 +43,13 @@ export default function DeleteProductButton({ productId, productName }: Props) {
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="inline-flex items-center gap-1 px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium"
+        className={asMenuItem
+          ? 'w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-red-600 hover:bg-gray-50'
+          : 'inline-flex items-center gap-1 px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors text-sm font-medium'}
         title="Delete product"
       >
         <FiTrash2 className="w-4 h-4" />
+        {asMenuItem && 'Delete'}
       </button>
 
       {showModal && (

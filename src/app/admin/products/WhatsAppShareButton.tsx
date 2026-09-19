@@ -15,13 +15,15 @@ interface Product {
 
 interface Props {
   product: Product;
+  /** Render the trigger as a full-width menu row instead of a standalone pill button. */
+  asMenuItem?: boolean;
 }
 
 // Your WhatsApp number
 const WHATSAPP_NUMBER = '919019076335';
 const STORE_URL = 'https://www.darshanstylehub.com';
 
-export default function WhatsAppShareButton({ product }: Props) {
+export default function WhatsAppShareButton({ product, asMenuItem }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [copied, setCopied] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -79,11 +81,13 @@ export default function WhatsAppShareButton({ product }: Props) {
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors text-sm font-medium"
+        className={asMenuItem
+          ? 'w-full flex items-center gap-2 text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50'
+          : 'inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded-lg transition-colors text-sm font-medium'}
         title="Share on WhatsApp"
       >
         <FaWhatsapp className="w-4 h-4" />
-        Share
+        Share on WhatsApp
       </button>
 
       {/* Modal */}

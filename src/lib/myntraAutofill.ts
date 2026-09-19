@@ -182,9 +182,12 @@ export function deriveMyntraAutofill(input: MyntraAutofillInput): MyntraAutofill
     fillReview('packageContains', pkgMatch ? pkgMatch[1].trim() : '1 Top, 1 Bottom');
     fillReview('numberOfItems', '2');
 
-    block('addOns');
-    block('lining');
-    block('numberOfPockets');
+    // Myntra requires *something* in these columns, but "NA" is a valid, confirmed
+    // answer when the garment genuinely has none — safe default, still flagged to
+    // verify in case a specific product actually does have add-ons/lining/pockets.
+    fillReview('addOns', 'NA');
+    fillReview('lining', 'NA');
+    fillReview('numberOfPockets', 'NA');
   } else if (saree) {
     block('washCare');
     block('materialCareDescription');

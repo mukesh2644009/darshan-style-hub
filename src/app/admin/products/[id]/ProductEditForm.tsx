@@ -12,6 +12,10 @@ import MyntraListingFields, {
   type MyntraFormState,
   type SizeMeasurementForm,
 } from '../MyntraListingFields';
+import FlipkartListingFields, {
+  EMPTY_FLIPKART_FORM,
+  type FlipkartFormState,
+} from '../FlipkartListingFields';
 
 const SAREE_COLORS = [
   { name: 'Red', hex: '#DC2626' }, { name: 'Maroon', hex: '#7F1D1D' },
@@ -63,6 +67,10 @@ type MyntraListingDetailRecord = {
   sizeMeasurements?: MyntraSizeMeasurementRecord[];
 };
 
+type FlipkartListingDetailRecord = {
+  [K in keyof FlipkartFormState]?: string | null;
+};
+
 interface Product {
   id: string;
   sku: string;
@@ -80,6 +88,7 @@ interface Product {
   images?: ProductImage[];
   colors?: ProductColor[];
   myntraListingDetail?: MyntraListingDetailRecord | null;
+  flipkartListingDetail?: FlipkartListingDetailRecord | null;
 }
 
 interface Props {
@@ -144,6 +153,17 @@ export default function ProductEditForm({ product }: Props) {
         toFitWaist: m.toFitWaist != null ? String(m.toFitWaist) : '',
       },
     }), {} as Record<string, SizeMeasurementForm>);
+  });
+
+  const [flipkartData, setFlipkartData] = useState<FlipkartFormState>(() => {
+    const d = product.flipkartListingDetail;
+    if (!d) return EMPTY_FLIPKART_FORM;
+    const merged = { ...EMPTY_FLIPKART_FORM };
+    (Object.keys(EMPTY_FLIPKART_FORM) as (keyof FlipkartFormState)[]).forEach((key) => {
+      const v = d[key];
+      if (v != null) merged[key] = v;
+    });
+    return merged;
   });
 
   const updateMyntraMeasurement = (size: string, field: keyof SizeMeasurementForm, value: string) => {
@@ -293,6 +313,7 @@ export default function ProductEditForm({ product }: Props) {
           colors: selectedColors,
           myntra: myntraData,
           myntraSizeMeasurements: Object.entries(myntraMeasurements).map(([size, m]) => ({ size, ...m })),
+          flipkart: flipkartData,
         }),
       });
 
@@ -729,6 +750,18 @@ export default function ProductEditForm({ product }: Props) {
         onChange={(patch) => setMyntraData(prev => ({ ...prev, ...patch }))}
         measurements={myntraMeasurements}
         onMeasurementChange={updateMyntraMeasurement}
+      />
+
+      {/* Flipkart Listing Details */}
+      <FlipkartListingFields
+        productId={product.id}
+        category={formData.category}
+        subcategory={formData.subcategory}
+        productName={formData.name}
+        productDescription={formData.description}
+        colors={selectedColors}
+        value={flipkartData}
+        onChange={(patch) => setFlipkartData(prev => ({ ...prev, ...patch }))}
       />
 
       {/* Visibility */}

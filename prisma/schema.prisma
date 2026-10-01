@@ -109,7 +109,8 @@ model Product {
   cartItems           CartItem[]
   orderItems          OrderItem[]
   wishlistItems       WishlistItem[]
-  myntraListingDetail MyntraListingDetail?
+  myntraListingDetail   MyntraListingDetail?
+  flipkartListingDetail FlipkartListingDetail?
 
   @@index([category])
   @@index([subcategory])
@@ -467,6 +468,112 @@ model MyntraSizeMeasurement {
 
   @@unique([myntraListingDetailId, size])
   @@index([myntraListingDetailId])
+}
+
+// Flipkart-only listing data, mirrored from a real Flipkart_Coordset reference
+// sheet (Google Sheets, shared 2026-09-19) — column names in comments match
+// that sheet exactly. No per-size measurements needed (Flipkart's sheet only
+// needs Brand Size/Standard Size per row, computed at export time).
+model FlipkartListingDetail {
+  id        String  @id @default(cuid())
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  category String? // e.g. "Coordset"
+  colour   String?
+
+  // Compliance / identifiers
+  gtin       String?
+  hsnFlipkart String? // "HSN Code - Flipkart (4-digit)"
+  // "HSN Code - Myntra (8-digit)" column intentionally has no default value —
+  // the reference sheet (62042990) conflicts with the real submitted Myntra
+  // file (62042300) for the same product; needs a human decision, never guessed.
+  hsnMyntra  String?
+  taxCode    String? @default("GST_APPAREL")
+
+  // Care & material
+  materialCareDescription String?
+  topFabric               String?
+  bottomFabric            String?
+
+  // Packaging
+  netQuantity     String?
+  packageContains String?
+
+  // Logistics — defaults confirmed 2026-09-24 from DSH_CS_03's real live listing
+  // via GET /sellers/listings/v3/DSH_CS_03 (not guessed from the Excel template,
+  // which used different wording, e.g. "instock" vs the API's real "REGULAR").
+  lengthCm          String? @default("30")
+  breadthCm         String? @default("25")
+  heightCm          String? @default("5")
+  weightKg          String? @default("0.5")
+  // Final confirmed values from a real submission that reached "10 Listings
+  // Created, 0 Failed" 2026-09-24 — account is self-ship (not FBF-enabled), so
+  // 'Fulfilment by' must literally be 'Seller' (blank and 'Flipkart' both
+  // rejected). Procurement type + SLA must both be set together once
+  // Fulfilment by = 'Seller' (setting only one is rejected).
+  fulfilmentBy      String? @default("Seller")
+  procurementType   String? @default("REGULAR")
+  procurementSlaDays String? @default("1")
+  // Real API fields (POST /listings/v3), confirmed from the same live GET call —
+  // distinct from the Excel-template fields above, which a manual bulk-upload uses.
+  locationId        String? @default("LOCf63da351145f411381b64c10322efe3a")
+  fulfillmentProfile String? @default("NON_FBF")
+  dispatchSlaHours  String? @default("24")
+
+  // Descriptive / garment construction
+  topType      String?
+  bottomType   String?
+  neck         String?
+  sleeveLength String?
+  topPattern   String?
+  bottomPattern String?
+  occasion     String?
+  ageGroup     String?
+  fashionType  String?
+  season       String?
+  year         String?
+  // Suit-specific mandatory fields — discovered 2026-09-24 via real Flipkart QC
+  // failures on a fresh submission (Excel's own "Fast Validate" doesn't check
+  // these, but Flipkart's server-side QC does). "Suitable For" has a strict
+  // 3-value enum: Ethnic Wear / Fusion Wear / Maternity Wear.
+  shapeType   String?
+  suitableFor String?
+  // Kurti-specific (real "kurta" template columns not covered above) — best-
+  // effort defaults, not yet confirmed against a real QC submission.
+  pockets         String?
+  packOf          String?
+  attachedDupatta String?
+  // Ethnic Set's general "Fabric" column — confirmed 2026-09-24 via real QC
+  // failure to be a DIFFERENT, separately-enumerated field from Top/Bottom
+  // Fabric (e.g. "Pure Cotton" here vs. plain "Cotton" for Top/Bottom Fabric).
+  fabricType String?
+
+  // Long-form content (parsed from the product's own description)
+  productDetails String? // "Product Details / Key Features"
+  styleNote      String? // "Style Note / Description"
+  tags           String?
+  // "Search Keywords" — real column in Suit/Kurti/Ethnic Set templates
+  // (Multi-Text, "::"-separated, max 5). Optional (Suits went live with this
+  // blank), but genuinely useful for on-site search visibility.
+  searchKeywords String?
+
+  // Tops-only mandatory/recommended attributes (Flipkart "top" template,
+  // values from its own Index sheet). Style Type reuses shapeType.
+  fit         String?
+  sleeveStyle String?
+  topsLength  String?
+
+  // Last Flipkart bulk template this product was filled into — the "REQ..."
+  // id from the template's filename. Lets the admin table show "QC in
+  // progress" until the Seller API reports the listing live.
+  flipkartRequestId   String?
+  flipkartSubmittedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
 }
 
 model AbandonedCart {

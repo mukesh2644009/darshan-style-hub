@@ -12,6 +12,8 @@
 //    (GTIN, HSN, construction details, wash instructions, tape measurements) — these
 //    are never guessed, only flagged, because a wrong GTIN/HSN has real consequences.
 
+import { detectColorFromName, detectFabric, capitalizeFirst } from './productTextHeuristics';
+
 export interface MyntraAutofillInput {
   name: string;
   description: string;
@@ -75,37 +77,6 @@ export function deriveCoOrdSizeMeasurements(sizes: string[]): CoOrdSizeMeasureme
     });
 }
 
-const KNOWN_COLORS = [
-  'Off White', 'Olive Green', 'Mehendi Green', 'Navy Blue', 'Royal Blue', 'Teal Blue',
-  'Hot Pink', 'Fuchsia Pink', 'Rust Coral', 'Golden', 'Rust', 'Maroon', 'Mauve', 'Mustard',
-  'Indigo', 'Coral', 'Peach', 'Cream', 'Beige', 'Lavender', 'Magenta', 'Purple', 'Teal',
-  'Green', 'Blue', 'Red', 'Pink', 'Orange', 'Yellow', 'White', 'Grey', 'Black', 'Brown',
-];
-
-const FABRIC_KEYWORDS = [
-  'Cotton', 'Viscose', 'Rayon', 'Georgette', 'Chiffon', 'Silk', 'Linen',
-  'Crepe', 'Net', 'Satin', 'Polyester', 'Modal',
-];
-
-function detectColorFromName(name: string): string {
-  const lower = name.toLowerCase();
-  for (const c of KNOWN_COLORS) {
-    if (lower.includes(c.toLowerCase())) return c;
-  }
-  return '';
-}
-
-function detectFabric(text: string): string {
-  for (const f of FABRIC_KEYWORDS) {
-    if (new RegExp(`\\b${f}\\b`, 'i').test(text)) return f;
-  }
-  return '';
-}
-
-function capitalizeFirst(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
 export function deriveMyntraAutofill(input: MyntraAutofillInput): MyntraAutofillOutcome {
   const { name, description, category, subcategory, colors } = input;
   const coOrd = category === 'Co Ord Sets' || category === 'Summer Co-ord Sets';
@@ -148,7 +119,6 @@ export function deriveMyntraAutofill(input: MyntraAutofillInput): MyntraAutofill
   // unless the listing itself is explicitly a summer piece.
   const isSummer = /summer/i.test(category) || /summer/i.test(subcategory || '') || /summer/i.test(description);
   fillReview('season', isSummer ? 'Summer' : 'Winter');
-  fillReview('netQuantity', '1');
 
   // GTIN is never guessed — a wrong barcode is a real business/compliance problem.
   block('gtin');
@@ -180,7 +150,10 @@ export function deriveMyntraAutofill(input: MyntraAutofillInput): MyntraAutofill
 
     const pkgMatch = description.match(/package contains?:?\s*([^\n]+)/i);
     fillReview('packageContains', pkgMatch ? pkgMatch[1].trim() : '1 Top, 1 Bottom');
+    // Confirmed from DSH_CS_03: Net Quantity matches Number of Items for a co-ord
+    // set (both count pieces in the pack) — was wrongly defaulted to '1' before.
     fillReview('numberOfItems', '2');
+    fillReview('netQuantity', '2');
 
     // Myntra requires *something* in these columns, but "NA" is a valid, confirmed
     // answer when the garment genuinely has none — safe default, still flagged to
@@ -196,6 +169,7 @@ export function deriveMyntraAutofill(input: MyntraAutofillInput): MyntraAutofill
     fillReview('sareeFabric', detectFabric(text));
     fillReview('blouseIncluded', /blouse/i.test(text) ? 'Unstitched Blouse Piece' : 'No Blouse');
     fillReview('multipackSet', '1');
+    fillReview('netQuantity', '1');
 
     block('sareeType');
     block('blouseFabric');

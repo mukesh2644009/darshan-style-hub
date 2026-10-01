@@ -14,6 +14,7 @@ const productInclude = {
   sizes: true,
   colors: true,
   myntraListingDetail: { include: { sizeMeasurements: true } },
+  flipkartListingDetail: true,
 } as const;
 
 async function getProduct(id: string) {

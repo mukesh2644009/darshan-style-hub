@@ -5,10 +5,28 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   FiPackage, FiEdit, FiEye, FiExternalLink, FiDownload, FiLoader, FiAlertTriangle, FiX,
-  FiCheckCircle, FiMoreVertical,
+  FiCheckCircle, FiMoreVertical, FiClock,
 } from 'react-icons/fi';
+import { SiFlipkart } from 'react-icons/si';
 import WhatsAppShareButton from './WhatsAppShareButton';
 import DeleteProductButton from './DeleteProductButton';
+import FlipkartReviewPanel from './FlipkartReviewPanel';
+import { templateKeyFor, flipkartTemplateLink } from '@/lib/flipkartTemplates';
+import { platformPrice, markupLabel } from '@/lib/platformPricing';
+
+// Chrome's File System Access API — lets "Fill Flipkart Template" write the
+// filled data back into the exact file the admin picked, so it keeps
+// Flipkart's filename (no browser-added " (1)" copy to rename).
+type WritableFileHandle = {
+  getFile: () => Promise<File>;
+  requestPermission?: (opts: { mode: 'readwrite' }) => Promise<PermissionState>;
+  createWritable: () => Promise<{ write: (data: Blob) => Promise<void>; close: () => Promise<void> }>;
+};
+type WindowWithFilePicker = Window & {
+  showOpenFilePicker?: (opts: {
+    types: { description: string; accept: Record<string, string[]> }[];
+  }) => Promise<WritableFileHandle[]>;
+};
 
 const CATEGORY_BADGE_CLASS: Record<string, string> = {
   'Suits': 'bg-purple-100 text-purple-800',
@@ -49,7 +67,7 @@ interface MyntraDetailsSummary {
   sku: string;
   name: string;
   filledFields: number;
-  filledMeasurementCells: number;
+  filledMeasurementCells?: number;
   reviewFields: string[];
   blockedFields: string[];
   skipped?: string;
@@ -108,13 +126,61 @@ function DropdownMenu({
 export default function ProductsTable({ products, totalCount, activeCategory }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkMissing, setBulkMissing] = useState<MissingFieldsByProduct[] | null>(null);
+  const [missingPlatform, setMissingPlatform] = useState<'Myntra' | 'Flipkart'>('Myntra');
 
-  // Myntra: one click both fetches/fills details AND generates the Excel. If a
-  // mandatory field is still missing after the fill, the export step reports it
-  // via the same missing-fields popup instead of downloading a broken file.
+  // Myntra/Flipkart: one click both fetches/fills details AND generates the Excel.
+  // If a mandatory field is still missing after the fill, the export step reports
+  // it via the same missing-fields popup instead of downloading a broken file.
   const [myntraLoading, setMyntraLoading] = useState(false);
   const [myntraError, setMyntraError] = useState('');
   const [myntraSummary, setMyntraSummary] = useState<MyntraDetailsSummary[] | null>(null);
+
+  const [flipkartLoading, setFlipkartLoading] = useState(false);
+  const [flipkartError, setFlipkartError] = useState('');
+  const [flipkartSummary, setFlipkartSummary] = useState<MyntraDetailsSummary[] | null>(null);
+
+  // Fill-template: upload the exact blank template downloaded from Flipkart
+  // (preserves its filename, which Flipkart's "Send to QC" step validates
+  // against) and get it back with our data filled into the matching cells.
+  const [fillTemplateLoading, setFillTemplateLoading] = useState(false);
+  const [fillTemplateError, setFillTemplateError] = useState('');
+  const [fillTemplateWarnings, setFillTemplateWarnings] = useState<string[]>([]);
+  const fillTemplateInputRef = useRef<HTMLInputElement>(null);
+  const [priceSync, setPriceSync] = useState<{
+    changes: { sku: string; current: { mrp: number; sellingPrice: number }; target: { mrp: number; sellingPrice: number }; capped: boolean }[];
+    notLive: string[];
+    loading?: boolean;
+    error?: string;
+    applied?: boolean;
+    updated?: number;
+    failures?: { sku: string; error: string }[];
+  } | null>(null);
+  const [pendingTemplateWrite, setPendingTemplateWrite] = useState<{ handle: WritableFileHandle; blob: Blob; name: string } | null>(null);
+
+  const [reviewPanelProductId, setReviewPanelProductId] = useState<string | null>(null);
+
+  // Which of the listed products are already live on Flipkart (via Seller API).
+  const [flipkartStatuses, setFlipkartStatuses] = useState<
+    Record<string, {
+      status: string; url?: string; listedSkus: string[]; requestId?: string; submittedAt?: string;
+      livePrice?: number; liveMrp?: number;
+    }>
+  >({});
+  const productIdsKey = products.map((p) => p.id).join(',');
+  useEffect(() => {
+    if (!productIdsKey) return;
+    let cancelled = false;
+    fetch('/api/admin/flipkart/listing-status', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productIds: productIdsKey.split(',') }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (!cancelled && data?.statuses) setFlipkartStatuses(data.statuses); })
+      .catch(() => {}); // badge is informational — never block the table
+    return () => { cancelled = true; };
+  }, [productIdsKey]);
 
   const allSelected = products.length > 0 && products.every((p) => selected.has(p.id));
 
@@ -168,6 +234,7 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
 
       if (exportResponse.status === 422) {
         const exportData = await exportResponse.json();
+        setMissingPlatform('Myntra');
         setBulkMissing(exportData.details || []);
         return;
       }
@@ -198,6 +265,240 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
     }
   };
 
+  const handleFlipkartAction = async () => {
+    // Single selection: open the editable review panel instead of exporting
+    // immediately — lets you catch a wrong autofill guess (e.g. a mismatched
+    // color) before it ends up in a file you'd upload to Flipkart.
+    if (selected.size === 1) {
+      setReviewPanelProductId(Array.from(selected)[0]);
+      return;
+    }
+
+    setFlipkartLoading(true);
+    setFlipkartError('');
+    setFlipkartSummary(null);
+    setBulkMissing(null);
+    const productIds = Array.from(selected);
+
+    try {
+      const detailsResponse = await fetch('/api/admin/flipkart/autofill', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productIds }),
+      });
+      const detailsData = await detailsResponse.json().catch(() => ({}));
+      if (!detailsResponse.ok) {
+        setFlipkartError(detailsData.error || 'Failed to fetch Flipkart details');
+        return;
+      }
+      setFlipkartSummary(detailsData.results || []);
+
+      const exportResponse = await fetch('/api/admin/flipkart/export', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productIds }),
+      });
+
+      if (exportResponse.status === 422) {
+        const exportData = await exportResponse.json();
+        setMissingPlatform('Flipkart');
+        setBulkMissing(exportData.details || []);
+        return;
+      }
+
+      if (!exportResponse.ok) {
+        const exportData = await exportResponse.json().catch(() => ({}));
+        setFlipkartError(exportData.error || 'Export failed');
+        return;
+      }
+
+      const blob = await exportResponse.blob();
+      const disposition = exportResponse.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename="(.+)"/);
+      const filename = match?.[1] || 'Flipkart-Export.xlsx';
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setFlipkartError(err instanceof Error ? err.message : 'Flipkart export failed');
+    } finally {
+      setFlipkartLoading(false);
+    }
+  };
+
+  // Price sync: preview first (no changes on Flipkart), then apply on confirm.
+  const syncPrices = async (apply: boolean) => {
+    setPriceSync((prev) => ({ ...(prev ?? { changes: [], notLive: [] }), loading: true, error: '' }));
+    try {
+      const res = await fetch('/api/admin/flipkart/sync-prices', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productIds: Array.from(selected), apply }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPriceSync((prev) => ({ ...(prev ?? { changes: [], notLive: [] }), loading: false, error: data.error || 'Price sync failed' }));
+        return;
+      }
+      setPriceSync({ ...data, loading: false, error: '', applied: apply });
+    } catch (err) {
+      setPriceSync((prev) => ({ ...(prev ?? { changes: [], notLive: [] }), loading: false, error: err instanceof Error ? err.message : 'Price sync failed' }));
+    }
+  };
+
+  const handleGetFlipkartTemplate = () => {
+    setFillTemplateError('');
+    const chosen = products.filter((p) => selected.has(p.id));
+    const keys = Array.from(new Set(chosen.map(templateKeyFor)));
+    if (keys.length > 1) {
+      setFillTemplateError(`Selected products need different Flipkart templates (${keys.join(', ')}) — select one group at a time.`);
+      return;
+    }
+    const link = flipkartTemplateLink(keys[0]);
+    if (!link) {
+      setFillTemplateError(`No Flipkart template set up for "${chosen[0].category}" yet.`);
+      return;
+    }
+    window.open(link.url, '_blank', 'noopener');
+  };
+
+  const handleFillTemplateClick = async () => {
+    const picker = (window as WindowWithFilePicker).showOpenFilePicker;
+    if (!picker) {
+      fillTemplateInputRef.current?.click();
+      return;
+    }
+    let handle: WritableFileHandle;
+    try {
+      [handle] = await picker({
+        types: [{ description: 'Flipkart template', accept: { 'application/vnd.ms-excel': ['.xls', '.xlsx'] } }],
+      });
+    } catch {
+      return; // picker cancelled
+    }
+    // Chrome only lets us ask for write access right after a click, so ask
+    // now — not after the fill request, by which time the click has expired.
+    let canWrite = false;
+    try {
+      canWrite = (await handle.requestPermission?.({ mode: 'readwrite' })) === 'granted';
+    } catch {
+      // No click activation left (slow picker) — fall back to a "Save into file" button.
+    }
+    handleFillTemplateFileChosen(await handle.getFile(), handle, canWrite);
+  };
+
+  const writeToHandle = async (handle: WritableFileHandle, blob: Blob, name: string) => {
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    setPendingTemplateWrite(null);
+    setFillTemplateWarnings((prev) => [`Filled "${name}" in place — upload that same file to Flipkart.`, ...prev]);
+  };
+
+  // Fresh click → fresh activation, so the permission prompt is allowed here.
+  const handleSavePendingTemplate = async () => {
+    if (!pendingTemplateWrite) return;
+    const { handle, blob, name } = pendingTemplateWrite;
+    try {
+      if ((await handle.requestPermission?.({ mode: 'readwrite' })) === 'denied') {
+        setFillTemplateError('Chrome blocked editing the file — allow it, or use the downloaded copy instead.');
+        return;
+      }
+      await writeToHandle(handle, blob, name);
+    } catch (err) {
+      setFillTemplateError(err instanceof Error ? err.message : 'Could not save into the file');
+    }
+  };
+
+  const handleFillTemplateFileChosen = async (file: File, handle?: WritableFileHandle, canWrite = false) => {
+    setFillTemplateLoading(true);
+    setPendingTemplateWrite(null);
+    setFillTemplateError('');
+    setFillTemplateWarnings([]);
+    setBulkMissing(null);
+    const productIds = Array.from(selected);
+
+    try {
+      // Make sure the DB has our best data before filling the file.
+      await fetch('/api/admin/flipkart/autofill', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productIds }),
+      });
+
+      const form = new FormData();
+      form.append('file', file);
+      form.append('productIds', JSON.stringify(productIds));
+
+      const response = await fetch('/api/admin/flipkart/fill-template', {
+        method: 'POST',
+        credentials: 'include',
+        body: form,
+      });
+
+      if (response.status === 422) {
+        const data = await response.json();
+        if (data.details) {
+          setMissingPlatform('Flipkart');
+          setBulkMissing(data.details);
+        } else {
+          setFillTemplateError(data.error || 'Fill template failed');
+        }
+        return;
+      }
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setFillTemplateError(data.error || 'Fill template failed');
+        return;
+      }
+
+      const warningsHeader = response.headers.get('X-Fill-Warnings');
+      if (warningsHeader) {
+        const decoded = decodeURIComponent(warningsHeader);
+        if (decoded) setFillTemplateWarnings(decoded.split(' || '));
+      }
+
+      const blob = await response.blob();
+
+      // Overwrite the picked template in place when the browser allows it.
+      if (handle && canWrite) {
+        await writeToHandle(handle, blob, file.name);
+        return;
+      }
+      if (handle) {
+        setPendingTemplateWrite({ handle, blob, name: file.name });
+        return;
+      }
+
+      const disposition = response.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename="(.+)"/);
+      const filename = match?.[1] || file.name;
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setFillTemplateError(err instanceof Error ? err.message : 'Fill template failed');
+    } finally {
+      setFillTemplateLoading(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm overflow-hidden">
       {/* Bulk action bar */}
@@ -218,12 +519,53 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
               </button>
               <button
                 type="button"
-                disabled
-                title="Not built yet — needs a confirmed Flipkart bulk-template/API reference first"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium opacity-40 cursor-not-allowed"
+                onClick={handleFlipkartAction}
+                disabled={flipkartLoading}
+                title="Fetches Flipkart listing details for the selected products, then immediately generates the Excel"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
               >
-                <FiDownload className="w-4 h-4" />
+                {flipkartLoading ? <FiLoader className="w-4 h-4 animate-spin" /> : <FiDownload className="w-4 h-4" />}
                 Flipkart
+              </button>
+              <input
+                ref={fillTemplateInputRef}
+                type="file"
+                accept=".xls,.xlsx"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFillTemplateFileChosen(file);
+                  e.target.value = '';
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => syncPrices(false)}
+                disabled={priceSync?.loading}
+                title="Preview updating live Flipkart listings to site price + platform markup — nothing changes until you confirm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-blue-700 border border-blue-300 hover:bg-blue-50 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                {priceSync?.loading ? <FiLoader className="w-4 h-4 animate-spin" /> : <SiFlipkart className="w-4 h-4" />}
+                Sync Flipkart Prices
+              </button>
+              <button
+                type="button"
+                onClick={handleGetFlipkartTemplate}
+                title="Opens Seller Hub on the right category's bulk-template page with brand preselected — just click Download template there"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-indigo-700 border border-indigo-300 hover:bg-indigo-50 rounded-lg transition-colors text-sm font-medium"
+              >
+                <FiExternalLink className="w-4 h-4" />
+                Get Flipkart Template
+              </button>
+              <button
+                type="button"
+                onClick={handleFillTemplateClick}
+                disabled={fillTemplateLoading}
+                title="Upload the exact blank template you downloaded from Flipkart — we fill it with the right data and hand it back under the same filename"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                {fillTemplateLoading ? <FiLoader className="w-4 h-4 animate-spin" /> : <FiDownload className="w-4 h-4" />}
+                Fill Flipkart Template
               </button>
               <button
                 type="button"
@@ -254,7 +596,7 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
                     ) : (
                       <>
                         filled {s.filledFields} field{s.filledFields === 1 ? '' : 's'}
-                        {s.filledMeasurementCells > 0 && ` + ${s.filledMeasurementCells} measurement cell${s.filledMeasurementCells === 1 ? '' : 's'}`}
+                        {!!s.filledMeasurementCells && s.filledMeasurementCells > 0 && ` + ${s.filledMeasurementCells} measurement cell${s.filledMeasurementCells === 1 ? '' : 's'}`}
                         {s.blockedFields.length > 0 && (
                           <span className="text-red-600"> — still needs: {s.blockedFields.join(', ')}</span>
                         )}
@@ -265,7 +607,118 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
               </ul>
             </div>
           )}
+
+          {flipkartError && (
+            <p className="text-sm text-red-600">{flipkartError}</p>
+          )}
+
+          {flipkartSummary && (
+            <div className="text-sm bg-white border border-blue-200 rounded-lg p-3 space-y-2">
+              <p className="flex items-center gap-1.5 text-blue-800 font-medium">
+                <FiCheckCircle className="w-4 h-4" />
+                Fetched Flipkart details for {flipkartSummary.length} product{flipkartSummary.length === 1 ? '' : 's'}.
+              </p>
+              <ul className="space-y-1 max-h-40 overflow-y-auto">
+                {flipkartSummary.map((s) => (
+                  <li key={s.productId} className="text-gray-700">
+                    <span className="font-mono text-xs bg-gray-100 px-1.5 py-0.5 rounded">{s.sku}</span>{' '}
+                    {s.skipped ? (
+                      <span className="text-gray-500">— {s.skipped}</span>
+                    ) : (
+                      <>
+                        filled {s.filledFields} field{s.filledFields === 1 ? '' : 's'}
+                        {s.blockedFields.length > 0 && (
+                          <span className="text-red-600"> — still needs: {s.blockedFields.join(', ')}</span>
+                        )}
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {fillTemplateError && (
+            <p className="text-sm text-red-600">{fillTemplateError}</p>
+          )}
+
+          {priceSync && !priceSync.loading && (
+            <div className="text-sm bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="font-medium text-blue-900">
+                  {priceSync.applied
+                    ? `Flipkart prices updated: ${priceSync.updated ?? 0} of ${priceSync.changes.length} SKUs`
+                    : priceSync.changes.length > 0
+                      ? `${priceSync.changes.length} live Flipkart SKU price(s) would change — review, then confirm:`
+                      : 'Live Flipkart prices already match the platform pricing — nothing to change.'}
+                </p>
+                <button type="button" onClick={() => setPriceSync(null)} className="text-blue-400 hover:text-blue-600" title="Close">
+                  <FiX className="w-4 h-4" />
+                </button>
+              </div>
+              {priceSync.error && <p className="text-red-600">{priceSync.error}</p>}
+              {priceSync.changes.length > 0 && (
+                <ul className="font-mono text-xs text-gray-700 space-y-0.5 max-h-48 overflow-y-auto">
+                  {priceSync.changes.map((c) => (
+                    <li key={c.sku}>
+                      {c.sku}: ₹{c.current.sellingPrice} (MRP ₹{c.current.mrp}) → <b>₹{c.target.sellingPrice}</b> (MRP ₹{c.target.mrp})
+                      {c.capped && <span className="text-amber-700"> · capped at MRP</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {priceSync.failures && priceSync.failures.length > 0 && (
+                <p className="text-red-600">Failed: {priceSync.failures.map((f) => `${f.sku} (${f.error})`).join(', ')}</p>
+              )}
+              {priceSync.notLive.length > 0 && (
+                <p className="text-gray-500">Not live on Flipkart (skipped): {priceSync.notLive.join(', ')}</p>
+              )}
+              {!priceSync.applied && priceSync.changes.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => syncPrices(true)}
+                  className="px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-medium"
+                >
+                  Update {priceSync.changes.length} price(s) on Flipkart
+                </button>
+              )}
+            </div>
+          )}
+
+          {pendingTemplateWrite && (
+            <div className="flex items-center gap-3 text-sm bg-indigo-50 border border-indigo-200 rounded-lg p-3">
+              <span className="text-indigo-800">Template filled — click to save it into <b>{pendingTemplateWrite.name}</b>:</span>
+              <button
+                type="button"
+                onClick={handleSavePendingTemplate}
+                className="px-3 py-1.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg font-medium"
+              >
+                Save into file
+              </button>
+            </div>
+          )}
+
+          {fillTemplateWarnings.length > 0 && (
+            <div className="text-sm bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-1">
+              <p className="flex items-center gap-1.5 text-amber-800 font-medium">
+                <FiAlertTriangle className="w-4 h-4" />
+                Template filled — check these before uploading:
+              </p>
+              <ul className="list-disc list-inside text-amber-800">
+                {fillTemplateWarnings.map((w, i) => (
+                  <li key={i}>{w}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
+      )}
+
+      {reviewPanelProductId && (
+        <FlipkartReviewPanel
+          productId={reviewPanelProductId}
+          onClose={() => setReviewPanelProductId(null)}
+        />
       )}
 
       {products.length === 0 ? (
@@ -300,6 +753,7 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flipkart Price</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sizes</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Colors</th>
@@ -320,9 +774,39 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
                     />
                   </td>
                   <td className="px-6 py-4">
-                    <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded text-gray-700">
+                    <Link
+                      href={`/admin/products/${product.sku || product.id}`}
+                      className="font-mono text-sm bg-gray-100 hover:bg-primary-100 hover:text-primary-700 px-2 py-1 rounded text-gray-700 transition-colors"
+                      title={`Open ${product.name}`}
+                    >
                       {product.sku}
-                    </span>
+                    </Link>
+                    {flipkartStatuses[product.id]?.status === 'IN_QC' && (
+                      <span
+                        className="inline-flex items-center gap-0.5 ml-2 align-middle text-amber-500 cursor-help"
+                        title={`Sent to Flipkart — QC in progress (request ${flipkartStatuses[product.id].requestId}${
+                          flipkartStatuses[product.id].submittedAt
+                            ? `, filled ${new Date(flipkartStatuses[product.id].submittedAt!).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+                            : ''
+                        }). Turns blue once it's live.`}
+                      >
+                        <SiFlipkart className="w-4 h-4" />
+                        <FiClock className="w-3 h-3" />
+                      </span>
+                    )}
+                    {flipkartStatuses[product.id]?.url && (
+                      <a
+                        href={flipkartStatuses[product.id].url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`inline-flex items-center ml-2 align-middle ${
+                          flipkartStatuses[product.id].status === 'ACTIVE' ? 'text-[#2874f0]' : 'text-gray-400'
+                        }`}
+                        title={`On Flipkart (${flipkartStatuses[product.id].status}): ${flipkartStatuses[product.id].listedSkus.join(', ')}`}
+                      >
+                        <SiFlipkart className="w-4 h-4" />
+                      </a>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-4">
@@ -375,6 +859,24 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
                         </p>
                       )}
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    {(() => {
+                      const fk = platformPrice(product, 'flipkart');
+                      const live = flipkartStatuses[product.id];
+                      const outOfSync = live?.livePrice !== undefined && (live.livePrice !== fk.price || live.liveMrp !== fk.mrp);
+                      return (
+                        <div title={`Site price ${markupLabel('flipkart')}`}>
+                          <p className="font-medium text-[#2874f0]">₹{fk.price.toLocaleString('en-IN')}</p>
+                          <p className="text-sm text-gray-500 line-through">₹{fk.mrp.toLocaleString('en-IN')}</p>
+                          {outOfSync && (
+                            <p className="text-xs text-amber-600" title="The price live on Flipkart differs — use Sync Flipkart Prices">
+                              Live: ₹{live.livePrice!.toLocaleString('en-IN')} · sync needed
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-6 py-4">
                     {(() => {
@@ -502,14 +1004,14 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                 <FiAlertTriangle className="text-amber-500" />
-                Some products aren&apos;t ready for Myntra export
+                Some products aren&apos;t ready for {missingPlatform} export
               </h3>
               <button onClick={() => setBulkMissing(null)} className="p-2 hover:bg-gray-100 rounded-lg">
                 <FiX className="w-5 h-5" />
               </button>
             </div>
             {bulkMissing.length === 0 ? (
-              <p className="text-sm text-gray-600">None of the selected products&apos; categories are supported for Myntra export.</p>
+              <p className="text-sm text-gray-600">None of the selected products&apos; categories are supported for {missingPlatform} export.</p>
             ) : (
               <div className="space-y-4">
                 {bulkMissing.map((item) => (

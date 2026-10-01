@@ -12,6 +12,10 @@ import MyntraListingFields, {
   type MyntraFormState,
   type SizeMeasurementForm,
 } from '../MyntraListingFields';
+import FlipkartListingFields, {
+  EMPTY_FLIPKART_FORM,
+  type FlipkartFormState,
+} from '../FlipkartListingFields';
 
 const DRAFT_KEY = 'product-add-draft';
 
@@ -97,6 +101,7 @@ export default function ProductAddForm() {
   const [dragOver, setDragOver] = useState(false);
   const [myntraData, setMyntraData] = useState<MyntraFormState>(EMPTY_MYNTRA_FORM);
   const [myntraMeasurements, setMyntraMeasurements] = useState<Record<string, SizeMeasurementForm>>({});
+  const [flipkartData, setFlipkartData] = useState<FlipkartFormState>(EMPTY_FLIPKART_FORM);
 
   const updateMyntraMeasurement = (size: string, field: keyof SizeMeasurementForm, value: string) => {
     setMyntraMeasurements(prev => ({
@@ -293,6 +298,7 @@ export default function ProductAddForm() {
           colors: selectedColors,
           myntra: myntraData,
           myntraSizeMeasurements: Object.entries(myntraMeasurements).map(([size, m]) => ({ size, ...m })),
+          flipkart: flipkartData,
         }),
       });
 
@@ -773,6 +779,17 @@ export default function ProductAddForm() {
         onChange={(patch) => setMyntraData(prev => ({ ...prev, ...patch }))}
         measurements={myntraMeasurements}
         onMeasurementChange={updateMyntraMeasurement}
+      />
+
+      {/* Flipkart Listing Details */}
+      <FlipkartListingFields
+        category={formData.category}
+        subcategory={formData.subcategory}
+        productName={formData.name}
+        productDescription={formData.description}
+        colors={selectedColors}
+        value={flipkartData}
+        onChange={(patch) => setFlipkartData(prev => ({ ...prev, ...patch }))}
       />
 
       {/* Visibility */}

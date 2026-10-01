@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       colors,
       myntra,
       myntraSizeMeasurements,
+      flipkart,
     } = body;
 
     // Validate required fields
@@ -148,6 +149,13 @@ export async function POST(request: Request) {
           });
         }
       }
+    }
+
+    // Create Flipkart listing details, if provided (optional metadata)
+    if (flipkart && typeof flipkart === 'object' && Object.values(flipkart).some((v) => typeof v === 'string' && v.trim())) {
+      await prisma.flipkartListingDetail.create({
+        data: { productId: product.id, ...flipkart },
+      });
     }
 
     return NextResponse.json({ success: true, product }, { status: 201 });

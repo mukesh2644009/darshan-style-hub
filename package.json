@@ -44,6 +44,7 @@
     "react-icons": "^4.12.0",
     "resend": "^6.6.0",
     "ws": "^8.20.0",
+    "xlsx": "^0.18.5",
     "zustand": "^4.4.7"
   },
   "devDependencies": {

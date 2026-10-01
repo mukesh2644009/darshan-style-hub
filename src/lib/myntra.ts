@@ -1,5 +1,6 @@
 import type { Product, ProductSize, ProductColor, MyntraListingDetail, MyntraSizeMeasurement } from '@prisma/client';
-import { normalizeProductImageUrl } from './productImageUrl';
+import { absoluteImageUrl, categorizeProductImages } from './productImageCategorization';
+import { platformPrice } from './platformPricing';
 
 // Store-wide constants — same for every product, so these are not stored as
 // per-product fields on MyntraListingDetail.
@@ -7,8 +8,6 @@ export const MYNTRA_BRAND = 'Darshan Style Hub';
 export const MYNTRA_BUSINESS_ADDRESS =
   'Darshan Style Hub, Plot Number B-11, Shri Ram Vihar-B, Shri Kishanpura, Sanganer, Jaipur, Rajasthan, 302017';
 export const MYNTRA_COUNTRY_OF_ORIGIN = 'India';
-
-const SITE_BASE_URL = 'https://www.darshanstylehub.com';
 
 export type MyntraSheetName = 'Co-Ords' | 'Sarees';
 
@@ -105,65 +104,10 @@ export function validateMyntraListing(product: ProductWithMyntra): MissingMyntra
 interface RowContext {
   product: ProductWithMyntra;
   size: ProductSize;
-}
-
-function absoluteImageUrl(url: string | undefined): string {
-  if (!url) return '';
-  const normalized = normalizeProductImageUrl(url);
-  if (!normalized) return '';
-  return /^https?:\/\//i.test(normalized) ? normalized : `${SITE_BASE_URL}${normalized}`;
-}
-
-interface CategorizedImages {
-  front: string;
-  side: string;
-  back: string;
-  detail: string;
-  lookShot: string;
-  additional: string[];
-}
-
-/**
- * Myntra wants specific image angles (Front/Side/Back/Detail/Look Shot) in
- * fixed columns, but our own upload order doesn't guarantee that layout.
- * Filenames from the product photo shoot carry angle hints (e.g.
- * "..._back_side_photo_...", "..._detail_photo_...") — use those to place
- * each image in the right column, falling back to upload order only when no
- * filename gives a hint at all. "back" is checked before "side" so a file
- * like "back_side_photo" (a back-angle shot) lands in Back, not Side.
- */
-function categorizeProductImages(images: { url: string }[]): CategorizedImages {
-  const result: CategorizedImages = { front: '', side: '', back: '', detail: '', lookShot: '', additional: [] };
-  const unmatched: string[] = [];
-
-  for (const img of images) {
-    const name = (img.url.split('/').pop() || '').toLowerCase();
-    if (!result.back && /back/.test(name)) {
-      result.back = img.url;
-    } else if (!result.front && /(front|main)/.test(name)) {
-      result.front = img.url;
-    } else if (!result.side && /side/.test(name)) {
-      result.side = img.url;
-    } else if (!result.detail && /detail/.test(name)) {
-      result.detail = img.url;
-    } else if (!result.lookShot && /(lifestyle|look)/.test(name)) {
-      result.lookShot = img.url;
-    } else {
-      unmatched.push(img.url);
-    }
-  }
-
-  const anyKeywordMatched = result.front || result.side || result.back || result.detail || result.lookShot;
-  if (!anyKeywordMatched && images.length > 0) {
-    const urls = images.map((i) => i.url);
-    const [first, second, third, fourth, fifth, ...rest] = urls;
-    return { front: first || '', side: second || '', back: third || '', detail: fourth || '', lookShot: fifth || '', additional: rest };
-  }
-
-  if (!result.front && images.length > 0) result.front = images[0].url;
-
-  result.additional = unmatched.filter((u) => u !== result.front);
-  return result;
+  // Sequential per-style number within this export batch (1, 2, 3, ...) — confirmed
+  // from a real submitted template that this is a plain incrementing integer, not
+  // the SKU. Same value across every size row of one style.
+  styleGroupId: number;
 }
 
 export interface MyntraColumn {
@@ -179,7 +123,7 @@ const str = (v: string | null | undefined): string => v || '';
 // "Co-Ords" bulk-upload template sheet — do not reorder.
 export const CO_ORDS_COLUMNS: MyntraColumn[] = [
   { header: 'styleId', mandatory: false, get: () => '' },
-  { header: 'styleGroupId', mandatory: true, get: ({ product }) => product.sku },
+  { header: 'styleGroupId', mandatory: true, get: ({ styleGroupId }) => styleGroupId },
   { header: 'vendorSkuCode', mandatory: false, get: ({ product, size }) => `${product.sku}-${size.size}` },
   { header: 'vendorArticleNumber', mandatory: true, get: ({ product }) => product.sku },
   { header: 'vendorArticleName', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.styleName) },
@@ -200,8 +144,8 @@ export const CO_ORDS_COLUMNS: MyntraColumn[] = [
   { header: 'GTIN', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.gtin) },
   { header: 'HSN', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.hsnCode) },
   { header: 'SKUCode', mandatory: false, get: () => '' },
-  { header: 'MRP', mandatory: true, get: ({ product }) => product.originalPrice ?? product.price },
-  { header: 'ISP', mandatory: true, get: ({ product }) => product.price },
+  { header: 'MRP', mandatory: true, get: ({ product }) => platformPrice(product, 'myntra').mrp },
+  { header: 'ISP', mandatory: true, get: ({ product }) => platformPrice(product, 'myntra').price },
   { header: 'AgeGroup', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.ageGroup) || 'Adults-Women' },
   { header: 'Prominent Colour', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.prominentColour) || product.colors[0]?.name || '' },
   { header: 'Second Prominent Colour', mandatory: false, get: ({ product }) => product.colors[1]?.name || '' },
@@ -278,7 +222,7 @@ export const CO_ORDS_COLUMNS: MyntraColumn[] = [
 // "Sarees" bulk-upload template sheet — do not reorder.
 export const SAREES_COLUMNS: MyntraColumn[] = [
   { header: 'styleId', mandatory: false, get: () => '' },
-  { header: 'styleGroupId', mandatory: true, get: ({ product }) => product.sku },
+  { header: 'styleGroupId', mandatory: true, get: ({ styleGroupId }) => styleGroupId },
   { header: 'vendorSkuCode', mandatory: false, get: ({ product, size }) => `${product.sku}-${size.size}` },
   { header: 'vendorArticleNumber', mandatory: true, get: ({ product }) => product.sku },
   { header: 'vendorArticleName', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.styleName) },
@@ -299,8 +243,8 @@ export const SAREES_COLUMNS: MyntraColumn[] = [
   { header: 'GTIN', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.gtin) },
   { header: 'HSN', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.hsnCode) },
   { header: 'SKUCode', mandatory: false, get: () => '' },
-  { header: 'MRP', mandatory: true, get: ({ product }) => product.originalPrice ?? product.price },
-  { header: 'ISP', mandatory: true, get: ({ product }) => product.price },
+  { header: 'MRP', mandatory: true, get: ({ product }) => platformPrice(product, 'myntra').mrp },
+  { header: 'ISP', mandatory: true, get: ({ product }) => platformPrice(product, 'myntra').price },
   { header: 'AgeGroup', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.ageGroup) || 'Adults-Women' },
   { header: 'Prominent Colour', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.prominentColour) || product.colors[0]?.name || '' },
   { header: 'Second Prominent Colour', mandatory: false, get: ({ product }) => product.colors[1]?.name || '' },

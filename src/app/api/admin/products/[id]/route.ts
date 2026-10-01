@@ -53,7 +53,7 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival, visibleOnSite, afNumber, sizes, images, colors, rating, reviews, myntra, myntraSizeMeasurements } = body;
+    const { sku, name, description, price, originalPrice, category, subcategory, featured, newArrival, visibleOnSite, afNumber, sizes, images, colors, rating, reviews, myntra, myntraSizeMeasurements, flipkart } = body;
 
     // Validate required fields
     if (!sku || !name || !description || price === undefined) {
@@ -193,6 +193,15 @@ export async function PATCH(
       }
     }
 
+    // Upsert Flipkart listing details, if provided
+    if (flipkart && typeof flipkart === 'object') {
+      await prisma.flipkartListingDetail.upsert({
+        where: { productId: params.id },
+        create: { productId: params.id, ...flipkart },
+        update: { ...flipkart },
+      });
+    }
+
     // Refetch product with updated sizes
     const updatedProduct = await prisma.product.findUnique({
       where: { id: params.id },
@@ -201,6 +210,7 @@ export async function PATCH(
         sizes: true,
         colors: true,
         myntraListingDetail: { include: { sizeMeasurements: true } },
+        flipkartListingDetail: true,
       },
     });
 

@@ -36,8 +36,12 @@ export async function uploadAdminProductImages(params: {
   files: File[];
   category: string;
   productFolder: string;
+  /** Optional angle per file (front, back, side…), kept in the uploaded file name. */
+  labels?: string[];
+  /** Files already carry SEO names (Convert as per Myntra) — keep them on Cloudinary. */
+  keepNames?: boolean;
 }): Promise<string[]> {
-  const { files, category, productFolder } = params;
+  const { files, category, productFolder, labels, keepNames } = params;
 
   // Step 1: compress all images in parallel in the browser
   const compressed = await Promise.all(files.map(compressImage));
@@ -47,6 +51,8 @@ export async function uploadAdminProductImages(params: {
   compressed.forEach((f) => formData.append('images', f));
   formData.append('category', category);
   formData.append('productFolder', productFolder);
+  if (labels?.length) formData.append('labels', JSON.stringify(labels));
+  if (keepNames) formData.append('keepNames', '1');
 
   const res = await fetch('/api/admin/upload', {
     method: 'POST',

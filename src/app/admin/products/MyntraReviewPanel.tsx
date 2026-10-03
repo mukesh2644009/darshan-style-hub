@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiX, FiLoader, FiCheckCircle, FiSave, FiDownload, FiImage } from 'react-icons/fi';
+import MarketplaceCategoryHint from './MarketplaceCategoryHint';
 import MyntraListingFields, {
   type MyntraFormState,
   type SizeMeasurementForm,
@@ -212,6 +213,9 @@ export default function MyntraReviewPanel({ productId, onClose }: Props) {
 
       {product && !loading && (
         <>
+          <div className="mb-3">
+            <MarketplaceCategoryHint category={product.category} only="myntra" />
+          </div>
           <MyntraListingFields
             productId={productId}
             defaultOpen

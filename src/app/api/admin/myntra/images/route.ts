@@ -1,27 +1,10 @@
 import { NextResponse } from 'next/server';
 import JSZip from 'jszip';
-import sharp from 'sharp';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
-import { absoluteImageUrl, categorizeProductImages } from '@/lib/productImageCategorization';
+import { myntraImageFiles } from '@/lib/myntraImageFiles';
 
 export const dynamic = 'force-dynamic';
-
-// Same spec as DarshanAutomation's imaging.js: 1080x1440 stretched to fit,
-// JPEG stepping quality down from 85 until <= 500 KB (floor 30), saved as .jpg.
-const WIDTH = 1080;
-const HEIGHT = 1440;
-const TARGET_KB = 500;
-
-async function toMyntraJpeg(source: Buffer): Promise<Buffer> {
-  let quality = 85;
-  let out: Buffer;
-  do {
-    out = await sharp(source).resize(WIDTH, HEIGHT, { fit: 'fill' }).jpeg({ quality }).toBuffer();
-    quality -= 10;
-  } while (out.length / 1024 > TARGET_KB && quality >= 30);
-  return out;
-}
 
 // GET /api/admin/myntra/images?productIds=a,b,c (or productId=a) → zip of the
 // photos in Myntra format, named by the angle they fill in the Myntra sheet.
@@ -53,27 +36,11 @@ export async function GET(request: Request) {
 
     const zip = new JSZip();
     for (const product of products) {
-      const sku = product.sku.toLowerCase();
-      const folder = products.length > 1 ? zip.folder(sku)! : zip;
-      const c = categorizeProductImages(product.images);
-      const angles: [string, string][] = [
-        ['front', c.front],
-        ['side', c.side],
-        ['back', c.back],
-        ['detail', c.detail],
-        ['lookshot', c.lookShot],
-        ...c.additional.map((url, i): [string, string] => [`additional-${i + 1}`, url]),
-      ];
-      let n = 0;
-      for (const [angle, url] of angles) {
-        if (!url) continue;
-        const res = await fetch(absoluteImageUrl(url));
-        if (!res.ok) {
-          return NextResponse.json({ error: `${product.sku}: could not fetch ${angle} image (HTTP ${res.status})` }, { status: 502 });
-        }
-        const jpeg = await toMyntraJpeg(Buffer.from(await res.arrayBuffer()));
-        n += 1;
-        folder.file(`${sku}_${n}_${angle}.jpg`, jpeg);
+      const folder = products.length > 1 ? zip.folder(product.sku.toLowerCase())! : zip;
+      try {
+        for (const file of await myntraImageFiles(product)) folder.file(file.name, file.data);
+      } catch (err) {
+        return NextResponse.json({ error: err instanceof Error ? err.message : 'Image fetch failed' }, { status: 502 });
       }
     }
 

@@ -6,9 +6,11 @@ import path from 'path';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// On Vercel (production): upload to Cloudinary
-// On local dev: save to public/products/ as before
+// On Vercel (production): upload to Cloudinary. Locally too whenever the
+// Cloudinary keys are in .env — products added from the laptop admin (e.g. the
+// "Load from Sheet" flow) must show on the live site, not only in public/.
 const IS_VERCEL = !!process.env.VERCEL;
+const USE_CLOUDINARY = IS_VERCEL || !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
 
 async function uploadToCloudinary(buffer: Buffer, folder: string, fileName: string): Promise<string> {
   const { v2: cloudinary } = await import('cloudinary');
@@ -37,13 +39,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
 
-    // Check Cloudinary config if on Vercel
-    if (IS_VERCEL) {
+    // Check Cloudinary config. `vercel env pull` writes sensitive vars as the
+    // literal "[SENSITIVE]", so a pulled local .env looks set but isn't.
+    if (USE_CLOUDINARY) {
       const missing = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']
-        .filter(k => !process.env[k]);
+        .filter(k => !process.env[k] || /SENSITIVE/.test(process.env[k]!));
       if (missing.length > 0) {
         return NextResponse.json(
-          { error: `Cloudinary not configured. Missing env vars: ${missing.join(', ')}. Add them in Vercel → Settings → Environment Variables.` },
+          { error: `Cloudinary keys missing: ${missing.join(', ')}. On the laptop, put the real values in .env.local (Cloudinary → Settings → API Keys) and restart the dev server; on Vercel, add them under Settings → Environment Variables.` },
           { status: 500 }
         );
       }
@@ -51,6 +54,11 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const files = formData.getAll('images') as File[];
+    // Optional per-photo angle labels (front, back, side, detail, lookshot…) —
+    // kept in the file name so Myntra/Flipkart exports can tell the angles apart.
+    let labels: string[] = [];
+    try { labels = JSON.parse((formData.get('labels') as string) || '[]'); } catch { labels = []; }
+    const keepNames = formData.get('keepNames') === '1';
     const category = (formData.get('category') as string) || 'co-ord-sets';
     const rawFolder = (formData.get('productFolder') as string) || '';
     const safeFolder = rawFolder
@@ -78,12 +86,20 @@ export async function POST(request: Request) {
       }
 
       const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-      const fileName = `${i + 1}.${ext}`;
+      const label = String(labels[i] || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      // Photos converted for Myntra already carry an SEO name
+      // ("<title>_main_photo_<sku>.jpg") — keep it on the site too.
+      const seoName = keepNames
+        ? file.name.toLowerCase().replace(/\.[^.]+$/, '').replace(/[^a-z0-9_-]+/g, '-').slice(0, 180)
+        : '';
+      const fileName = seoName
+        ? `${seoName}.${ext}`
+        : label ? `${i + 1}-${label}.${ext}` : `${i + 1}.${ext}`;
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      if (IS_VERCEL) {
-        // Production: upload to Cloudinary
+      if (USE_CLOUDINARY) {
+        // Production (and local when configured): upload to Cloudinary
         const url = await uploadToCloudinary(buffer, `${categoryFolder}/${productFolder}`, fileName);
         uploadedPaths.push(url);
       } else {
@@ -108,7 +124,10 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Upload error:', error);
-    const message = error instanceof Error ? error.message : 'Failed to upload images';
+    // Cloudinary rejects with a plain { message, http_code } object, not an Error.
+    const message = error instanceof Error
+      ? error.message
+      : (error as { message?: string })?.message || 'Failed to upload images';
     const detail = error instanceof Error ? error.stack : String(error);
     return NextResponse.json({ error: message, detail }, { status: 500 });
   }

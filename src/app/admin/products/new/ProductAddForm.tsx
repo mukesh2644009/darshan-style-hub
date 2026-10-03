@@ -5,7 +5,10 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { uploadAdminProductImages } from '@/lib/adminUploadClient';
 import { MAX_ADMIN_IMAGE_MB } from '@/lib/uploadLimits';
-import { FiSave, FiLoader, FiCheck, FiPlus, FiX, FiImage, FiUploadCloud, FiTrash2 } from 'react-icons/fi';
+import { FiSave, FiLoader, FiCheck, FiPlus, FiX, FiImage, FiUploadCloud, FiTrash2, FiZap } from 'react-icons/fi';
+import SheetImportPanel, { type SheetRow } from './SheetImportPanel';
+import SheetFinishPanel from './SheetFinishPanel';
+import MarketplaceCategoryHint from '../MarketplaceCategoryHint';
 import MyntraListingFields, {
   EMPTY_MYNTRA_FORM,
   EMPTY_SIZE_MEASUREMENT,
@@ -20,6 +23,16 @@ import FlipkartListingFields, {
 const DRAFT_KEY = 'product-add-draft';
 
 const AVAILABLE_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'Free Size'];
+
+// Photo angles — the hang-tag names used in the resized file names
+// (<title>_main_photo_<sku>.jpg …); also kept in the uploaded file name so the
+// Myntra/Flipkart exports (categorizeProductImages) know front/back/side etc.
+const IMAGE_ANGLES = ['main_photo', 'back_side_photo', 'side_photo', 'detail_photo', 'lifestyle_photo', 'other'];
+const ANGLE_LABELS: Record<string, string> = {
+  main_photo: 'Main (front)', back_side_photo: 'Back', side_photo: 'Side',
+  detail_photo: 'Detail', lifestyle_photo: 'Lifestyle', other: 'Other',
+};
+const defaultAngle = (index: number) => IMAGE_ANGLES[Math.min(index, IMAGE_ANGLES.length - 1)];
 
 const SAREE_COLORS = [
   { name: 'Red', hex: '#DC2626' },
@@ -102,6 +115,106 @@ export default function ProductAddForm() {
   const [myntraData, setMyntraData] = useState<MyntraFormState>(EMPTY_MYNTRA_FORM);
   const [myntraMeasurements, setMyntraMeasurements] = useState<Record<string, SizeMeasurementForm>>({});
   const [flipkartData, setFlipkartData] = useState<FlipkartFormState>(EMPTY_FLIPKART_FORM);
+  const [imageLabels, setImageLabels] = useState<string[]>([]);
+  // Parent-sheet flow: the loaded row, the AI name state, and the created product.
+  const [sheetRow, setSheetRow] = useState<SheetRow | null>(null);
+  const [titleBusy, setTitleBusy] = useState(false);
+  const [titleNote, setTitleNote] = useState('');
+  const [created, setCreated] = useState<{ id: string; sku: string; tab: string; sNo: string; convertedFiles: string[] } | null>(null);
+
+  // Myntra-format copies of the picked photos (1080x1440 JPEG, SEO-named, saved
+  // in resizeimages\<sku>\). `key` = the inputs they were made from, so any
+  // change to photos/angles/SKU/name makes them stale and triggers a re-run.
+  const [converted, setConverted] = useState<{
+    key: string; folder: string; files: File[]; info: { name: string; sizeKb: number }[];
+  } | null>(null);
+  const [converting, setConverting] = useState(false);
+  const [convertError, setConvertError] = useState('');
+  const convertKey = [
+    formData.sku.trim(), formData.name.trim(),
+    imageFiles.map((f, i) => `${f.name}:${f.size}:${f.lastModified}:${imageLabels[i] || defaultAngle(i)}`).join('|'),
+  ].join('#');
+  const isConverted = !!converted && converted.key === convertKey;
+
+  const convertImages = async (): Promise<File[] | null> => {
+    if (imageFiles.length === 0 || !formData.sku.trim() || !formData.name.trim()) return null;
+    const key = convertKey;
+    setConverting(true);
+    setConvertError('');
+    try {
+      const fd = new FormData();
+      imageFiles.forEach((f) => fd.append('images', f));
+      fd.append('labels', JSON.stringify(imageFiles.map((_, i) => imageLabels[i] || defaultAngle(i))));
+      fd.append('sku', formData.sku.trim());
+      fd.append('name', formData.name.trim());
+      const res = await fetch('/api/admin/sheet/convert-images', { method: 'POST', credentials: 'include', body: fd });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setConvertError(data.error || 'Photo conversion failed');
+        return null;
+      }
+      const files: File[] = await Promise.all(
+        (data.files as { name: string; dataUrl: string }[]).map(async (f) =>
+          new File([await (await fetch(f.dataUrl)).blob()], f.name, { type: 'image/jpeg' })),
+      );
+      setConverted({ key, folder: data.folder, files, info: data.files.map((f: { name: string; sizeKb: number }) => ({ name: f.name, sizeKb: f.sizeKb })) });
+      return files;
+    } catch (err) {
+      setConvertError(err instanceof Error ? err.message : 'Photo conversion failed');
+      return null;
+    } finally {
+      setConverting(false);
+    }
+  };
+
+
+  const generateTitle = async (row: SheetRow | null = sheetRow) => {
+    if (!row) return;
+    setTitleBusy(true);
+    setTitleNote('');
+    try {
+      const res = await fetch('/api/admin/sheet/title', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          category: row.siteCategory || formData.category,
+          fabricSpec: row.fabricSpec,
+          description: row.rawDescription,
+          bullets: row.bullets,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.title) {
+        setTitleNote(data.error || 'Could not create a name');
+        return;
+      }
+      setFormData((prev) => ({ ...prev, name: data.title }));
+      setTitleNote(data.byAi ? 'AI name — check it before saving' : 'AI busy — used the rule-based name, check it');
+    } catch (err) {
+      setTitleNote(err instanceof Error ? err.message : 'Could not create a name');
+    } finally {
+      setTitleBusy(false);
+    }
+  };
+
+  const applySheetRow = (row: SheetRow) => {
+    setSheetRow(row);
+    setFormData((prev) => ({
+      ...prev,
+      sku: row.sku || prev.sku,
+      name: row.itemName || '',
+      description: row.siteDescription,
+      price: row.sellingPrice || prev.price,
+      originalPrice: row.realPrice || prev.originalPrice,
+      category: row.siteCategory || prev.category,
+      subcategory: '',
+    }));
+    if (row.sizes.length > 0) {
+      setSizeQuantities(Object.fromEntries(row.sizes.map((s) => [s.size, s.quantity])));
+    }
+    if (!row.itemName) generateTitle(row);
+  };
 
   const updateMyntraMeasurement = (size: string, field: keyof SizeMeasurementForm, value: string) => {
     setMyntraMeasurements(prev => ({
@@ -160,6 +273,7 @@ export default function ProductAddForm() {
     if (newFiles.length === 0) return;
 
     setImageFiles(prev => [...prev, ...newFiles]);
+    setImageLabels(prev => [...prev, ...newFiles.map((_, i) => defaultAngle(prev.length + i))]);
     newFiles.forEach(file => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -172,6 +286,7 @@ export default function ProductAddForm() {
   const removeImage = (index: number) => {
     setImageFiles(prev => prev.filter((_, i) => i !== index));
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    setImageLabels(prev => prev.filter((_, i) => i !== index));
   };
 
   const moveImage = (index: number, dir: -1 | 1) => {
@@ -179,6 +294,7 @@ export default function ProductAddForm() {
     if (newIdx < 0 || newIdx >= imageFiles.length) return;
     setImageFiles(prev => { const a = [...prev]; [a[index], a[newIdx]] = [a[newIdx], a[index]]; return a; });
     setImagePreviews(prev => { const a = [...prev]; [a[index], a[newIdx]] = [a[newIdx], a[index]]; return a; });
+    setImageLabels(prev => { const a = [...prev]; [a[index], a[newIdx]] = [a[newIdx], a[index]]; return a; });
   };
 
   const replaceImage = (index: number, file: File) => {
@@ -236,8 +352,10 @@ export default function ProductAddForm() {
     );
   };
 
-  const uploadImages = async (): Promise<string[]> => {
+  const uploadImages = async (filesOverride?: File[]): Promise<string[]> => {
     if (imageFiles.length === 0) return [];
+    // The site gets the same Myntra-format photos that went to resizeimages.
+    const files = filesOverride || (isConverted ? converted!.files : imageFiles);
 
     setUploading(true);
     try {
@@ -245,9 +363,11 @@ export default function ProductAddForm() {
         ? formData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
         : '';
       const paths = await uploadAdminProductImages({
-        files: imageFiles,
+        files,
         category: formData.category,
         productFolder: slug || `product-${Date.now()}`,
+        labels: imageFiles.map((_, i) => imageLabels[i] || defaultAngle(i)),
+        keepNames: files !== imageFiles, // converted copies carry the SEO names
       });
       setUploading(false);
       return paths;
@@ -284,7 +404,10 @@ export default function ProductAddForm() {
     try {
       setMessage('Uploading images...');
       setMessageType('success');
-      const imagePaths = imageFiles.length > 0 ? await uploadImages() : [];
+      // Make sure the Myntra copies match the final photos/name before uploading.
+      const convertedNow = imageFiles.length > 0 && !isConverted ? await convertImages() : null;
+      const myntraFiles = convertedNow || (isConverted ? converted!.files : []);
+      const imagePaths = imageFiles.length > 0 ? await uploadImages(convertedNow || undefined) : [];
       const allImages = [...uploadedImagePaths, ...imagePaths];
 
       const response = await fetch('/api/admin/products', {
@@ -304,7 +427,15 @@ export default function ProductAddForm() {
 
       const data = await response.json();
 
-      if (response.ok) {
+      if (response.ok && sheetRow && data.product?.id) {
+        // Parent-sheet flow: stay here for the sheet/photo step and AI Fill All.
+        clearDraft();
+        setCreated({
+          id: data.product.id, sku: data.product.sku, tab: sheetRow.tab, sNo: sheetRow.sNo,
+          convertedFiles: myntraFiles.map((f) => f.name),
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (response.ok) {
         clearDraft();
         // Reset all form fields so navigating back shows a blank form
         setFormData({ sku: '', name: '', description: '', price: 0, originalPrice: 0, category: 'Co Ord Sets', subcategory: '', featured: false, newArrival: true, visibleOnSite: true, afNumber: '' });
@@ -343,6 +474,10 @@ export default function ProductAddForm() {
     'Western Dress': ['Bodycon Dress', 'Maxi Dress', 'Party Wear Dress', 'Casual Dress', 'Gown'],
   };
 
+  if (created) {
+    return <SheetFinishPanel productId={created.id} sku={created.sku} tab={created.tab} sNo={created.sNo} convertedFiles={created.convertedFiles} />;
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
 
@@ -379,6 +514,8 @@ export default function ProductAddForm() {
         </div>
       )}
 
+      <SheetImportPanel onLoaded={applySheetRow} />
+
       {/* Basic Information */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h2 className="text-lg font-bold text-gray-900 mb-4">Basic Information</h2>
@@ -412,6 +549,20 @@ export default function ProductAddForm() {
               placeholder="e.g., Fiona Aqua Designer Kurti"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
+            {sheetRow && (
+              <div className="flex items-center gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => generateTitle()}
+                  disabled={titleBusy}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white text-sm rounded-lg hover:bg-violet-700 font-medium disabled:opacity-50"
+                >
+                  {titleBusy ? <FiLoader className="w-4 h-4 animate-spin" /> : <FiZap className="w-4 h-4" />}
+                  AI Item Name
+                </button>
+                {titleNote && <span className="text-xs text-amber-700">{titleNote}</span>}
+              </div>
+            )}
           </div>
 
           <div>
@@ -464,6 +615,7 @@ export default function ProductAddForm() {
               </select>
             </div>
           </div>
+          <MarketplaceCategoryHint category={formData.category} />
         </div>
       </div>
 
@@ -651,9 +803,61 @@ export default function ProductAddForm() {
                   <div className="absolute top-2 right-2 w-6 h-6 bg-black/50 text-white text-xs font-bold rounded-full flex items-center justify-center">
                     {index + 1}
                   </div>
+                  {/* Photo angle — used by the Myntra/Flipkart image columns */}
+                  <select
+                    value={imageLabels[index] || defaultAngle(index)}
+                    onChange={(e) => setImageLabels((prev) => {
+                      const a = imageFiles.map((_, i) => prev[i] || defaultAngle(i));
+                      a[index] = e.target.value;
+                      return a;
+                    })}
+                    title="Photo angle"
+                    className="absolute top-9 right-2 text-xs bg-white/90 border border-gray-300 rounded px-1 py-0.5"
+                  >
+                    {IMAGE_ANGLES.map((a) => <option key={a} value={a}>{ANGLE_LABELS[a]}</option>)}
+                  </select>
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Convert for Myntra: 1080x1440 JPEG ≤500 KB, SEO names, saved in resizeimages\<sku>\ */}
+        {imageFiles.length > 0 && (
+          <div className={`mt-4 text-sm rounded-lg border p-4 ${
+            isConverted ? 'bg-green-50 border-green-200' : convertError ? 'bg-red-50 border-red-200' : 'bg-pink-50 border-pink-200'
+          }`}>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => convertImages()}
+                disabled={converting || !formData.sku.trim() || !formData.name.trim()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 font-medium disabled:opacity-50"
+              >
+                {converting ? <FiLoader className="w-4 h-4 animate-spin" /> : <FiImage className="w-4 h-4" />}
+                {converting ? 'Converting…' : isConverted ? 'Convert again' : 'Convert as per Myntra'}
+              </button>
+              <span className="text-gray-600">
+                {!formData.sku.trim() || !formData.name.trim()
+                  ? 'Fill SKU and Product Name first — they go in the file names.'
+                  : 'Resizes to 1080×1440 (≤500 KB), renames with SEO names and saves in resizeimages\\' + formData.sku.trim().toLowerCase()}
+              </span>
+            </div>
+            {convertError && <p className="text-red-700 mt-2">{convertError}</p>}
+            {isConverted && (
+              <div className="mt-3">
+                <p className="flex items-center gap-1.5 font-medium text-green-800">
+                  <FiCheck className="w-4 h-4" /> {converted!.files.length} photo(s) saved in <span className="font-mono break-all">{converted!.folder}</span>
+                </p>
+                <ul className="mt-1 text-xs text-green-900 space-y-0.5">
+                  {converted!.info.map((f) => <li key={f.name} className="font-mono break-all">{f.name} · {f.sizeKb} KB</li>)}
+                </ul>
+                <p className="text-xs text-gray-500 mt-1">These same photos are uploaded to the site when you click Create Product.</p>
+              </div>
+            )}
+            {converted && !isConverted && !converting && (
+              <p className="text-amber-700 mt-2">Photos, angles or name changed since the last convert — click Convert again (Create Product also does it).</p>
+            )}
           </div>
         )}
       </div>

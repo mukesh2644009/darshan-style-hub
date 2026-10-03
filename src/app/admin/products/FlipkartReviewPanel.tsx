@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiX, FiLoader, FiCheckCircle, FiSave } from 'react-icons/fi';
+import MarketplaceCategoryHint from './MarketplaceCategoryHint';
 import FlipkartListingFields, { type FlipkartFormState, EMPTY_FLIPKART_FORM } from './FlipkartListingFields';
 import { platformPrice, markupLabel } from '@/lib/platformPricing';
 
@@ -133,6 +134,9 @@ export default function FlipkartReviewPanel({ productId, onClose }: Props) {
 
       {product && !loading && (
         <>
+          <div className="mb-3">
+            <MarketplaceCategoryHint category={product.category} only="flipkart" />
+          </div>
           <FlipkartListingFields
             productId={productId}
             category={product.category}

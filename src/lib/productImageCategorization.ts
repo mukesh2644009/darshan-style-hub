@@ -34,6 +34,17 @@ export function categorizeProductImages(images: { url: string }[]): CategorizedI
 
   for (const img of images) {
     const name = (img.url.split('/').pop() || '').toLowerCase();
+    // SEO-named photos carry an exact angle tag ("…_main_photo_dsh_ws_02.jpg").
+    // Trust it over loose keywords — the title part may contain "back"/"side"
+    // (e.g. "backless-dress", "side-slit-kurta").
+    const tag = name.match(/[_-](main|back[_-]side|side|detail|lifestyle)[_-]photo(?=[_.-]|$)|[_-](other)(?=[_.-]|$)/);
+    if (tag) {
+      const angle = (tag[1] || tag[2]).replace(/-/g, '_');
+      const slot = ({ main: 'front', back_side: 'back', side: 'side', detail: 'detail', lifestyle: 'lookShot' } as const)[angle as 'main'];
+      if (slot && !result[slot]) result[slot] = img.url;
+      else unmatched.push(img.url);
+      continue;
+    }
     if (!result.back && /back/.test(name)) {
       result.back = img.url;
     } else if (!result.front && /(front|main)/.test(name)) {

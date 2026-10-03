@@ -13,6 +13,7 @@
 //    are never guessed, only flagged, because a wrong GTIN/HSN has real consequences.
 
 import { detectColorFromName, detectFabric, capitalizeFirst } from './productTextHeuristics';
+import { toMyntraFabric } from './myntraValues';
 
 export interface MyntraAutofillInput {
   name: string;
@@ -33,11 +34,6 @@ export interface MyntraAutofillOutcome {
 // HSN is the tax/customs classification code and stays constant across this whole
 // garment category regardless of colour.
 const CO_ORD_COMMON_HSN = '62042300';
-const FABRIC_VOCAB: Record<string, string> = {
-  Viscose: 'Viscose Rayon',
-  Rayon: 'Viscose Rayon',
-  Cotton: 'Pure Cotton',
-};
 // Wash Care confirmed business-side for Viscose Rayon items: Hand Wash, not Dry Clean
 // (corrected after the DSH_CS_03 reference file's "Dry Clean" was flagged as wrong).
 const FABRIC_WASH_CARE: Record<string, string> = {
@@ -128,10 +124,12 @@ export function deriveMyntraAutofill(input: MyntraAutofillInput): MyntraAutofill
     // per-product guess — same for every Co-Ord Set listing.
     fillConfident('articleType', 'Co-Ords');
 
+    // Only ever store a value from Myntra's own list — a raw word like
+    // "Georgette" would be rejected after upload.
     const rawFabric = detectFabric(text);
-    const fabric = FABRIC_VOCAB[rawFabric] || rawFabric;
+    const fabric = toMyntraFabric(rawFabric, 'topFabric');
     fillReview('topFabric', fabric);
-    fillReview('bottomFabric', fabric);
+    fillReview('bottomFabric', toMyntraFabric(rawFabric, 'bottomFabric'));
 
     // HSN is a fixed tax-classification code for this garment category — confirmed
     // from a real submitted listing — but still flagged since it's a shared default,
@@ -139,12 +137,14 @@ export function deriveMyntraAutofill(input: MyntraAutofillInput): MyntraAutofill
     fillReview('hsnCode', CO_ORD_COMMON_HSN);
 
     const washCare = FABRIC_WASH_CARE[fabric] || '';
-    const washMatch = description.match(/\b(dry clean|hand wash|machine wash)[^.\n]*/i);
-    if (washCare) fillReview('washCare', washCare);
-    else if (washMatch) fillReview('washCare', capitalizeFirst(washMatch[0]));
-    else block('washCare');
-
-    const resolvedWashCare = washCare || (washMatch ? capitalizeFirst(washMatch[0]) : '');
+    // Myntra's Wash Care is a 3-value dropdown — store the canonical value, not
+    // the description's full phrase ("Hand wash in cold water" is rejected).
+    // Same "Hand Wash if not stated" default the AI Fill uses.
+    const washMatch = description.match(/\b(dry clean|hand wash|machine wash)/i);
+    const resolvedWashCare = washCare || (washMatch
+      ? washMatch[1].toLowerCase().split(' ').map(capitalizeFirst).join(' ')
+      : 'Hand Wash');
+    fillReview('washCare', resolvedWashCare);
     if (fabric && resolvedWashCare) fillReview('materialCareDescription', `100% ${fabric}, ${resolvedWashCare}`);
     else block('materialCareDescription');
 
@@ -188,4 +188,7 @@ export const MYNTRA_FIELD_LABELS: Record<string, string> = {
   numberOfPockets: 'Number of Pockets', numberOfItems: 'Number of Items',
   packageContains: 'Package Contains', sareeType: 'Saree Type', sareeFabric: 'Saree Fabric',
   blouseFabric: 'Blouse Fabric', blouseIncluded: 'Blouse Included', multipackSet: 'Multipack Set',
+  productDetails: 'Product Details', styleNote: 'Style Note', tags: 'Tags', occasion: 'Occasion',
+  neck: 'Neck', sleeveLength: 'Sleeve Length', topType: 'Top Type', bottomType: 'Bottom Type',
+  topPattern: 'Top Pattern', bottomPattern: 'Bottom Pattern',
 };

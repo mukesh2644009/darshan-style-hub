@@ -116,9 +116,32 @@ export function getRequiredFlipkartFields(product: { category: string; name: str
       add('bottomFabric', 'Bottom Fabric');
     }
   } else {
-    add('materialCareDescription', 'Material Care Description');
+    // Co-ords: blue (mandatory) header cells in Flipkart's own "apparel_set"
+    // template, read via Excel 2026-10-02; package dims are purple
+    // (conditionally mandatory). "Type" is always "Co-ords" (fixed column).
+    add('lengthCm', 'Length (cm)');
+    add('breadthCm', 'Breadth (cm)');
+    add('heightCm', 'Height (cm)');
+    add('fulfilmentBy', 'Fulfilment by');
+    add('procurementType', 'Procurement type');
+    add('procurementSlaDays', 'Procurement SLA (DAY)');
+    add('addOns', 'Add ons');
+    add('topType', 'Top Type');
+    add('bottomType', 'Bottom Type');
+    add('occasion', 'Occasion');
+    add('topPattern', 'Top Pattern Type');
     add('topFabric', 'Top Fabric');
+    add('neck', 'Neck');
+    add('sleeveStyle', 'Sleeve Style');
+    add('bottomPattern', 'Bottom Pattern Type');
     add('bottomFabric', 'Bottom Fabric');
+    add('printType', 'Print Type');
+    add('ageGroup', 'Ideal For');
+    add('netQuantity', 'Net Quantity');
+    add('topLength', 'Top Length');
+    add('sleeveLength', 'Sleeve Length');
+    add('bottomLength', 'Bottom Length');
+    add('packOf', 'Pack of');
   }
 
   return required;
@@ -149,63 +172,100 @@ interface RowContext {
 
 const str = (v: string | null | undefined): string => v || '';
 
-// Column order/headers below are copied verbatim from the Flipkart_Coordset
-// reference sheet (Google Sheets, shared 2026-09-19) — do not reorder.
+// Column order/headers copied verbatim from Flipkart's own Co-ords template
+// (C_apparel-set_ddeaa0ca6b304eb1_0110-1313FK_REQQVQYAA8XNK.xls, "apparel_set"
+// sheet, 2026-10-02). Replaces the old layout copied from an internal
+// "Flipkart_Coordset" sheet, which only matched 13 of Flipkart's columns.
+// Allowed values: FLIPKART_CO_ORD_VALUES in flipkartAutofill.ts.
 export const FLIPKART_CO_ORD_COLUMNS = [
-  { header: 'Vendor Article Number (Style Code)', get: ({ product }: RowContext) => product.sku },
-  { header: 'Product Name', get: ({ product }: RowContext) => product.name },
-  { header: 'Brand', get: () => MYNTRA_BRAND },
-  { header: 'Category', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.category) },
-  { header: 'Brand Size', get: ({ size }: RowContext) => size.size },
-  { header: 'Standard Size', get: ({ size }: RowContext) => size.size },
-  { header: 'Seller SKU ID / Vendor SKU Code', get: ({ product, size }: RowContext) => `${product.sku}-${size.size}` },
-  { header: 'Myntra styleGroupId', get: () => '' },
+  { header: 'Flipkart Serial Number', get: () => '' },
+  { header: 'Catalog QC Status', get: () => '' },
+  { header: 'QC Failed Reason (if any)', get: () => '' },
+  { header: 'Flipkart Product Link', get: () => '' },
+  { header: 'Product Data Status', get: () => '' },
+  { header: 'Disapproval Reason (if any)', get: () => '' },
+  { header: 'Seller SKU ID', get: ({ product, size }: RowContext) => `${product.sku}-${size.size}` },
+  { header: 'Group ID', get: ({ product }: RowContext) => product.sku },
+  { header: 'Parent Variant FSN', get: () => '' },
+  { header: 'Listing Status', get: () => '' },
   { header: 'MRP (INR)', get: ({ product }: RowContext) => platformPrice(product, 'flipkart').mrp },
-  { header: 'Selling Price / ISP (INR)', get: ({ product }: RowContext) => platformPrice(product, 'flipkart').price },
-  { header: 'HSN Code - Flipkart (4-digit)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.hsnFlipkart) },
-  { header: 'HSN Code - Myntra (8-digit)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.hsnMyntra) },
+  { header: 'Your selling price (INR)', get: ({ product }: RowContext) => platformPrice(product, 'flipkart').price },
+  { header: 'Fullfilment by', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.fulfilmentBy) },
+  { header: 'Procurement type', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.procurementType) },
+  { header: 'Procurement SLA (DAY)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.procurementSlaDays) },
+  { header: 'Stock', get: ({ size }: RowContext) => size.quantity },
+  { header: 'Shipping provider', get: () => 'FLIPKART' },
+  { header: 'Local handling fee (INR)', get: () => 0 }, // mandatory for Co-ords (QC 2026-10-02); live listings use 0
+  { header: 'Zonal handling fee (INR)', get: () => 0 }, // mandatory for Co-ords (QC 2026-10-02); live listings use 0
+  { header: 'National handling fee (INR)', get: () => 0 }, // mandatory for Co-ords (QC 2026-10-02); live listings use 0
+  { header: 'Length (CM)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.lengthCm) },
+  { header: 'Breadth (CM)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.breadthCm) },
+  { header: 'Height (CM)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.heightCm) },
+  { header: 'Weight (KG)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.weightKg) },
+  { header: 'HSN', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.hsnFlipkart) },
+  { header: 'Luxury Cess', get: () => '' },
+  { header: 'Country Of Origin', get: () => MYNTRA_COUNTRY_OF_ORIGIN },
+  { header: 'Manufacturer Details', get: () => MYNTRA_BUSINESS_ADDRESS },
+  { header: 'Packer Details', get: () => MYNTRA_BUSINESS_ADDRESS },
+  { header: 'Importer Details', get: () => '' },
   { header: 'Tax Code', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.taxCode) },
-  { header: 'GTIN', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.gtin) },
-  { header: 'Manufacturer Name & Address (with Pincode)', get: () => MYNTRA_BUSINESS_ADDRESS },
-  { header: 'Packer Name & Address (with Pincode)', get: () => MYNTRA_BUSINESS_ADDRESS },
-  { header: 'Country of Origin', get: () => MYNTRA_COUNTRY_OF_ORIGIN },
-  { header: 'Material Care Description', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.materialCareDescription) },
-  { header: 'Top Fabric', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.topFabric) },
-  { header: 'Bottom Fabric', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.bottomFabric) },
-  { header: 'Colour', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.colour) },
-  { header: 'Net Quantity', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.netQuantity) },
-  { header: 'Package Contains', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.packageContains) },
-  { header: 'Length (cm)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.lengthCm) },
-  { header: 'Breadth (cm)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.breadthCm) },
-  { header: 'Height (cm)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.heightCm) },
-  { header: 'Weight (kg)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.weightKg) },
-  { header: 'Fulfilment By (Flipkart)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.fulfilmentBy) },
-  { header: 'Procurement Type', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.procurementType) },
-  { header: 'Procurement SLA (days)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.procurementSlaDays) },
+  { header: 'Brand', get: () => MYNTRA_BRAND },
+  { header: 'Type', get: () => 'Co-ords' },
+  { header: 'Add ons', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.addOns) },
   { header: 'Top Type', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.topType) },
   { header: 'Bottom Type', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.bottomType) },
-  { header: 'Neck', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.neck) },
-  { header: 'Sleeve Length', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.sleeveLength) },
-  { header: 'Top Pattern', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.topPattern) },
-  { header: 'Bottom Pattern', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.bottomPattern) },
   { header: 'Occasion', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.occasion) },
-  { header: 'Age Group', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.ageGroup) },
-  { header: 'Fashion Type', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.fashionType) },
-  { header: 'Season', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.season) },
-  { header: 'Year', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.year) },
-  { header: 'Product Display Name', get: ({ product }: RowContext) => product.name },
-  { header: 'Product Details / Key Features', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.productDetails) },
-  { header: 'Style Note / Description', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.styleNote) },
-  { header: 'Tags', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.tags) },
-  { header: 'Front Image URL', get: ({ product }: RowContext) => categorizeProductImages(product.images).front },
-  { header: 'Back Image URL', get: ({ product }: RowContext) => categorizeProductImages(product.images).back },
-  { header: 'Side Image URL', get: ({ product }: RowContext) => categorizeProductImages(product.images).side },
-  { header: 'Detail/Pattern Image URL', get: ({ product }: RowContext) => categorizeProductImages(product.images).detail },
-  { header: 'Lifestyle Image URL', get: ({ product }: RowContext) => categorizeProductImages(product.images).lookShot },
-  { header: 'Additional Image URL', get: ({ product }: RowContext) => categorizeProductImages(product.images).additional[0] || '' },
-  // Not in the original Google Sheet grounding, but a real column in
-  // Flipkart's official apparel_set template — added 2026-09-25 per request.
+  { header: 'Top Pattern Type', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.topPattern) },
+  { header: 'Top Fabric', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.topFabric) },
+  { header: 'Neck', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.neck) },
+  { header: 'Sleeve Style', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.sleeveStyle) },
+  // Flipkart QC rule (2026-10-02, DSH_CS_02): Top Pattern Type must match
+  // Bottom Pattern Type ("for bottom Solid, top should be Solid") — so the
+  // set's main (top) pattern is sent for both.
+  { header: 'Bottom Pattern Type', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.topPattern || product.flipkartListingDetail?.bottomPattern) },
+  { header: 'Bottom Fabric', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.bottomFabric) },
+  { header: 'Print Type', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.printType) },
+  { header: 'Ideal For', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.ageGroup) },
+  { header: 'Style Code', get: ({ product }: RowContext) => product.sku },
+  { header: 'Brand Color', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.colour) },
+  { header: 'Brand Size', get: ({ size }: RowContext) => size.size },
+  { header: 'Color', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.colour) },
+  { header: 'Net Quantity', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.netQuantity) },
+  { header: 'Top Length', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.topLength) },
+  { header: 'Sleeve Length', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.sleeveLength) },
+  { header: 'Bottom Length', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.bottomLength) },
+  { header: 'Pack of', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.packOf) },
+  { header: 'Main Image URL', get: ({ product }: RowContext) => categorizeProductImages(product.images).front },
+  { header: 'Other Image URL 1', get: ({ product }: RowContext) => categorizeProductImages(product.images).back },
+  { header: 'Other Image URL 2', get: ({ product }: RowContext) => categorizeProductImages(product.images).side },
+  { header: 'Other Image URL 3', get: ({ product }: RowContext) => categorizeProductImages(product.images).detail },
+  { header: 'Other Image URL 4', get: ({ product }: RowContext) => categorizeProductImages(product.images).lookShot },
+  { header: 'Other Image URL 5', get: () => '' },
+  { header: 'Main Palette Image URL', get: () => '' },
+  { header: 'Lining Material', get: () => '' },
+  { header: 'Detail Placement', get: () => '' },
+  { header: 'Top Closure', get: () => '' },
+  { header: 'Bottom Closure', get: () => '' },
+  { header: 'Waist Rise', get: () => '' },
+  { header: 'Bottom Fit', get: () => '' },
+  { header: 'Top Fit', get: () => '' },
+  { header: 'Surface Styling', get: () => '' },
+  { header: 'Belt Included', get: () => '' },
+  { header: 'Video URL', get: () => '' },
+  { header: 'Trend', get: () => '' },
+  { header: 'Bust in Inch (inch)', get: () => '' },
+  { header: 'Thigh in inch (inch)', get: () => '' },
+  { header: 'Waist in inch (inch)', get: () => '' },
+  { header: 'Hip in inch (inch)', get: () => '' },
+  { header: 'Inside Leg in inch (inch)', get: () => '' },
+  { header: 'Care Instructions', get: () => '' },
+  { header: 'Ornamentation Type', get: () => '' },
+  { header: 'Description', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.styleNote) },
+  { header: 'Key Features', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.productDetails) },
+  { header: 'EAN', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.gtin) },
   { header: 'Search Keywords', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.searchKeywords) },
+  { header: 'Other Details', get: () => '' },
+  { header: 'Supplier Image', get: () => '' },
 ];
 
 // Column order/headers below are copied verbatim from Flipkart's own downloaded
@@ -594,5 +654,5 @@ export function columnsAndSheetFor(templateKey: string): { columns: FlipkartColu
   if (templateKey === 'Kurtis:single') return { columns: FLIPKART_KURTI_COLUMNS, sheetName: 'kurta' };
   if (templateKey === 'Kurtis:set') return { columns: FLIPKART_ETHNIC_SET_COLUMNS, sheetName: 'ethnic_set' };
   if (templateKey === 'Tops') return { columns: FLIPKART_TOP_COLUMNS, sheetName: 'top' };
-  return { columns: FLIPKART_CO_ORD_COLUMNS, sheetName: 'Coordset' };
+  return { columns: FLIPKART_CO_ORD_COLUMNS, sheetName: 'apparel_set' };
 }

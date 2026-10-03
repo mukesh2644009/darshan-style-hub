@@ -1,6 +1,13 @@
 import type { Product, ProductSize, ProductColor, MyntraListingDetail, MyntraSizeMeasurement } from '@prisma/client';
-import { absoluteImageUrl, categorizeProductImages } from './productImageCategorization';
 import { platformPrice } from './platformPricing';
+import { MYNTRA_CO_ORDS_VALUES } from './myntraValues';
+import { MYNTRA_FIELD_LABELS } from './myntraAutofill';
+
+const SIZE_RANK = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '3XL', '4XL', 'Free Size'];
+const sizeRank = (size: string) => {
+  const i = SIZE_RANK.indexOf(size);
+  return i === -1 ? 999 : i;
+};
 
 // Store-wide constants — same for every product, so these are not stored as
 // per-product fields on MyntraListingDetail.
@@ -8,6 +15,11 @@ export const MYNTRA_BRAND = 'Darshan Style Hub';
 export const MYNTRA_BUSINESS_ADDRESS =
   'Darshan Style Hub, Plot Number B-11, Shri Ram Vihar-B, Shri Kishanpura, Sanganer, Jaipur, Rajasthan, 302017';
 export const MYNTRA_COUNTRY_OF_ORIGIN = 'India';
+
+// Image columns are left blank on purpose: Myntra rejects our Cloudinary links
+// ("not from a white listed domain"), so photos are uploaded by hand on Myntra
+// — get them in Myntra format via "Download Myntra Images". Flipkart unaffected.
+const MYNTRA_NO_IMAGE = '';
 
 export type MyntraSheetName = 'Co-Ords' | 'Sarees';
 
@@ -86,6 +98,35 @@ export function validateMyntraListing(product: ProductWithMyntra): MissingMyntra
       need(m?.inseamLength, 'Inseam Length');
       need(m?.toFitWaist, 'To Fit Waist');
     }
+
+    // Myntra rejects the whole style unless each measurement goes up (or stays
+    // equal) from smaller to bigger size — the 2026-10-01 DSH_CS_04 failure.
+    const sized = [...product.sizes].sort((a, b) => sizeRank(a.size) - sizeRank(b.size));
+    const MEASURES = [
+      ['bust', 'Bust'], ['chest', 'Chest'], ['frontLength', 'Front Length'],
+      ['garmentWaist', 'Garment Waist'], ['inseamLength', 'Inseam Length'], ['toFitWaist', 'To Fit Waist'],
+    ] as const;
+    for (const [key, name] of MEASURES) {
+      for (let i = 1; i < sized.length; i++) {
+        const prev = d?.sizeMeasurements.find((x) => x.size === sized[i - 1].size)?.[key];
+        const cur = d?.sizeMeasurements.find((x) => x.size === sized[i].size)?.[key];
+        if (prev != null && cur != null && cur < prev) {
+          missing.push({ field: `sizeMeasurements.${sized[i].size}.${key}`, label: `${name}: size "${sized[i].size}" (${cur}) is smaller than "${sized[i - 1].size}" (${prev}) — Myntra needs it to go up with size` });
+        }
+      }
+    }
+
+    // Dropdown fields must hold one of Myntra's own template values — anything
+    // else (e.g. "Crepe", "Georgette") is rejected at Myntra after upload.
+    for (const [field, allowed] of Object.entries(MYNTRA_CO_ORDS_VALUES)) {
+      const value = (d as Record<string, unknown> | null | undefined)?.[field];
+      if (typeof value === 'string' && value.trim() && !allowed.includes(value)) {
+        missing.push({ field, label: `${MYNTRA_FIELD_LABELS[field] || field}: "${value}" isn't a Myntra option — pick one from the dropdown` });
+      }
+    }
+    if (/unknown/i.test(d?.materialCareDescription || '')) {
+      missing.push({ field: 'materialCareDescription', label: 'materialCareDescription still says "Unknown" — fill in the fabric' });
+    }
   } else {
     req(d?.sareeType, 'sareeType', 'Type');
     req(d?.sareeFabric, 'sareeFabric', 'Saree Fabric');
@@ -156,23 +197,23 @@ export const CO_ORDS_COLUMNS: MyntraColumn[] = [
   { header: 'season', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.season) },
   { header: 'AI Label', mandatory: false, get: () => '' },
   { header: 'List View Name', mandatory: false, get: () => '' },
-  { header: 'Product Details', mandatory: false, get: () => '' },
-  { header: 'styleNote', mandatory: false, get: () => '' },
+  { header: 'Product Details', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.productDetails) },
+  { header: 'styleNote', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.styleNote) },
   { header: 'materialCareDescription', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.materialCareDescription) },
   { header: 'sizeAndFitDescription', mandatory: false, get: () => '' },
   { header: 'productDisplayName', mandatory: false, get: ({ product }) => product.name },
-  { header: 'tags', mandatory: false, get: () => '' },
+  { header: 'tags', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.tags) },
   { header: 'addedDate', mandatory: false, get: () => '' },
   { header: 'Color Variant GroupId', mandatory: false, get: () => '' },
-  { header: 'Occasion', mandatory: false, get: () => '' },
-  { header: 'Sleeve Length', mandatory: false, get: () => '' },
-  { header: 'Neck', mandatory: false, get: () => '' },
+  { header: 'Occasion', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.occasion) },
+  { header: 'Sleeve Length', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.sleeveLength) },
+  { header: 'Neck', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.neck) },
   { header: 'Top Fabric', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.topFabric) },
   { header: 'Bottom Fabric', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.bottomFabric) },
-  { header: 'Top Type', mandatory: false, get: () => '' },
-  { header: 'Bottom Type', mandatory: false, get: () => '' },
-  { header: 'Top Pattern', mandatory: false, get: () => '' },
-  { header: 'Bottom Pattern', mandatory: false, get: () => '' },
+  { header: 'Top Type', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.topType) },
+  { header: 'Bottom Type', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.bottomType) },
+  { header: 'Top Pattern', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.topPattern) },
+  { header: 'Bottom Pattern', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.bottomPattern) },
   { header: 'Bottom Closure', mandatory: false, get: () => '' },
   { header: 'Add-Ons', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.addOns) },
   { header: 'Wash Care', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.washCare) },
@@ -209,13 +250,13 @@ export const CO_ORDS_COLUMNS: MyntraColumn[] = [
   { header: 'To Fit Bust ( Inches )', mandatory: false, get: () => '' },
   { header: 'To Fit Chest ( Inches )', mandatory: false, get: () => '' },
   { header: 'To Fit Hip ( Inches )', mandatory: false, get: () => '' },
-  { header: 'Front Image', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).front) },
-  { header: 'Side Image', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).side) },
-  { header: 'Back Image', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).back) },
-  { header: 'Detail Angle', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).detail) },
-  { header: 'Look Shot Image', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).lookShot) },
-  { header: 'Additional Image 1', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).additional[0]) },
-  { header: 'Additional Image 2', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).additional[1]) },
+  { header: 'Front Image', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Side Image', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Back Image', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Detail Angle', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Look Shot Image', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Additional Image 1', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Additional Image 2', mandatory: false, get: () => MYNTRA_NO_IMAGE },
 ];
 
 // Column order/headers below are read directly from row 3 of Myntra's official
@@ -294,13 +335,13 @@ export const SAREES_COLUMNS: MyntraColumn[] = [
   { header: 'Outseam Length ( Inches )', mandatory: false, get: () => '' },
   { header: 'To Fit Waist ( Inches )', mandatory: false, get: () => '' },
   { header: 'Waist ( Inches )', mandatory: false, get: () => '' },
-  { header: 'Front Image', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).front) },
-  { header: 'Side Image', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).side) },
-  { header: 'Back Image', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).back) },
-  { header: 'Detail Angle', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).detail) },
-  { header: 'Look Shot Image', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).lookShot) },
-  { header: 'Additional Image 1', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).additional[0]) },
-  { header: 'Additional Image 2', mandatory: false, get: ({ product }) => absoluteImageUrl(categorizeProductImages(product.images).additional[1]) },
+  { header: 'Front Image', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Side Image', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Back Image', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Detail Angle', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Look Shot Image', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Additional Image 1', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Additional Image 2', mandatory: false, get: () => MYNTRA_NO_IMAGE },
 ];
 
 export const MYNTRA_SHEET_GROUP_LABELS: Record<MyntraSheetName, { col: number; label: string }[]> = {

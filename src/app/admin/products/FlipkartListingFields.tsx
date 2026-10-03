@@ -17,6 +17,7 @@ export interface FlipkartFormState {
   fashionType: string; season: string; year: string;
   shapeType: string; suitableFor: string; pockets: string; packOf: string; attachedDupatta: string;
   fit: string; sleeveStyle: string; topsLength: string;
+  addOns: string; printType: string; topLength: string; bottomLength: string;
   productDetails: string; styleNote: string; tags: string; searchKeywords: string;
 }
 
@@ -32,6 +33,7 @@ export const EMPTY_FLIPKART_FORM: FlipkartFormState = {
   fashionType: '', season: '', year: '',
   shapeType: '', suitableFor: '', pockets: '', packOf: '', attachedDupatta: '',
   fit: '', sleeveStyle: '', topsLength: '',
+  addOns: '', printType: '', topLength: '', bottomLength: '',
   productDetails: '', styleNote: '', tags: '', searchKeywords: '',
 };
 
@@ -318,6 +320,25 @@ export default function FlipkartListingFields({ productId, category, subcategory
                   </Field>
                   <Field label="Tops Length" status={statusFor('topsLength')}>
                     <input className={inputClassFor(statusFor('topsLength'))} value={value.topsLength} onChange={set('topsLength')} placeholder="Hip Length" />
+                  </Field>
+                </>
+              )}
+              {(category === 'Co Ord Sets' || category === 'Summer Co-ord Sets') && (
+                <>
+                  <Field label="Sleeve Style (Co-ords)" status={statusFor('sleeveStyle')} required={requiredFor('sleeveStyle')}>
+                    <input className={inputClassFor(statusFor('sleeveStyle'), requiredFor('sleeveStyle'))} value={value.sleeveStyle} onChange={set('sleeveStyle')} placeholder="Regular Sleeves" />
+                  </Field>
+                  <Field label="Add ons (Co-ords)" status={statusFor('addOns')} required={requiredFor('addOns')}>
+                    <input className={inputClassFor(statusFor('addOns'), requiredFor('addOns'))} value={value.addOns} onChange={set('addOns')} placeholder="NA" />
+                  </Field>
+                  <Field label="Print Type (Co-ords)" status={statusFor('printType')} required={requiredFor('printType')}>
+                    <input className={inputClassFor(statusFor('printType'), requiredFor('printType'))} value={value.printType} onChange={set('printType')} placeholder="Floral Print" />
+                  </Field>
+                  <Field label="Top Length (Co-ords)" status={statusFor('topLength')} required={requiredFor('topLength')}>
+                    <input className={inputClassFor(statusFor('topLength'), requiredFor('topLength'))} value={value.topLength} onChange={set('topLength')} placeholder="Regular" />
+                  </Field>
+                  <Field label="Bottom Length (Co-ords)" status={statusFor('bottomLength')} required={requiredFor('bottomLength')}>
+                    <input className={inputClassFor(statusFor('bottomLength'), requiredFor('bottomLength'))} value={value.bottomLength} onChange={set('bottomLength')} placeholder="Full Length" />
                   </Field>
                 </>
               )}

@@ -1,4 +1,4 @@
-import { FLIPKART_COLOR_VALUES, FLIPKART_NECK_VALUES, FLIPKART_SLEEVE_VALUES, FLIPKART_TOP_VALUES } from './flipkartAutofill';
+import { FLIPKART_COLOR_VALUES, FLIPKART_NECK_VALUES, FLIPKART_SLEEVE_VALUES, FLIPKART_TOP_VALUES, FLIPKART_CO_ORD_VALUES } from './flipkartAutofill';
 
 // "AI Fill" for the Flipkart review panel: Gemini reads the product's name,
 // description and photos and drafts the text fields autofill can't write well
@@ -29,6 +29,25 @@ const ETHNIC_ATTRIBUTES: AttributeSpec = {
   neck: { allowed: FLIPKART_NECK_VALUES, hint: 'neckline' },
   sleeveLength: { allowed: FLIPKART_SLEEVE_VALUES, hint: 'sleeve length' },
   shapeType: { hint: "the kurta's silhouette as Flipkart names it, e.g. Straight, A-line, Anarkali, Flared" },
+};
+
+// Co-ords ("apparel_set" template) — values from Flipkart's own dropdowns.
+const C = FLIPKART_CO_ORD_VALUES;
+const CO_ORD_ATTRIBUTES: AttributeSpec = {
+  neck: { allowed: C.neck, hint: "the top's neckline" },
+  sleeveLength: { allowed: C.sleeveLength, hint: "the top's sleeve length" },
+  sleeveStyle: { allowed: C.sleeveStyle, hint: 'sleeve style; Regular Sleeves if nothing special, No Sleeves if sleeveless' },
+  topType: { allowed: C.topType, hint: 'type of the top piece' },
+  bottomType: { allowed: C.bottomType, hint: 'type of the bottom piece' },
+  topPattern: { allowed: C.topPattern, hint: "the top's pattern" },
+  bottomPattern: { allowed: C.bottomPattern, hint: "must be the SAME value as topPattern (Flipkart rejects mismatches) — the set's main pattern" },
+  topFabric: { allowed: C.topFabric, hint: 'top fabric as stated in the text (Pure Cotton for 100% cotton); if the text never says, judge the most likely fabric from the photos (drape, sheen, texture) — never Unknown' },
+  bottomFabric: { allowed: C.bottomFabric, hint: 'bottom fabric as stated in the text; if the text never says, judge the most likely fabric from the photos — never Unknown' },
+  printType: { allowed: C.printType, hint: 'main print or surface design of the set' },
+  addOns: { allowed: C.addOns, hint: 'extra piece beyond top + bottom; NA if none' },
+  topLength: { allowed: C.topLength, hint: 'top length: Crop, Regular or Long' },
+  bottomLength: { allowed: C.bottomLength, hint: 'where the bottom ends' },
+  occasion: { allowed: C.occasion, hint: 'occasion' },
 };
 
 const TOP_ATTRIBUTES: AttributeSpec = {
@@ -97,7 +116,8 @@ export async function suggestFlipkartListing(input: {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set in .env');
 
-  const attributes = input.category === 'Tops' ? TOP_ATTRIBUTES : ETHNIC_ATTRIBUTES;
+  const isCoOrd = input.category === 'Co Ord Sets' || input.category === 'Summer Co-ord Sets';
+  const attributes = input.category === 'Tops' ? TOP_ATTRIBUTES : isCoOrd ? CO_ORD_ATTRIBUTES : ETHNIC_ATTRIBUTES;
   const images = (await Promise.all(input.imageUrls.slice(0, MAX_IMAGES).map(imagePart))).filter(Boolean);
 
   const body = JSON.stringify({

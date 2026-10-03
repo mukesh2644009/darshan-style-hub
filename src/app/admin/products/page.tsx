@@ -15,6 +15,7 @@ async function getProducts() {
       images: true,
       sizes: true,
       colors: true,
+      myntraListingDetail: { select: { myntraStyleId: true } },
     },
   });
 }

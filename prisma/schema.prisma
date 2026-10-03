@@ -442,6 +442,23 @@ model MyntraListingDetail {
   blouseIncluded String? // "Blouse"
   multipackSet   String?
 
+  // Descriptive Co-Ords columns (optional in Myntra's template, but they fill
+  // the listing page and filters) — values from the template's masterdata sheet.
+  productDetails String? // "Product Details" — paragraph overview
+  styleNote      String?
+  occasion       String?
+  neck           String?
+  sleeveLength   String?
+  topType        String?
+  bottomType     String?
+  topPattern     String?
+  bottomPattern  String?
+  tags           String? // "tags" — comma-separated search terms (Myntra's search keywords)
+
+  // Myntra's style id once the product is live there (myntra.com/<id>) —
+  // copied from the Partner Portal until Myntra's API credentials arrive.
+  myntraStyleId String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -561,8 +578,15 @@ model FlipkartListingDetail {
   // Tops-only mandatory/recommended attributes (Flipkart "top" template,
   // values from its own Index sheet). Style Type reuses shapeType.
   fit         String?
-  sleeveStyle String?
+  sleeveStyle String? // also used by Co-ords (apparel_set)
   topsLength  String?
+
+  // Co-ords-only mandatory attributes (Flipkart "apparel_set" template,
+  // values from its own Index sheet, 2026-10-02).
+  addOns       String?
+  printType    String?
+  topLength    String?
+  bottomLength String?
 
   // Last Flipkart bulk template this product was filled into — the "REQ..."
   // id from the template's filename. Lets the admin table show "QC in

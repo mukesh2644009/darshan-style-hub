@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FiChevronDown, FiChevronRight, FiTag, FiRefreshCw, FiAlertTriangle } from 'react-icons/fi';
+import { FiChevronDown, FiChevronRight, FiTag, FiRefreshCw, FiAlertTriangle, FiLoader } from 'react-icons/fi';
 import { deriveMyntraAutofill, deriveCoOrdSizeMeasurements, MYNTRA_FIELD_LABELS } from '@/lib/myntraAutofill';
 
 export interface MyntraFormState {
@@ -28,6 +28,17 @@ export interface MyntraFormState {
   numberOfPockets: string;
   numberOfItems: string;
   packageContains: string;
+  // Co-Ord descriptive (optional in the template, filled by AI Fill)
+  productDetails: string;
+  styleNote: string;
+  occasion: string;
+  neck: string;
+  sleeveLength: string;
+  topType: string;
+  bottomType: string;
+  topPattern: string;
+  bottomPattern: string;
+  tags: string; // Myntra's search keywords, comma-separated
   // Saree specific
   sareeType: string;
   sareeFabric: string;
@@ -59,6 +70,16 @@ export const EMPTY_MYNTRA_FORM: MyntraFormState = {
   numberOfPockets: '',
   numberOfItems: '',
   packageContains: '',
+  productDetails: '',
+  styleNote: '',
+  occasion: '',
+  neck: '',
+  sleeveLength: '',
+  topType: '',
+  bottomType: '',
+  topPattern: '',
+  bottomPattern: '',
+  tags: '',
   sareeType: '',
   sareeFabric: '',
   blouseFabric: '',
@@ -87,6 +108,8 @@ function isSareeCategory(category: string) {
 }
 
 interface Props {
+  productId?: string; // enables "AI Fill" (needs a saved product so the server can read its photos)
+  defaultOpen?: boolean;
   category: string;
   subcategory?: string;
   productName: string;
@@ -126,11 +149,13 @@ const inputClassFor = (status: FieldStatus) =>
       ? `${inputClass} border-red-300 bg-red-50`
       : inputClass;
 
-export default function MyntraListingFields({ category, subcategory, productName, productDescription, colors, sizes, value, onChange, measurements, onMeasurementChange }: Props) {
-  const [open, setOpen] = useState(false);
+export default function MyntraListingFields({ productId, defaultOpen, category, subcategory, productName, productDescription, colors, sizes, value, onChange, measurements, onMeasurementChange }: Props) {
+  const [open, setOpen] = useState(!!defaultOpen);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
   const [reviewFields, setReviewFields] = useState<Set<string>>(new Set());
   const [blockedFields, setBlockedFields] = useState<Set<string>>(new Set());
-  const [autofillSummary, setAutofillSummary] = useState<{ filled: number; review: string[]; blocked: string[]; measurementsFilled: number } | null>(null);
+  const [autofillSummary, setAutofillSummary] = useState<{ filled: number; review: string[]; blocked: string[]; measurementsFilled: number; byAi?: boolean } | null>(null);
   const coOrd = isCoOrdCategory(category);
   const saree = isSareeCategory(category);
   const supported = coOrd || saree;
@@ -181,6 +206,42 @@ export default function MyntraListingFields({ category, subcategory, productName
     setOpen(true);
   };
 
+  // Unlike Fetch, AI Fill overwrites its fields — it exists to correct the
+  // text-only guesses. Nothing is saved until Save, and every AI-set field is
+  // flagged to verify.
+  const handleAiFill = async () => {
+    if (!productId) return;
+    setAiLoading(true);
+    setAiError('');
+    try {
+      const res = await fetch('/api/admin/myntra/ai-fill', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setAiError(data.error || 'AI Fill failed');
+        return;
+      }
+      const patch: Partial<MyntraFormState> = {};
+      Object.entries(data.suggestion as Record<string, string>).forEach(([k, v]) => {
+        if (v) patch[k as keyof MyntraFormState] = v;
+      });
+      onChange(patch);
+      const aiFields = Object.keys(patch);
+      setReviewFields((prev) => new Set([...Array.from(prev), ...aiFields]));
+      setBlockedFields((prev) => new Set(Array.from(prev).filter((f) => !aiFields.includes(f))));
+      setAutofillSummary({ filled: aiFields.length, review: aiFields, blocked: [], measurementsFilled: 0, byAi: true });
+      setOpen(true);
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'AI Fill failed');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-purple-100">
       <div className="flex items-center justify-between p-6">
@@ -205,7 +266,20 @@ export default function MyntraListingFields({ category, subcategory, productName
             Fetch
           </button>
         )}
+        {coOrd && productId && (
+          <button
+            type="button"
+            onClick={handleAiFill}
+            disabled={aiLoading}
+            className="ml-2 flex items-center gap-1.5 text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg px-3 py-1.5 shrink-0 disabled:opacity-60"
+            title="AI reads the name, description and photos and fills Myntra's fields from Myntra's own dropdown values — review before saving"
+          >
+            {aiLoading ? <FiLoader className="w-3.5 h-3.5 animate-spin" /> : <span aria-hidden>✨</span>}
+            {aiLoading ? 'AI working (up to 1 min)…' : 'AI Fill'}
+          </button>
+        )}
       </div>
+      {aiError && <p className="mx-6 -mt-3 mb-3 text-sm text-red-600">{aiError}</p>}
 
       {open && (
         <div className="px-6 pb-6 space-y-5">
@@ -219,7 +293,7 @@ export default function MyntraListingFields({ category, subcategory, productName
           {autofillSummary && (
             <div className="text-sm bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 space-y-1">
               <p className="text-blue-800">
-                Auto-filled {autofillSummary.filled} field{autofillSummary.filled === 1 ? '' : 's'} from the product&apos;s name/description
+                {autofillSummary.byAi ? 'AI filled' : 'Auto-filled'} {autofillSummary.filled} field{autofillSummary.filled === 1 ? '' : 's'} from the product&apos;s {autofillSummary.byAi ? 'name, description and photos' : 'name/description'}
                 {autofillSummary.measurementsFilled > 0 && ` + ${autofillSummary.measurementsFilled} size-measurement cell${autofillSummary.measurementsFilled === 1 ? '' : 's'} from the shared co-ord size chart`}.
               </p>
               {autofillSummary.review.length > 0 && (
@@ -317,6 +391,44 @@ export default function MyntraListingFields({ category, subcategory, productName
                 </Field>
                 <Field label="Package Contains *" status={statusFor('packageContains')}>
                   <input className={inputClassFor(statusFor('packageContains'))} value={value.packageContains} onChange={set('packageContains')} placeholder="1 Top, 1 Bottom" />
+                </Field>
+                <Field label="Occasion" status={statusFor('occasion')}>
+                  <input className={inputClassFor(statusFor('occasion'))} value={value.occasion} onChange={set('occasion')} placeholder="Casual" />
+                </Field>
+                <Field label="Neck" status={statusFor('neck')}>
+                  <input className={inputClassFor(statusFor('neck'))} value={value.neck} onChange={set('neck')} placeholder="Round Neck" />
+                </Field>
+                <Field label="Sleeve Length" status={statusFor('sleeveLength')}>
+                  <input className={inputClassFor(statusFor('sleeveLength'))} value={value.sleeveLength} onChange={set('sleeveLength')} placeholder="Three-Quarter Sleeves" />
+                </Field>
+                <Field label="Top Type" status={statusFor('topType')}>
+                  <input className={inputClassFor(statusFor('topType'))} value={value.topType} onChange={set('topType')} placeholder="Top" />
+                </Field>
+                <Field label="Bottom Type" status={statusFor('bottomType')}>
+                  <input className={inputClassFor(statusFor('bottomType'))} value={value.bottomType} onChange={set('bottomType')} placeholder="Palazzos" />
+                </Field>
+                <Field label="Top Pattern" status={statusFor('topPattern')}>
+                  <input className={inputClassFor(statusFor('topPattern'))} value={value.topPattern} onChange={set('topPattern')} placeholder="Printed" />
+                </Field>
+                <Field label="Bottom Pattern" status={statusFor('bottomPattern')}>
+                  <input className={inputClassFor(statusFor('bottomPattern'))} value={value.bottomPattern} onChange={set('bottomPattern')} placeholder="Solid" />
+                </Field>
+              </div>
+
+              <div className="mt-3 space-y-3">
+                <Field label="Product Details (paragraph)" status={statusFor('productDetails')}>
+                  <textarea className={inputClassFor(statusFor('productDetails'))} rows={3} value={value.productDetails} onChange={set('productDetails')} />
+                </Field>
+                <Field label="Style Note" status={statusFor('styleNote')}>
+                  <textarea className={inputClassFor(statusFor('styleNote'))} rows={2} value={value.styleNote} onChange={set('styleNote')} />
+                </Field>
+                <Field label="Tags (search keywords, comma-separated)" status={statusFor('tags')}>
+                  <input
+                    className={inputClassFor(statusFor('tags'))}
+                    value={value.tags}
+                    onChange={set('tags')}
+                    placeholder="maroon co ord set, embroidered co ord set for women, festive co ord set"
+                  />
                 </Field>
               </div>
 

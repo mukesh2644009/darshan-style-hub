@@ -5,12 +5,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   FiPackage, FiEdit, FiEye, FiExternalLink, FiDownload, FiLoader, FiAlertTriangle, FiX,
-  FiCheckCircle, FiMoreVertical, FiClock,
+  FiCheckCircle, FiMoreVertical, FiClock, FiImage,
 } from 'react-icons/fi';
 import { SiFlipkart } from 'react-icons/si';
 import WhatsAppShareButton from './WhatsAppShareButton';
 import DeleteProductButton from './DeleteProductButton';
 import FlipkartReviewPanel from './FlipkartReviewPanel';
+import MyntraReviewPanel from './MyntraReviewPanel';
+
+// Myntra Partner Portal page where "Add New Listing → Add Listing in Bulk"
+// offers each article type's template (no deep link to a specific type).
+const MYNTRA_BULK_LISTING_URL = 'https://partners.myntrainfo.com/Catalog/AddListing';
 import { templateKeyFor, flipkartTemplateLink } from '@/lib/flipkartTemplates';
 import { platformPrice, markupLabel } from '@/lib/platformPricing';
 
@@ -53,6 +58,7 @@ interface ProductRow {
   images: { url: string }[];
   sizes: { id: string; size: string; quantity: number }[];
   colors: { id: string; name: string; hex: string }[];
+  myntraListingDetail?: { myntraStyleId: string | null } | null;
 }
 
 interface MissingFieldsByProduct {
@@ -158,6 +164,14 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
   const [pendingTemplateWrite, setPendingTemplateWrite] = useState<{ handle: WritableFileHandle; blob: Blob; name: string } | null>(null);
 
   const [reviewPanelProductId, setReviewPanelProductId] = useState<string | null>(null);
+  const [myntraPanelProductId, setMyntraPanelProductId] = useState<string | null>(null);
+  const [myntraFill, setMyntraFill] = useState<{
+    loading: boolean;
+    error?: string;
+    message?: string;
+    pending?: { handle: WritableFileHandle; blob: Blob; name: string };
+  }>({ loading: false });
+  const [myntraImagesLoading, setMyntraImagesLoading] = useState(false);
 
   // Which of the listed products are already live on Flipkart (via Seller API).
   const [flipkartStatuses, setFlipkartStatuses] = useState<
@@ -202,7 +216,110 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
 
   const clearSelection = () => setSelected(new Set());
 
+  // ----- Myntra template (separate from the Flipkart template flow) -----
+  const myntraWriteInto = async (handle: WritableFileHandle, blob: Blob, name: string) => {
+    const writable = await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
+    setMyntraFill({ loading: false, message: `Filled "${name}" in place — upload that same file in Myntra's Add Listing in Bulk.` });
+  };
+
+  const handleMyntraFillClick = async () => {
+    const picker = (window as WindowWithFilePicker).showOpenFilePicker;
+    if (!picker) {
+      setMyntraFill({ loading: false, error: 'This needs Chrome (it saves the filled data back into the file you choose).' });
+      return;
+    }
+    let handle: WritableFileHandle;
+    try {
+      [handle] = await picker({
+        types: [{ description: 'Myntra template', accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] } }],
+      });
+    } catch {
+      return; // picker cancelled
+    }
+    // Ask for write access while the click still counts (Chrome requires it).
+    let canWrite = false;
+    try {
+      canWrite = (await handle.requestPermission?.({ mode: 'readwrite' })) === 'granted';
+    } catch { /* fall back to the "Save into" button below */ }
+
+    setMyntraFill({ loading: true });
+    setBulkMissing(null);
+    try {
+      const file = await handle.getFile();
+      const form = new FormData();
+      form.append('file', file);
+      form.append('productIds', JSON.stringify(Array.from(selected)));
+      const res = await fetch('/api/admin/myntra/fill-template', { method: 'POST', credentials: 'include', body: form });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 422 && data.details) {
+          setMissingPlatform('Myntra');
+          setBulkMissing(data.details);
+          setMyntraFill({ loading: false });
+        } else {
+          setMyntraFill({ loading: false, error: data.error || 'Fill Myntra Template failed' });
+        }
+        return;
+      }
+      const blob = await res.blob();
+      if (canWrite) await myntraWriteInto(handle, blob, file.name);
+      else setMyntraFill({ loading: false, message: 'Template filled.', pending: { handle, blob, name: file.name } });
+    } catch (err) {
+      setMyntraFill({ loading: false, error: err instanceof Error ? err.message : 'Fill Myntra Template failed' });
+    }
+  };
+
+  const handleMyntraSavePending = async () => {
+    const pending = myntraFill.pending;
+    if (!pending) return;
+    try {
+      if ((await pending.handle.requestPermission?.({ mode: 'readwrite' })) === 'denied') {
+        setMyntraFill({ loading: false, error: 'Chrome blocked editing the file — allow it and try again.' });
+        return;
+      }
+      await myntraWriteInto(pending.handle, pending.blob, pending.name);
+    } catch (err) {
+      setMyntraFill({ loading: false, error: err instanceof Error ? err.message : 'Could not save into the file' });
+    }
+  };
+
+  const handleMyntraImages = async () => {
+    setMyntraImagesLoading(true);
+    setMyntraFill({ loading: false });
+    try {
+      const ids = Array.from(selected).join(',');
+      const res = await fetch(`/api/admin/myntra/images?productIds=${encodeURIComponent(ids)}`, { credentials: 'include' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setMyntraFill({ loading: false, error: data.error || 'Image download failed' });
+        return;
+      }
+      const blob = await res.blob();
+      const match = (res.headers.get('Content-Disposition') || '').match(/filename="(.+)"/);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = match?.[1] || 'Myntra-Images.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setMyntraFill({ loading: false, error: err instanceof Error ? err.message : 'Image download failed' });
+    } finally {
+      setMyntraImagesLoading(false);
+    }
+  };
+
   const handleMyntraAction = async () => {
+    // Single selection: open the Myntra review panel (autofill + AI Fill +
+    // Save + download), like Flipkart. Several selected: straight to the Excel.
+    if (selected.size === 1) {
+      setMyntraPanelProductId(Array.from(selected)[0]);
+      return;
+    }
     setMyntraLoading(true);
     setMyntraError('');
     setMyntraSummary(null);
@@ -506,7 +623,9 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
         <div className="px-6 py-3 bg-primary-50 border-b border-primary-100 space-y-2">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <span className="text-sm font-medium text-primary-800">{selected.size} selected</span>
+            <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold uppercase tracking-wide text-pink-700 w-16 text-right">Myntra</span>
               <button
                 type="button"
                 onClick={handleMyntraAction}
@@ -517,6 +636,38 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
                 {myntraLoading ? <FiLoader className="w-4 h-4 animate-spin" /> : <FiDownload className="w-4 h-4" />}
                 Myntra
               </button>
+              <button
+                type="button"
+                onClick={() => window.open(MYNTRA_BULK_LISTING_URL, '_blank', 'noopener')}
+                title="Opens Myntra's Add Listing page — Add New Listing → Add Listing in Bulk → Article type → upload the sheet (our own Myntra sheet works; Myntra's template is optional)"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-pink-700 border border-pink-300 hover:bg-pink-50 rounded-lg transition-colors text-sm font-medium"
+              >
+                <FiExternalLink className="w-4 h-4" />
+                Open Myntra Upload
+              </button>
+              <button
+                type="button"
+                onClick={handleMyntraFillClick}
+                disabled={myntraFill.loading}
+                title="Choose the template you downloaded from Myntra — we fill the selected products into it, in the same file"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-pink-700 text-white hover:bg-pink-800 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                {myntraFill.loading ? <FiLoader className="w-4 h-4 animate-spin" /> : <FiDownload className="w-4 h-4" />}
+                Fill Myntra Template
+              </button>
+              <button
+                type="button"
+                onClick={handleMyntraImages}
+                disabled={myntraImagesLoading}
+                title="Downloads the selected products' photos as 1080x1440 JPEGs (≤500 KB), one folder per SKU, for uploading on Myntra"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-pink-700 border border-pink-300 hover:bg-pink-50 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
+              >
+                {myntraImagesLoading ? <FiLoader className="w-4 h-4 animate-spin" /> : <FiImage className="w-4 h-4" />}
+                Download Myntra Images
+              </button>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold uppercase tracking-wide text-[#2874f0] w-16 text-right">Flipkart</span>
               <button
                 type="button"
                 onClick={handleFlipkartAction}
@@ -567,18 +718,47 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
                 {fillTemplateLoading ? <FiLoader className="w-4 h-4 animate-spin" /> : <FiDownload className="w-4 h-4" />}
                 Fill Flipkart Template
               </button>
-              <button
-                type="button"
-                onClick={clearSelection}
-                className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Clear selection
-              </button>
+            </div>
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Clear selection
+            </button>
             </div>
           </div>
 
           {myntraError && (
             <p className="text-sm text-red-600">{myntraError}</p>
+          )}
+
+          {(myntraFill.error || myntraFill.message || myntraFill.pending) && (
+            <div className={`text-sm rounded-lg p-3 space-y-2 border ${
+              myntraFill.message && !myntraFill.error && !myntraFill.pending
+                ? 'bg-green-50 border-green-200'
+                : 'bg-pink-50 border-pink-200'
+            }`}>
+              {myntraFill.error && <p className="text-red-600">{myntraFill.error}</p>}
+              {myntraFill.message && (
+                myntraFill.pending
+                  ? <p className="text-pink-900">{myntraFill.message}</p>
+                  : (
+                    <p className="flex items-center gap-1.5 text-green-800 font-medium">
+                      <FiCheckCircle className="w-4 h-4 shrink-0" /> {myntraFill.message}
+                    </p>
+                  )
+              )}
+              {myntraFill.pending && (
+                <button
+                  type="button"
+                  onClick={handleMyntraSavePending}
+                  className="px-3 py-1.5 bg-pink-600 text-white hover:bg-pink-700 rounded-lg font-medium"
+                >
+                  Save into {myntraFill.pending.name}
+                </button>
+              )}
+            </div>
           )}
 
           {myntraSummary && (
@@ -714,6 +894,13 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
         </div>
       )}
 
+      {myntraPanelProductId && (
+        <MyntraReviewPanel
+          productId={myntraPanelProductId}
+          onClose={() => setMyntraPanelProductId(null)}
+        />
+      )}
+
       {reviewPanelProductId && (
         <FlipkartReviewPanel
           productId={reviewPanelProductId}
@@ -754,6 +941,7 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flipkart Price</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Myntra Price</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sizes</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Colors</th>
@@ -793,6 +981,17 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
                         <SiFlipkart className="w-4 h-4" />
                         <FiClock className="w-3 h-3" />
                       </span>
+                    )}
+                    {product.myntraListingDetail?.myntraStyleId && (
+                      <a
+                        href={`https://www.myntra.com/${product.myntraListingDetail.myntraStyleId}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center ml-2 align-middle w-4 h-4 rounded bg-[#ff3f6c] text-white text-[10px] font-bold leading-none"
+                        title={`On Myntra (style ${product.myntraListingDetail.myntraStyleId})`}
+                      >
+                        M
+                      </a>
                     )}
                     {flipkartStatuses[product.id]?.url && (
                       <a
@@ -874,6 +1073,20 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
                               Live: ₹{live.livePrice!.toLocaleString('en-IN')} · sync needed
                             </p>
                           )}
+                        </div>
+                      );
+                    })()}
+                  </td>
+                  <td className="px-6 py-4">
+                    {(() => {
+                      const myntra = platformPrice(product, 'myntra');
+                      return (
+                        <div title={`Site price ${markupLabel('myntra')}${myntra.capped ? ' — capped at MRP' : ''}`}>
+                          <p className="font-medium text-[#ff3f6c]">₹{myntra.price.toLocaleString('en-IN')}</p>
+                          {myntra.mrp > myntra.price && (
+                            <p className="text-sm text-gray-500 line-through">₹{myntra.mrp.toLocaleString('en-IN')}</p>
+                          )}
+                          {myntra.capped && <p className="text-xs text-amber-600">capped at MRP</p>}
                         </div>
                       );
                     })()}

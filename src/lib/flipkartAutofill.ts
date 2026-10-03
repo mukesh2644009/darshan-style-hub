@@ -173,6 +173,36 @@ const FLIPKART_TOP_HSN = '6204';
 // (not guessed; Flipkart QC treats these as conditionally mandatory).
 const TOP_PACKAGE: { lengthCm: string; breadthCm: string; heightCm: string; weightKg: string } | null =
   { lengthCm: '35', breadthCm: '28', heightCm: '4', weightKg: '0.35' };
+
+// detectFabric() keyword -> Co-ords Top/Bottom Fabric value (no Georgette/Silk
+// in this list — those stay blank for the admin rather than guessed).
+const CO_ORD_FABRIC_FROM_KEYWORD: Record<string, string> = {
+  Cotton: 'Pure Cotton', Viscose: 'Viscose Rayon', Rayon: 'Viscose Rayon', Chiffon: 'Chiffon',
+  Linen: 'Linen', Crepe: 'Crepe', Net: 'Net/Lace', Satin: 'Satin', Polyester: 'Polyester', Modal: 'Modal',
+};
+
+// Co-ords ("apparel_set" template) use their OWN allowed-value lists — copied
+// verbatim from the template's Index sheet (C_apparel-set_…REQQVQYAA8XNK.xls,
+// 2026-10-02). Neck spellings match Tops ("V-Neck", "Keyhole Neck").
+export const FLIPKART_CO_ORD_VALUES: Record<string, string[]> = {
+  type: ['Co-ords', 'Western Set'],
+  addOns: ['Blazer', 'Coat', 'Jacket', 'NA', 'Scarf/Stole', 'Shrug'],
+  topType: ['Shirt', 'Sweatshirt', 'Top', 'Tshirt', 'Tunic', 'Waistcoat'],
+  bottomType: ['Chino Shorts', 'Chinos', 'Denim Skirt', 'Hot Pants', 'Palazzos', 'Pant', 'Pencil Skirt', 'Peplum Skirt', 'Regular Shorts', 'Skirt', 'Tulip Skirt', 'Wrap Skirt'],
+  occasion: ['Casual', 'Formal', 'Party'],
+  topPattern: ['Embellished', 'Embroidered', 'Printed', 'Solid'],
+  bottomPattern: ['Embellished', 'Embroidered', 'Printed', 'Solid'],
+  topFabric: ['Acrylic Blend', 'Chiffon', 'Cotton Blend', 'Crepe', 'Denim', 'Linen', 'Lyocell', 'Modal', 'Net/Lace', 'Nylon', 'Polycotton', 'Polyester', 'Pure Cotton', 'Satin', 'Velvet', 'Viscose Rayon', 'Wool Blend'],
+  bottomFabric: ['Acrylic Blend', 'Chiffon', 'Cotton Blend', 'Crepe', 'Denim', 'Linen', 'Lyocell', 'Modal', 'Net/Lace', 'Nylon', 'Polycotton', 'Polyester', 'Pure Cotton', 'Satin', 'Velvet', 'Viscose Rayon', 'Wool Blend'],
+  neck: ['Asymmetric Neck', 'Boat Neck', 'Choker Neck', 'Cold Shoulder', 'Collared', 'Cowl Collar', 'Halter Neck', 'Henley', 'High Neck', 'Hooded Neck', 'Keyhole Neck', 'Mandarin Collar', 'Off Shoulder', 'One Shoulder', 'Peter Pan Collar', 'Pussy Bow Collar', 'Round Neck', 'Ruffle Neck', 'Scoop Neck', 'Spaghetti Neck', 'Spread Collar', 'Square Neck', 'Strapless', 'Sweetheart Neck', 'Tie-up', 'U Neck', 'V-Neck'],
+  sleeveStyle: ['Balloon Sleeve', 'Batwing Sleeve', 'Bell Sleeves', 'Bishop Sleeve', 'Butterfly Sleeve', 'Cap Sleeve', 'Cape Sleeves', 'Cold Shoulder Sleeve', 'Cuffed Sleeve', 'Cutout Sleeves', 'Dolman Sleeve', 'Extended Sleeves', 'Fashion Sleeve', 'Flared Sleeve', 'Flute Sleeves', 'Flutter Sleeves', 'Juliet Sleeve', 'Kaftan Sleeve', 'Kimono Sleeve', 'Layered Sleeves', 'NA', 'No Sleeves', 'Noodle Strap', 'Off Shoulder Sleeve', 'One Shoulder', 'Petal Sleeves', 'Puff Sleeves', 'Raglan Sleeves', 'Regular Sleeves', 'Roll-up Sleeve', 'Ruffled Sleeves', 'Shoulder Straps', 'Slit Sleeve', 'Volume Sleeve'],
+  printType: ['Abstract Print', 'Ajrakh Print', 'Animal Print', 'Applique', 'Block Print', 'Botanical Print', 'Camouflage', 'Cartoon', 'Checkered', 'Chevron/Zig Zag', 'Colorblock', 'Conversational', 'Digital Prints', 'Distressed', 'Ditsy Print', 'Embellished', 'Embossed', 'Embroidered', 'Floral Print', 'Foil Print', 'Geometric Print', 'Graphic Print', 'Heathered', 'Heavy Washed', 'Herringbone', 'Houndstooth', 'Light Washed', 'Mid Washed', 'Ombre', 'Polka Print', 'Self Design', 'Sequined', 'Solid', 'Striped', 'Superheros', 'Textured', 'Tie & Dye', 'Typography', 'Varsity', 'Woven Design'],
+  sleeveLength: ['3/4 Sleeve', 'Full Sleeve', 'Half Sleeve', 'NA', 'Short Sleeve', 'Sleeveless'],
+  topLength: ['Crop', 'Long', 'Regular'],
+  bottomLength: ['Cropped/Ankle Length', 'Full Length', 'Knee Length', 'Thigh Length'],
+  netQuantity: ['10', '2', '3', '4', '5', '6', '7', '8', '9'],
+  packOf: ['1', '2', '3', '4', '5'],
+};
 const COLOR_SYNONYMS: Record<string, string> = {
   olive: 'Green', mustard: 'Yellow', peach: 'Pink', coral: 'Orange', rust: 'Brown',
   wine: 'Maroon', burgundy: 'Maroon', teal: 'Blue', navy: 'Dark Blue', 'navy blue': 'Dark Blue',
@@ -306,7 +336,8 @@ export function deriveFlipkartAutofill(input: FlipkartAutofillInput): FlipkartAu
   const fabricLabel = fabric ? `100% ${fabric}` : '';
 
   const neckMatch = NECK_PATTERNS.find(([re]) => re.test(text));
-  const neck = neckMatch ? (isTop ? TOP_NECK_FROM_ETHNIC[neckMatch[1]] ?? neckMatch[1] : neckMatch[1]) : '';
+  // Tops and Co-ords share Flipkart's western neck spellings ("V-Neck", "Keyhole Neck").
+  const neck = neckMatch ? (isTop || isCoOrd ? TOP_NECK_FROM_ETHNIC[neckMatch[1]] ?? neckMatch[1] : neckMatch[1]) : '';
   if (neck) fillReview('neck', neck); else block('neck');
 
   const pattern = /embroider/i.test(text) ? 'Embroidered' : /print/i.test(text) ? 'Printed' : '';
@@ -322,32 +353,46 @@ export function deriveFlipkartAutofill(input: FlipkartAutofillInput): FlipkartAu
     if (color) fillReview('tags', `coordset, ${color.toLowerCase()}`);
     else block('tags');
 
-    if (fabricLabel) {
-      fillReview('topFabric', fabricLabel);
-      fillReview('bottomFabric', fabricLabel);
-      fillReview('materialCareDescription', fabricLabel);
-    } else {
-      block('topFabric');
-      block('bottomFabric');
-      block('materialCareDescription');
-    }
+    // Values below are from Flipkart's real "apparel_set" template's own
+    // dropdowns (FLIPKART_CO_ORD_VALUES) — not the old "100% X" free text.
+    const V = FLIPKART_CO_ORD_VALUES;
+    const coOrdFabric = fabric ? CO_ORD_FABRIC_FROM_KEYWORD[fabric] ?? '' : '';
+    fillReview('topFabric', coOrdFabric);
+    fillReview('bottomFabric', coOrdFabric);
+    if (fabricLabel) fillReview('materialCareDescription', fabricLabel); else block('materialCareDescription');
 
-    fillReview('netQuantity', '2');
+    fillConfident('ageGroup', 'Women'); // "Ideal For"
+    fillReview('netQuantity', '2'); // top + bottom
+    fillReview('packOf', '1'); // one set
     fillReview('packageContains', '1 Top, 1 Bottom');
+    fillReview('addOns', /shrug/i.test(text) ? 'Shrug' : /jacket/i.test(text) ? 'Jacket' : /stole|scarf/i.test(text) ? 'Scarf/Stole' : 'NA');
 
     const sleeveMatch = SLEEVE_PATTERNS.find(([re]) => re.test(text));
-    if (sleeveMatch) fillReview('sleeveLength', sleeveMatch[1]); else block('sleeveLength');
+    const sleeveLength = sleeveMatch?.[1] === 'Elbow Length Sleeve' ? 'Half Sleeve' : sleeveMatch?.[1] ?? '';
+    fillReview('sleeveLength', V.sleeveLength.includes(sleeveLength) ? sleeveLength : '');
+    fillReview('sleeveStyle', sleeveLength === 'Sleeveless' ? 'No Sleeves'
+      : /bell sleeve/i.test(text) ? 'Bell Sleeves'
+      : /puff sleeve/i.test(text) ? 'Puff Sleeves'
+      : /flared sleeve/i.test(text) ? 'Flared Sleeve'
+      : 'Regular Sleeves');
 
-    if (pattern) {
-      fillReview('topPattern', pattern);
-      fillReview('bottomPattern', pattern);
-    } else {
-      block('topPattern');
-      block('bottomPattern');
-    }
-    block('topType');
-    block('bottomType');
-    block('occasion');
+    const coOrdPattern = /embroider/i.test(text) ? 'Embroidered' : /print/i.test(text) ? 'Printed' : /solid|plain/i.test(text) ? 'Solid' : '';
+    fillReview('topPattern', coOrdPattern);
+    fillReview('bottomPattern', coOrdPattern);
+    fillReview('printType', /floral/i.test(text) ? 'Floral Print'
+      : /block print/i.test(text) ? 'Block Print'
+      : /geometric/i.test(text) ? 'Geometric Print'
+      : /stripe/i.test(text) ? 'Striped'
+      : /check/i.test(text) ? 'Checkered'
+      : /embroider/i.test(text) ? 'Embroidered'
+      : /solid|plain/i.test(text) ? 'Solid' : '');
+
+    fillReview('topType', /tunic/i.test(text) ? 'Tunic' : /\bshirt\b/i.test(text) ? 'Shirt' : 'Top');
+    const coOrdBottom = /palazzo/i.test(text) ? 'Palazzos' : /skirt/i.test(text) ? 'Skirt' : /shorts?\b/i.test(text) ? 'Regular Shorts' : /pant|trouser/i.test(text) ? 'Pant' : '';
+    fillReview('bottomType', coOrdBottom);
+    fillReview('bottomLength', coOrdBottom === 'Regular Shorts' ? 'Thigh Length' : coOrdBottom ? 'Full Length' : '');
+    fillReview('topLength', /crop/i.test(text) ? 'Crop' : 'Regular');
+    fillReview('occasion', 'Casual');
   } else if (isSuit) {
     // Suits (salwar_kurta_dupatta on Flipkart) — confirmed from a real,
     // self-validated ("0 errors") DSH_SU_04 bulk-template row, 2026-09-24.
@@ -572,4 +617,5 @@ export const FLIPKART_FIELD_LABELS: Record<string, string> = {
   fabricType: 'Fabric',
   searchKeywords: 'Search Keywords',
   fit: 'Fit', sleeveStyle: 'Sleeve Style', topsLength: 'Tops Length',
+  addOns: 'Add ons', printType: 'Print Type', topLength: 'Top Length', bottomLength: 'Bottom Length',
 };

@@ -132,7 +132,7 @@ export async function POST(request: Request) {
       if (Array.isArray(myntraSizeMeasurements)) {
         for (const m of myntraSizeMeasurements) {
           if (!m.size) continue;
-          const hasAny = ['bust', 'chest', 'frontLength', 'garmentWaist', 'inseamLength', 'toFitWaist']
+          const hasAny = ['bust', 'chest', 'frontLength', 'garmentWaist', 'inseamLength', 'toFitWaist', 'hips']
             .some((f) => m[f] !== '' && m[f] != null);
           if (!hasAny) continue;
           await prisma.myntraSizeMeasurement.create({
@@ -144,6 +144,7 @@ export async function POST(request: Request) {
               frontLength: m.frontLength !== '' && m.frontLength != null ? parseFloat(m.frontLength) : null,
               garmentWaist: m.garmentWaist !== '' && m.garmentWaist != null ? parseFloat(m.garmentWaist) : null,
               inseamLength: m.inseamLength !== '' && m.inseamLength != null ? parseFloat(m.inseamLength) : null,
+              hips: m.hips !== '' && m.hips != null ? parseFloat(m.hips) : null,
               toFitWaist: m.toFitWaist !== '' && m.toFitWaist != null ? parseFloat(m.toFitWaist) : null,
             },
           });

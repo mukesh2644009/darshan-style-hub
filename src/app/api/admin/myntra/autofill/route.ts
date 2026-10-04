@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
-import { deriveMyntraAutofill, deriveCoOrdSizeMeasurements } from '@/lib/myntraAutofill';
+import { deriveMyntraAutofill, deriveCoOrdSizeMeasurements, deriveDressSizeMeasurements, detectDressLength } from '@/lib/myntraAutofill';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,11 +48,12 @@ export async function POST(request: Request) {
     for (const product of products) {
       const isCoOrd = CO_ORD_CATEGORIES.includes(product.category);
       const isSaree = product.category === 'Sarees';
-      if (!isCoOrd && !isSaree) {
+      const isDress = product.category === 'Western Dress';
+      if (!isCoOrd && !isSaree && !isDress) {
         results.push({
           productId: product.id, sku: product.sku, name: product.name,
           filledFields: 0, filledMeasurementCells: 0, reviewFields: [], blockedFields: [],
-          skipped: `Category "${product.category}" isn't supported for Myntra (only Co Ord Sets, Summer Co-ord Sets and Sarees).`,
+          skipped: `Category "${product.category}" isn't supported for Myntra (only Co Ord Sets, Summer Co-ord Sets, Western Dress and Sarees).`,
         });
         continue;
       }
@@ -82,13 +83,22 @@ export async function POST(request: Request) {
         : await prisma.myntraListingDetail.create({ data: { productId: product.id, ...patch } });
 
       let filledMeasurementCells = 0;
-      if (isCoOrd) {
-        const suggestions = deriveCoOrdSizeMeasurements(product.sizes.map((s) => s.size));
+      if (isCoOrd || isDress) {
+        const sizes = product.sizes.map((s) => s.size);
+        // Dresses: standard block, front length by the saved (or detected) dress length.
+        const dressLength = detail.dressLength || detectDressLength(`${product.name}
+${product.description}`);
+        const suggestions: Record<string, string>[] = isDress
+          ? deriveDressSizeMeasurements(sizes, dressLength) as unknown as Record<string, string>[]
+          : deriveCoOrdSizeMeasurements(sizes) as unknown as Record<string, string>[];
+        const fields = isDress
+          ? (['bust', 'chest', 'frontLength', 'hips', 'garmentWaist'] as const)
+          : (['bust', 'chest', 'frontLength', 'garmentWaist', 'inseamLength', 'toFitWaist'] as const);
         const existingBySize = new Map((existing?.sizeMeasurements || []).map((m) => [m.size, m]));
         for (const s of suggestions) {
           const existingRow = existingBySize.get(s.size);
           const measurementPatch: Record<string, number> = {};
-          (['bust', 'chest', 'frontLength', 'garmentWaist', 'inseamLength', 'toFitWaist'] as const).forEach((field) => {
+          fields.forEach((field) => {
             const currentVal = existingRow ? existingRow[field] : null;
             if (currentVal == null) {
               measurementPatch[field] = Number(s[field]);

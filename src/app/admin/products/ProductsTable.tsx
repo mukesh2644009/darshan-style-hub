@@ -12,6 +12,7 @@ import WhatsAppShareButton from './WhatsAppShareButton';
 import DeleteProductButton from './DeleteProductButton';
 import FlipkartReviewPanel from './FlipkartReviewPanel';
 import MyntraReviewPanel from './MyntraReviewPanel';
+import MarketplaceCategoryHint from './MarketplaceCategoryHint';
 
 // Myntra Partner Portal page where "Add New Listing → Add Listing in Bulk"
 // offers each article type's template (no deep link to a specific type).
@@ -91,14 +92,19 @@ function DropdownMenu({
   trigger,
   align = 'right',
   disabled,
+  floating,
   children,
 }: {
   trigger: React.ReactNode;
   align?: 'left' | 'right';
   disabled?: boolean;
+  /** Position the menu on the viewport (fixed) so a scrollable table can't clip
+   *  it; opens upward when there isn't room below. Used for the per-row menu. */
+  floating?: boolean;
   children: (close: () => void) => React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [pos, setPos] = useState<React.CSSProperties>({});
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -106,22 +112,44 @@ function DropdownMenu({
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
+    // A floating menu would drift away from its button on scroll — just close it.
+    const closeOnScroll = () => setOpen(false);
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+    if (floating) window.addEventListener('scroll', closeOnScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+      window.removeEventListener('scroll', closeOnScroll, true);
+    };
+  }, [open, floating]);
+
+  const toggle = () => {
+    if (!open && floating && ref.current) {
+      const r = ref.current.getBoundingClientRect();
+      const roomBelow = window.innerHeight - r.bottom;
+      setPos({
+        position: 'fixed',
+        right: Math.max(8, window.innerWidth - r.right),
+        ...(roomBelow < 320 ? { bottom: window.innerHeight - r.top + 4 } : { top: r.bottom + 4 }),
+      });
+    }
+    setOpen((o) => !o);
+  };
 
   return (
     <div className="relative inline-block" ref={ref}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         disabled={disabled}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors text-sm font-medium text-gray-700"
       >
         {trigger}
       </button>
       {open && (
-        <div className={`absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1 w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50 py-1`}>
+        <div
+          style={floating ? pos : undefined}
+          className={`${floating ? '' : `absolute ${align === 'right' ? 'right-0' : 'left-0'} top-full mt-1`} w-64 bg-white rounded-lg shadow-xl border border-gray-200 z-50 py-1`}
+        >
           {children(() => setOpen(false))}
         </div>
       )}
@@ -289,23 +317,28 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
     setMyntraImagesLoading(true);
     setMyntraFill({ loading: false });
     try {
-      const ids = Array.from(selected).join(',');
-      const res = await fetch(`/api/admin/myntra/images?productIds=${encodeURIComponent(ids)}`, { credentials: 'include' });
+      // Saved on this laptop in resizeimages\<sku>\ (replacing that folder's photos).
+      const res = await fetch('/api/admin/myntra/images', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productIds: Array.from(selected) }),
+      });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setMyntraFill({ loading: false, error: data.error || 'Image download failed' });
+        setMyntraFill({ loading: false, error: data.error || 'Saving Myntra images failed' });
         return;
       }
-      const blob = await res.blob();
-      const match = (res.headers.get('Content-Disposition') || '').match(/filename="(.+)"/);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = match?.[1] || 'Myntra-Images.zip';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const results = (data.results || []) as { sku: string; folder: string; count: number; replaced: number; error?: string }[];
+      const ok = results.filter((r) => !r.error);
+      const failed = results.filter((r) => r.error);
+      setMyntraFill({
+        loading: false,
+        message: ok.length
+          ? `Saved Myntra photos (1080×1440, SEO names): ${ok.map((r) => `${r.sku} → ${r.count} photo(s) in ${r.folder}${r.replaced ? ` (replaced ${r.replaced} old)` : ''}`).join('; ')}`
+          : undefined,
+        error: failed.length ? `Couldn't save: ${failed.map((r) => `${r.sku} (${r.error})`).join('; ')}` : undefined,
+      });
     } catch (err) {
       setMyntraFill({ loading: false, error: err instanceof Error ? err.message : 'Image download failed' });
     } finally {
@@ -659,7 +692,7 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
                 type="button"
                 onClick={handleMyntraImages}
                 disabled={myntraImagesLoading}
-                title="Downloads the selected products' photos as 1080x1440 JPEGs (≤500 KB), one folder per SKU, for uploading on Myntra"
+                title="Saves the selected products' photos as Myntra-ready 1080x1440 JPEGs (≤500 KB, SEO names) in resizeimages\\<sku> on this laptop — replaces the photos already in that folder"
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white text-pink-700 border border-pink-300 hover:bg-pink-50 rounded-lg transition-colors text-sm font-medium disabled:opacity-50"
               >
                 {myntraImagesLoading ? <FiLoader className="w-4 h-4 animate-spin" /> : <FiImage className="w-4 h-4" />}
@@ -728,6 +761,25 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
             </button>
             </div>
           </div>
+
+          {/* Which marketplace category to pick for the ticked products. */}
+          {(() => {
+            const cats = Array.from(new Set(products.filter((p) => selected.has(p.id)).map((p) => p.category)));
+            if (cats.length === 0) return null;
+            return (
+              <div className="space-y-1">
+                {cats.map((cat) => (
+                  <div key={cat} className="flex items-center gap-2">
+                    {cats.length > 1 && <span className="text-xs font-medium text-gray-600 w-32 shrink-0">{cat}</span>}
+                    <div className="flex-1"><MarketplaceCategoryHint category={cat} /></div>
+                  </div>
+                ))}
+                {cats.length > 1 && (
+                  <p className="text-xs text-amber-700">Different categories selected — Flipkart and Myntra need one upload per category.</p>
+                )}
+              </div>
+            );
+          })()}
 
           {myntraError && (
             <p className="text-sm text-red-600">{myntraError}</p>
@@ -923,9 +975,11 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
+        // Own scroll area sized to the window: both scrollbars stay on screen,
+        // the header row stays on top and the Actions column is pinned right.
+        <div className="overflow-auto max-h-[calc(100vh-12rem)]">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 sticky top-0 z-20 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
               <tr>
                 <th className="px-4 py-4 text-left">
                   <input
@@ -946,7 +1000,7 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sizes</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Colors</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-4 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 z-30 bg-gray-50 border-l border-gray-100">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -1167,8 +1221,8 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <DropdownMenu trigger={<><FiMoreVertical className="w-4 h-4" /> Actions</>}>
+                  <td className={`px-4 py-4 sticky right-0 z-10 border-l border-gray-100 shadow-[-6px_0_8px_-6px_rgba(0,0,0,0.12)] ${selected.has(product.id) ? 'bg-primary-50' : 'bg-white'}`}>
+                    <DropdownMenu floating trigger={<><FiMoreVertical className="w-4 h-4" /> Actions</>}>
                       {(close) => (
                         <>
                           <div onClick={close}>

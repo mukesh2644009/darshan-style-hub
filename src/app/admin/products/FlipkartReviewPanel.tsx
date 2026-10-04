@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiX, FiLoader, FiCheckCircle, FiSave } from 'react-icons/fi';
 import MarketplaceCategoryHint from './MarketplaceCategoryHint';
+import { marketplaceCategoryFor } from '@/lib/marketplaceCategories';
 import FlipkartListingFields, { type FlipkartFormState, EMPTY_FLIPKART_FORM } from './FlipkartListingFields';
 import { platformPrice, markupLabel } from '@/lib/platformPricing';
 
@@ -160,8 +161,17 @@ export default function FlipkartReviewPanel({ productId, onClose }: Props) {
             </button>
 
             {saved && (
-              <span className="flex items-center gap-1.5 text-sm text-green-700">
-                <FiCheckCircle className="w-4 h-4" /> Saved — next: tick the product(s), then Get Flipkart Template
+              <span className="flex items-start gap-1.5 text-sm text-green-700">
+                <FiCheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                  Saved — next: tick the product(s), then Get Flipkart Template.
+                  {product && (
+                    <>
+                      {' '}On Seller Hub choose category:{' '}
+                      <b className="text-blue-800">{marketplaceCategoryFor(product.category).flipkart || 'not set up yet — ask before uploading'}</b>
+                    </>
+                  )}
+                </span>
               </span>
             )}
           </div>

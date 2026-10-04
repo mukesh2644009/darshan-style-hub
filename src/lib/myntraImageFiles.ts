@@ -32,29 +32,35 @@ export async function toMyntraJpeg(source: Buffer): Promise<Buffer> {
 }
 
 /**
- * Fetches a product's photos and converts each to Myntra format, named by the
- * angle it fills in the Myntra sheet: `<sku>_<n>_<angle>.jpg`.
+ * Fetches a product's photos and converts each to Myntra format, with the same
+ * SEO names as "Convert as per Myntra" (hang-tag style):
+ * `<title>_main_photo_<sku>.jpg`, `…_back_side_photo_…`, `…_other_<sku>_2.jpg`.
  */
-export async function myntraImageFiles(product: { sku: string; images: { url: string }[] }): Promise<{ name: string; data: Buffer }[]> {
+export async function myntraImageFiles(product: { sku: string; name: string; images: { url: string }[] }): Promise<{ name: string; data: Buffer }[]> {
   const c = categorizeProductImages(product.images);
   const angles: [string, string][] = [
-    ['front', c.front],
-    ['side', c.side],
-    ['back', c.back],
-    ['detail', c.detail],
-    ['lookshot', c.lookShot],
-    ...c.additional.map((url, i): [string, string] => [`additional-${i + 1}`, url]),
+    ['main_photo', c.front],
+    ['side_photo', c.side],
+    ['back_side_photo', c.back],
+    ['detail_photo', c.detail],
+    ['lifestyle_photo', c.lookShot],
+    ...c.additional.map((url): [string, string] => ['other', url]),
   ];
-  const sku = product.sku.toLowerCase();
+  const used = new Set<string>();
   const files: { name: string; data: Buffer }[] = [];
   for (const [angle, url] of angles) {
     if (!url) continue;
     const res = await fetch(absoluteImageUrl(url));
     if (!res.ok) throw new Error(`${product.sku}: could not fetch ${angle} image (HTTP ${res.status})`);
-    files.push({
-      name: `${sku}_${files.length + 1}_${angle}.jpg`,
-      data: await toMyntraJpeg(Buffer.from(await res.arrayBuffer())),
-    });
+    let name = myntraPhotoName(product.name, angle, product.sku);
+    for (let n = 2; used.has(name); n++) name = myntraPhotoName(product.name, angle, product.sku, n);
+    used.add(name);
+    files.push({ name, data: await toMyntraJpeg(Buffer.from(await res.arrayBuffer())) });
   }
   return files;
+}
+
+/** Image files in a SKU folder (what "replace" clears before writing a fresh set). */
+export function isImageFileName(name: string): boolean {
+  return /\.(jpe?g|png|webp)$/i.test(name);
 }

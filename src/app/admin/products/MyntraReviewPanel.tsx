@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FiX, FiLoader, FiCheckCircle, FiSave, FiDownload, FiImage } from 'react-icons/fi';
 import MarketplaceCategoryHint from './MarketplaceCategoryHint';
+import { marketplaceCategoryFor } from '@/lib/marketplaceCategories';
 import MyntraListingFields, {
   type MyntraFormState,
   type SizeMeasurementForm,
@@ -32,7 +33,7 @@ interface DetailResponse {
   measurements: ({ size: string } & Partial<Record<keyof SizeMeasurementForm, number | null>>)[];
 }
 
-const MEASUREMENT_FIELDS: (keyof SizeMeasurementForm)[] = ['bust', 'chest', 'frontLength', 'garmentWaist', 'inseamLength', 'toFitWaist'];
+const MEASUREMENT_FIELDS: (keyof SizeMeasurementForm)[] = ['bust', 'chest', 'frontLength', 'garmentWaist', 'hips', 'inseamLength', 'toFitWaist'];
 
 // Single-product Myntra review: same flow as the Flipkart panel — autofill
 // runs first, then AI Fill / edit / Save. Multi-product selection still goes
@@ -48,6 +49,7 @@ export default function MyntraReviewPanel({ productId, onClose }: Props) {
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState('');
   const [downloadingImages, setDownloadingImages] = useState(false);
+  const [imagesSaved, setImagesSaved] = useState('');
   const myntraPrice = product ? platformPrice(product, 'myntra') : null;
 
   useEffect(() => {
@@ -118,23 +120,22 @@ export default function MyntraReviewPanel({ productId, onClose }: Props) {
   const handleDownloadImages = async () => {
     setDownloadingImages(true);
     setDownloadError('');
+    setImagesSaved('');
     try {
-      const res = await fetch(`/api/admin/myntra/images?productId=${encodeURIComponent(productId)}`, { credentials: 'include' });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setDownloadError(data.error || 'Image download failed');
+      // Saved on this laptop in resizeimages\<sku>\ (replacing that folder's photos).
+      const res = await fetch('/api/admin/myntra/images', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productIds: [productId] }),
+      });
+      const data = await res.json().catch(() => ({}));
+      const r = data.results?.[0] as { folder: string; count: number; replaced: number; error?: string } | undefined;
+      if (!res.ok || !r || r.error) {
+        setDownloadError(data.error || r?.error || 'Saving Myntra images failed');
         return;
       }
-      const blob = await res.blob();
-      const match = (res.headers.get('Content-Disposition') || '').match(/filename="(.+)"/);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = match?.[1] || 'Myntra-Images.zip';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      setImagesSaved(`Saved ${r.count} photo(s) in ${r.folder}${r.replaced ? ` (replaced ${r.replaced} old)` : ''}`);
     } catch (err) {
       setDownloadError(err instanceof Error ? err.message : 'Image download failed');
     } finally {
@@ -246,8 +247,13 @@ export default function MyntraReviewPanel({ productId, onClose }: Props) {
             </button>
             {saved && (
               <>
-                <span className="flex items-center gap-1.5 text-sm text-green-700">
-                  <FiCheckCircle className="w-4 h-4" /> Saved
+                <span className="flex items-start gap-1.5 text-sm text-green-700">
+                  <FiCheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>
+                    Saved — next: Download Myntra Sheet, then on Myntra: Add Listing in Bulk → Article type{' '}
+                    <b className="text-pink-800">{marketplaceCategoryFor(product?.category || '').myntra || 'not set up yet — ask before uploading'}</b>
+                    {' '}→ Studio: Brand Owned Studio → upload the sheet.
+                  </span>
                 </span>
                 {/* Unlike Flipkart, Myntra accepts our own file (columns match its template exactly). */}
                 <button
@@ -273,6 +279,7 @@ export default function MyntraReviewPanel({ productId, onClose }: Props) {
             </button>
           </div>
           {downloadError && <p className="text-sm text-red-600 mt-2">{downloadError}</p>}
+          {imagesSaved && <p className="text-sm text-green-700 mt-2 break-all">✓ {imagesSaved}</p>}
         </>
       )}
     </div>

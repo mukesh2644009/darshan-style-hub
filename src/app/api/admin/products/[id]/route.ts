@@ -182,6 +182,7 @@ export async function PATCH(
             frontLength: m.frontLength !== '' && m.frontLength != null ? parseFloat(m.frontLength) : null,
             garmentWaist: m.garmentWaist !== '' && m.garmentWaist != null ? parseFloat(m.garmentWaist) : null,
             inseamLength: m.inseamLength !== '' && m.inseamLength != null ? parseFloat(m.inseamLength) : null,
+            hips: m.hips !== '' && m.hips != null ? parseFloat(m.hips) : null,
             toFitWaist: m.toFitWaist !== '' && m.toFitWaist != null ? parseFloat(m.toFitWaist) : null,
           };
           await prisma.myntraSizeMeasurement.upsert({

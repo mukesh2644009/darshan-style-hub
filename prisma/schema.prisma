@@ -457,6 +457,17 @@ model MyntraListingDetail {
 
   // Myntra's style id once the product is live there (myntra.com/<id>) —
   // copied from the Partner Portal until Myntra's API credentials arrive.
+  // Dresses sheet (Myntra template v13, 2026-10-04) — values from its masterdata.
+  fabric        String? // "Fabric" (mandatory)
+  fabricType    String? // "Fabric Type" (mandatory)
+  knitOrWoven   String? // "Knit or Woven" (mandatory)
+  closure       String? // "Closure" (mandatory)
+  dressShape    String? // "Shape"
+  dressType     String? // "Type"
+  dressLength   String? // "Length"
+  sleeveStyling String? // "Sleeve Styling"
+  printType     String? // "Print or Pattern Type"
+
   myntraStyleId String?
 
   createdAt DateTime @default(now())
@@ -482,6 +493,7 @@ model MyntraSizeMeasurement {
   garmentWaist Float?
   inseamLength Float?
   toFitWaist   Float?
+  hips         Float? // Dresses
 
   @@unique([myntraListingDetailId, size])
   @@index([myntraListingDetailId])

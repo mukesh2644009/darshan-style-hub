@@ -13,7 +13,7 @@
 //    are never guessed, only flagged, because a wrong GTIN/HSN has real consequences.
 
 import { detectColorFromName, detectFabric, capitalizeFirst } from './productTextHeuristics';
-import { toMyntraFabric } from './myntraValues';
+import { toMyntraFabric, MYNTRA_DRESSES_VALUES } from './myntraValues';
 
 export interface MyntraAutofillInput {
   name: string;
@@ -73,10 +73,56 @@ export function deriveCoOrdSizeMeasurements(sizes: string[]): CoOrdSizeMeasureme
     });
 }
 
+// Standard women's dress block (garment inches) for Myntra Dresses — the user
+// asked for standard measurements (2026-10-04). Front Length depends on the
+// dress length, rising 0.5" per size so the values ascend as Myntra requires.
+// Always review-flagged: not measured from the actual SKU.
+const DRESS_SIZE_CHART: Record<string, { bust: number; hips: number; garmentWaist: number; step: number }> = {
+  XS: { bust: 34, hips: 36, garmentWaist: 28, step: 0 },
+  S: { bust: 36, hips: 38, garmentWaist: 30, step: 1 },
+  M: { bust: 38, hips: 40, garmentWaist: 32, step: 2 },
+  L: { bust: 40, hips: 42, garmentWaist: 34, step: 3 },
+  XL: { bust: 42, hips: 44, garmentWaist: 36, step: 4 },
+  XXL: { bust: 44, hips: 46, garmentWaist: 38, step: 5 },
+  XXXL: { bust: 46, hips: 48, garmentWaist: 40, step: 6 },
+  'Free Size': { bust: 38, hips: 40, garmentWaist: 32, step: 2 },
+};
+const DRESS_FRONT_LENGTH: Record<string, number> = { Mini: 33, 'Above Knee': 35, 'Knee Length': 38, Midi: 45, Maxi: 53 };
+
+export interface DressSizeMeasurementSuggestion {
+  size: string;
+  bust: string; chest: string; frontLength: string; hips: string; garmentWaist: string;
+}
+
+/** Suggests per-size dress measurements from the standard block. Always review-flagged. */
+export function deriveDressSizeMeasurements(sizes: string[], dressLength: string): DressSizeMeasurementSuggestion[] {
+  const base = DRESS_FRONT_LENGTH[dressLength] ?? DRESS_FRONT_LENGTH['Knee Length'];
+  return sizes
+    .filter((s) => DRESS_SIZE_CHART[s])
+    .map((s) => {
+      const m = DRESS_SIZE_CHART[s];
+      return {
+        size: s,
+        bust: String(m.bust), chest: String(m.bust), hips: String(m.hips), garmentWaist: String(m.garmentWaist),
+        frontLength: String(base + m.step * 0.5),
+      };
+    });
+}
+
+/** Dress length from the name/description, as Myntra's "Length" value. */
+export function detectDressLength(text: string): string {
+  return /maxi|floor[- ]length|full[- ]length/i.test(text) ? 'Maxi'
+    : /midi|calf/i.test(text) ? 'Midi'
+    : /knee[- ]length/i.test(text) ? 'Knee Length'
+    : /above[- ]knee|mid[- ]thigh/i.test(text) ? 'Above Knee'
+    : /\bmini\b/i.test(text) ? 'Mini' : '';
+}
+
 export function deriveMyntraAutofill(input: MyntraAutofillInput): MyntraAutofillOutcome {
   const { name, description, category, subcategory, colors } = input;
   const coOrd = category === 'Co Ord Sets' || category === 'Summer Co-ord Sets';
   const saree = category === 'Sarees';
+  const dress = category === 'Western Dress';
   const text = `${name}\n${description}`;
 
   const patch: Record<string, string> = {};
@@ -161,6 +207,62 @@ export function deriveMyntraAutofill(input: MyntraAutofillInput): MyntraAutofill
     fillReview('addOns', 'NA');
     fillReview('lining', 'NA');
     fillReview('numberOfPockets', 'NA');
+  } else if (dress) {
+    // Myntra "Dresses" sheet — mandatory = yellow header cells (template v13,
+    // 2026-10-04). Values only from MYNTRA_DRESSES_VALUES; guesses review-flagged.
+    const V = MYNTRA_DRESSES_VALUES;
+    const pick = (field: string, v: string) => (V[field]?.includes(v) ? v : '');
+    fillConfident('articleType', 'Dresses');
+    // Prominent Colour is a dropdown: "Olive Green" → "Olive" (longest list
+    // value contained in the colour name), else left for the admin/AI.
+    if (patch.prominentColour && !V.prominentColour.includes(patch.prominentColour)) {
+      const lc = patch.prominentColour.toLowerCase();
+      // Longest match wins ("Sea Green" over "Green"); on a tie, the one named first ("Olive Green" → Olive).
+      const match = V.prominentColour
+        .filter((c) => c !== 'NA' && lc.includes(c.toLowerCase()))
+        .sort((a, b) => b.length - a.length || lc.indexOf(a.toLowerCase()) - lc.indexOf(b.toLowerCase()))[0];
+      if (match) patch.prominentColour = match; else { delete patch.prominentColour; block('prominentColour'); }
+    }
+
+    const raw = detectFabric(text); // e.g. "Viscose", "Cotton", "Rayon"
+    const fabric = pick('fabric', /viscose|rayon/i.test(raw) ? 'Viscose Rayon' : /cotton/i.test(raw) ? 'Cotton' : raw);
+    fillReview('fabric', fabric);
+    // "Fabric Type" is the weave/material family; viscose isn't on its list.
+    fillReview('fabricType', /cotton/i.test(raw) ? 'Cotton' : pick('fabricType', raw) || 'NA');
+    fillReview('knitOrWoven', /knit|jersey|hosiery/i.test(text) ? 'Knitted' : 'Woven');
+    // HSN 6204.4x = women's dresses, by fibre: 42 cotton, 43 synthetic, 44 artificial (viscose/rayon).
+    // Best-effort by fabric — flagged; confirm with your CA.
+    fillReview('hsnCode', /cotton/i.test(raw) ? '62044200' : /polyester|nylon|synthetic/i.test(raw) ? '62044300' : /viscose|rayon/i.test(raw) ? '62044400' : '');
+
+    const washMatch = description.match(/\b(dry clean|hand wash|machine wash)/i);
+    const washCare = washMatch ? washMatch[1].toLowerCase().split(' ').map(capitalizeFirst).join(' ') : 'Hand Wash';
+    fillReview('washCare', washCare);
+    if (fabric) fillReview('materialCareDescription', `100% ${fabric}, ${washCare}`); else block('materialCareDescription');
+
+    fillReview('closure', /button|shirt dress|button[- ]down/i.test(text) ? 'Button' : /zip/i.test(text) ? 'Zip' : /tie[- ]up/i.test(text) ? 'Tie-Ups' : 'NA');
+    fillReview('addOns', /belt/i.test(text) ? 'Comes with a belt' : 'NA');
+    fillReview('lining', /lined|lining/i.test(text) ? 'Has a lining' : 'NA');
+    fillReview('multipackSet', 'NA');
+    fillReview('numberOfItems', '1');
+    fillReview('netQuantity', '1');
+    fillReview('packageContains', '1 Dress');
+
+    const length = detectDressLength(text);
+    fillReview('dressLength', length);
+    fillReview('dressShape', /shirt dress/i.test(text) ? 'Shirt' : /wrap/i.test(text) ? 'Wrap' : /bodycon/i.test(text) ? 'Bodycon'
+      : /a[- ]line/i.test(text) ? 'A-Line' : /fit and flare|fit & flare|smock|tiered/i.test(text) ? 'Fit and Flare' : '');
+    fillReview('dressType', /tiered/i.test(text) ? 'Tiered' : /shirt dress/i.test(text) ? 'Shirt' : /wrap/i.test(text) ? 'Wrap' : '');
+    fillReview('neck', /square neck/i.test(text) ? 'Square Neck' : /collar/i.test(text) ? 'Shirt Collar' : /v[- ]?neck/i.test(text) ? 'V-Neck'
+      : /round neck/i.test(text) ? 'Round Neck' : /sweetheart/i.test(text) ? 'Sweetheart Neck' : '');
+    fillReview('sleeveLength', /sleeveless/i.test(text) ? 'Sleeveless' : /full sleeve|long sleeve/i.test(text) ? 'Long Sleeves'
+      : /3\/4|three[- ]quarter/i.test(text) ? 'Three-Quarter Sleeves' : /half sleeve|short sleeve|flutter|cap sleeve|puff sleeve/i.test(text) ? 'Short Sleeves' : '');
+    fillReview('sleeveStyling', /sleeveless/i.test(text) ? 'No Sleeves' : /flutter/i.test(text) ? 'Flutter Sleeves' : /puff/i.test(text) ? 'Puff Sleeves'
+      : /bell sleeve/i.test(text) ? 'Bell Sleeves' : 'Regular Sleeves');
+    const pattern = /floral/i.test(text) ? 'Printed' : /stripe/i.test(text) ? 'Striped' : /check/i.test(text) ? 'Checked'
+      : /embroider/i.test(text) ? 'Embroidered' : /print/i.test(text) ? 'Printed' : /solid|plain/i.test(text) ? 'Solid' : '';
+    fillReview('topPattern', pattern);
+    fillReview('printType', /floral/i.test(text) ? 'Floral' : /stripe/i.test(text) ? 'Striped' : /check/i.test(text) ? 'Checked' : pattern === 'Solid' ? 'Solid' : '');
+    fillReview('occasion', /party/i.test(text) ? 'Party' : 'Casual');
   } else if (saree) {
     block('washCare');
     block('materialCareDescription');
@@ -191,4 +293,7 @@ export const MYNTRA_FIELD_LABELS: Record<string, string> = {
   productDetails: 'Product Details', styleNote: 'Style Note', tags: 'Tags', occasion: 'Occasion',
   neck: 'Neck', sleeveLength: 'Sleeve Length', topType: 'Top Type', bottomType: 'Bottom Type',
   topPattern: 'Top Pattern', bottomPattern: 'Bottom Pattern',
+  fabric: 'Fabric', fabricType: 'Fabric Type', knitOrWoven: 'Knit or Woven', closure: 'Closure',
+  dressShape: 'Shape', dressType: 'Type', dressLength: 'Length', sleeveStyling: 'Sleeve Styling',
+  printType: 'Print or Pattern Type',
 };

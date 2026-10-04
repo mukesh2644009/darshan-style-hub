@@ -1,4 +1,4 @@
-import { MYNTRA_CO_ORDS_VALUES } from './myntraValues';
+import { MYNTRA_CO_ORDS_VALUES, MYNTRA_DRESSES_VALUES } from './myntraValues';
 
 // "AI Fill" for the Myntra review panel (Co-Ords): Gemini reads the product's
 // name, description and photos and drafts Myntra's text fields plus its
@@ -49,6 +49,39 @@ const CO_ORDS_FIELDS: Record<string, { allowed?: string[]; hint: string }> = {
   season: { allowed: V.season, hint: 'season it suits best' },
 };
 
+// Dresses ("Dresses" sheet) — dropdowns from Myntra's own masterdata.
+const DV = MYNTRA_DRESSES_VALUES;
+const DRESS_FIELDS: Record<string, { allowed?: string[]; hint: string }> = {
+  styleName: { hint: 'short product name, e.g. "Maroon Tiered Midi Dress" (colour + key detail + Dress), max 40 characters' },
+  productDetails: { hint: 'Myntra "Product Details": one paragraph (50-90 words) covering the dress, fabric and key selling points' },
+  styleNote: { hint: 'one or two sentences on how to style or wear it' },
+  tags: { hint: '8-12 distinct search terms Indian shoppers would type on Myntra, lowercase, comma-separated, each 2-5 words (colour, fabric, length, shape, "dress for women" style phrases), no near-duplicates' },
+  materialCareDescription: { hint: 'fabric and care, e.g. "100% Viscose Rayon, Hand Wash" — same fabric as the fabric field, never "Unknown"' },
+  colourRemarks: { hint: 'brand colour name as a shopper would say it, e.g. "Maroon"' },
+  prominentColour: { allowed: DV.prominentColour, hint: 'dominant colour' },
+  fabric: { allowed: DV.fabric, hint: 'main fabric as stated in the text (Viscose Rayon for viscose/rayon); if the text never says, judge from the photos — never Unknown' },
+  fabricType: { allowed: DV.fabricType, hint: 'fabric family/weave if it is one of these (Cotton, Crepe, Georgette, Linen…); NA when none fits (e.g. plain viscose)' },
+  knitOrWoven: { allowed: DV.knitOrWoven, hint: 'Woven for regular dress fabrics, Knitted for jersey/stretch knits' },
+  closure: { allowed: DV.closure, hint: 'how it fastens (Button for shirt dresses, Zip, Tie-Ups); NA for pull-on dresses' },
+  dressShape: { allowed: DV.dressShape, hint: 'silhouette as Myntra names it (e.g. Fit and Flare, A-Line, Shirt, Wrap, Bodycon)' },
+  dressType: { allowed: DV.dressType, hint: 'dress type (e.g. Tiered, Shirt, Wrap, Fit and Flare)' },
+  dressLength: { allowed: DV.dressLength, hint: 'where the hem ends on the model' },
+  neck: { allowed: DV.neck, hint: 'neckline' },
+  sleeveLength: { allowed: DV.sleeveLength, hint: 'sleeve length (flutter/cap sleeves are Short Sleeves)' },
+  sleeveStyling: { allowed: DV.sleeveStyling, hint: 'sleeve style; Regular Sleeves if nothing special, No Sleeves if sleeveless' },
+  topPattern: { allowed: DV.topPattern, hint: 'overall pattern; Solid if plain' },
+  printType: { allowed: DV.printType, hint: 'print or pattern type; Solid if plain' },
+  occasion: { allowed: DV.occasion, hint: 'occasion' },
+  washCare: { allowed: DV.washCare, hint: 'wash care as stated; Hand Wash if not stated' },
+  addOns: { allowed: DV.addOns, hint: 'Comes with a belt only if a separate belt is included; NA otherwise' },
+  lining: { allowed: DV.lining, hint: 'NA unless a lining is mentioned' },
+  season: { allowed: DV.season, hint: 'season it suits best' },
+};
+
+const DRESS_PROMPT = `You are writing a Myntra listing for an Indian women's fashion seller (brand: Darshan Style Hub). The product is a western dress.
+Use only what the product name, description and photos actually show. Never invent work or items that aren't there; for fabric, follow the fabric instructions.
+No emojis, no HTML, no price or discount claims. For fields with an allowed list, pick from it, reading the photos when the text doesn't say; answer "${UNKNOWN}" if you genuinely can't tell.`;
+
 const PROMPT = `You are writing a Myntra listing for an Indian women's fashion seller (brand: Darshan Style Hub). The product is a co-ord set (matching top + bottom).
 Use only what the product name, description and photos actually show. Never invent work or items that aren't there; for fabric, follow the topFabric/bottomFabric instructions.
 No emojis, no HTML, no price or discount claims. For fields with an allowed list, pick from it, reading the photos when the text doesn't say; answer "${UNKNOWN}" if you genuinely can't tell.`;
@@ -70,26 +103,30 @@ export async function suggestMyntraCoOrdListing(input: {
   name: string;
   description: string;
   imageUrls: string[];
+  category?: string;
 }): Promise<MyntraAiSuggestion> {
+  const isDress = input.category === 'Western Dress';
+  const FIELDS = isDress ? DRESS_FIELDS : CO_ORDS_FIELDS;
+  const prompt = isDress ? DRESS_PROMPT : PROMPT;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set in .env');
 
   const schema = {
     type: 'OBJECT',
-    properties: Object.fromEntries(Object.entries(CO_ORDS_FIELDS).map(([field, spec]) => [
+    properties: Object.fromEntries(Object.entries(FIELDS).map(([field, spec]) => [
       field,
       spec.allowed
         ? { type: 'STRING', enum: [...spec.allowed, UNKNOWN], description: spec.hint }
         : { type: 'STRING', description: spec.hint },
     ])),
-    required: Object.keys(CO_ORDS_FIELDS),
+    required: Object.keys(FIELDS),
   };
 
   const images = (await Promise.all(input.imageUrls.slice(0, MAX_IMAGES).map(imagePart))).filter(Boolean);
   const body = JSON.stringify({
     contents: [{
       role: 'user',
-      parts: [{ text: `${PROMPT}\n\nProduct name: ${input.name}\n\nProduct description:\n${input.description}` }, ...images],
+      parts: [{ text: `${prompt}\n\nProduct name: ${input.name}\n\nProduct description:\n${input.description}` }, ...images],
     }],
     generationConfig: { responseMimeType: 'application/json', responseSchema: schema },
   });
@@ -121,7 +158,7 @@ export async function suggestMyntraCoOrdListing(input: {
   // Schema enums are enforced by Gemini, but never trust a value Myntra won't accept.
   const clean = (s: string) => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   const suggestion: MyntraAiSuggestion = {};
-  for (const [field, spec] of Object.entries(CO_ORDS_FIELDS)) {
+  for (const [field, spec] of Object.entries(FIELDS)) {
     const value = out[field];
     if (typeof value !== 'string') continue;
     suggestion[field] = spec.allowed ? (spec.allowed.includes(value) ? value : '') : clean(value);

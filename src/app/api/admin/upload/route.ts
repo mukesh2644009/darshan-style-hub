@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/auth';
 import { MAX_ADMIN_IMAGE_BYTES, MAX_ADMIN_IMAGE_MB } from '@/lib/uploadLimits';
 import path from 'path';
+import { uploadToCloudinary } from '@/lib/cloudinaryUpload';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -12,25 +13,6 @@ export const runtime = 'nodejs';
 const IS_VERCEL = !!process.env.VERCEL;
 const USE_CLOUDINARY = IS_VERCEL || !!(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
 
-async function uploadToCloudinary(buffer: Buffer, folder: string, fileName: string): Promise<string> {
-  const { v2: cloudinary } = await import('cloudinary');
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key:    process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-  });
-
-  return new Promise((resolve, reject) => {
-    const publicId = `darshan/${folder}/${fileName.replace(/\.[^.]+$/, '')}`;
-    cloudinary.uploader.upload_stream(
-      { public_id: publicId, overwrite: true, resource_type: 'image' },
-      (err, result) => {
-        if (err || !result) return reject(err || new Error('Cloudinary upload failed'));
-        resolve(result.secure_url);
-      }
-    ).end(buffer);
-  });
-}
 
 export async function POST(request: Request) {
   try {

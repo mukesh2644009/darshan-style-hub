@@ -45,6 +45,18 @@ interface ProductImage {
   url: string;
 }
 
+// Same angle names as Add Product (hang-tag style, used in the SEO file names).
+const IMAGE_ANGLES = ['main_photo', 'back_side_photo', 'side_photo', 'detail_photo', 'lifestyle_photo', 'other'];
+const ANGLE_LABELS: Record<string, string> = {
+  main_photo: 'Main (front)', back_side_photo: 'Back', side_photo: 'Side',
+  detail_photo: 'Detail', lifestyle_photo: 'Lifestyle', other: 'Other',
+};
+function guessAngle(url: string, index: number): string {
+  const name = (url.split('/').pop() || '').toLowerCase();
+  const tag = IMAGE_ANGLES.find((a) => name.includes(`_${a}_`));
+  return tag || IMAGE_ANGLES[Math.min(index, IMAGE_ANGLES.length - 1)];
+}
+
 interface ProductColor {
   id: string;
   name: string;
@@ -58,6 +70,7 @@ interface MyntraSizeMeasurementRecord {
   frontLength: number | null;
   garmentWaist: number | null;
   inseamLength: number | null;
+  hips?: number | null;
   toFitWaist: number | null;
 }
 
@@ -122,6 +135,54 @@ export default function ProductEditForm({ product }: Props) {
   );
 
   const [existingImages, setExistingImages] = useState<ProductImage[]>(product.images || []);
+
+  // "Convert as per Myntra" for the saved photos: angle per photo (by image id),
+  // guessed from an SEO file name if it has one, else by position.
+  const [imageAngles, setImageAngles] = useState<Record<string, string>>(() =>
+    Object.fromEntries((product.images || []).map((img, i) => [img.id, guessAngle(img.url, i)])),
+  );
+  const [converting, setConverting] = useState(false);
+  const [convertResult, setConvertResult] = useState<{ ok: boolean; text: string; files?: { name: string; sizeKb: number }[] } | null>(null);
+
+  const convertExisting = async () => {
+    if (newImageFiles.length > 0) {
+      setConvertResult({ ok: false, text: 'Save (Update Product) the new photos first, then convert.' });
+      return;
+    }
+    setConverting(true);
+    setConvertResult(null);
+    try {
+      const res = await fetch('/api/admin/sheet/convert-existing', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sku: formData.sku,
+          name: formData.name,
+          category: formData.category,
+          images: existingImages.map((img, i) => ({ url: img.url, label: imageAngles[img.id] || guessAngle(img.url, i) })),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setConvertResult({ ok: false, text: data.error || 'Photo conversion failed' });
+        return;
+      }
+      const stamp = Date.now();
+      const next = (data.files as { url: string; name: string }[]).map((f, i) => ({ id: `cv-${stamp}-${i}`, url: f.url }));
+      setImageAngles(Object.fromEntries(next.map((img, i) => [img.id, guessAngle(img.url, i)])));
+      setExistingImages(next);
+      setConvertResult({
+        ok: true,
+        text: `${next.length} photo(s) saved in ${data.folder} and uploaded with SEO names — click Update Product to save them on the site.`,
+        files: data.files,
+      });
+    } catch (err) {
+      setConvertResult({ ok: false, text: err instanceof Error ? err.message : 'Photo conversion failed' });
+    } finally {
+      setConverting(false);
+    }
+  };
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -150,6 +211,7 @@ export default function ProductEditForm({ product }: Props) {
         frontLength: m.frontLength != null ? String(m.frontLength) : '',
         garmentWaist: m.garmentWaist != null ? String(m.garmentWaist) : '',
         inseamLength: m.inseamLength != null ? String(m.inseamLength) : '',
+        hips: m.hips != null ? String(m.hips) : '',
         toFitWaist: m.toFitWaist != null ? String(m.toFitWaist) : '',
       },
     }), {} as Record<string, SizeMeasurementForm>);
@@ -570,8 +632,45 @@ export default function ProductEditForm({ product }: Props) {
                   <div className="absolute top-2 right-2 w-6 h-6 bg-black/50 text-white text-xs font-bold rounded-full flex items-center justify-center">
                     {index + 1}
                   </div>
+                  {/* Photo angle — goes in the SEO file name on Convert as per Myntra */}
+                  <select
+                    value={imageAngles[img.id] || guessAngle(img.url, index)}
+                    onChange={(e) => setImageAngles((prev) => ({ ...prev, [img.id]: e.target.value }))}
+                    title="Photo angle"
+                    className="absolute top-9 right-2 text-xs bg-white/90 border border-gray-300 rounded px-1 py-0.5"
+                  >
+                    {IMAGE_ANGLES.map((a) => <option key={a} value={a}>{ANGLE_LABELS[a]}</option>)}
+                  </select>
                 </div>
               ))}
+            </div>
+
+            {/* Convert the saved photos for Myntra: 1080x1440, SEO names, resizeimages\<sku>\ + site */}
+            <div className={`mt-4 text-sm rounded-lg border p-4 ${
+              convertResult?.ok ? 'bg-green-50 border-green-200' : convertResult ? 'bg-red-50 border-red-200' : 'bg-pink-50 border-pink-200'
+            }`}>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={convertExisting}
+                  disabled={converting || !formData.sku || !formData.name}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 font-medium disabled:opacity-50"
+                >
+                  {converting ? <FiLoader className="w-4 h-4 animate-spin" /> : <FiImage className="w-4 h-4" />}
+                  {converting ? 'Converting…' : 'Convert as per Myntra'}
+                </button>
+                <span className="text-gray-600">
+                  Set each photo&apos;s angle, then convert: 1080×1440 (≤500 KB), SEO names, saved in resizeimages\{formData.sku.toLowerCase()} and re-uploaded to the site.
+                </span>
+              </div>
+              {convertResult && (
+                <p className={`mt-2 ${convertResult.ok ? 'text-green-800 font-medium' : 'text-red-700'}`}>{convertResult.text}</p>
+              )}
+              {convertResult?.files && (
+                <ul className="mt-1 text-xs text-green-900 space-y-0.5">
+                  {convertResult.files.map((f) => <li key={f.name} className="font-mono break-all">{f.name} · {f.sizeKb} KB</li>)}
+                </ul>
+              )}
             </div>
           </div>
         )}

@@ -1,4 +1,4 @@
-import { FLIPKART_COLOR_VALUES, FLIPKART_NECK_VALUES, FLIPKART_SLEEVE_VALUES, FLIPKART_TOP_VALUES, FLIPKART_CO_ORD_VALUES } from './flipkartAutofill';
+import { FLIPKART_COLOR_VALUES, FLIPKART_NECK_VALUES, FLIPKART_SLEEVE_VALUES, FLIPKART_TOP_VALUES, FLIPKART_CO_ORD_VALUES, FLIPKART_DRESS_VALUES } from './flipkartAutofill';
 
 // "AI Fill" for the Flipkart review panel: Gemini reads the product's name,
 // description and photos and drafts the text fields autofill can't write well
@@ -63,6 +63,21 @@ const TOP_ATTRIBUTES: AttributeSpec = {
   occasion: { allowed: FLIPKART_TOP_VALUES.occasion, hint: 'occasion' },
 };
 
+// Western Dress ("dress" template) — values from Flipkart's own dropdowns.
+const D = FLIPKART_DRESS_VALUES;
+const DRESS_ATTRIBUTES: AttributeSpec = {
+  neck: { allowed: D.neck, hint: 'neckline' },
+  sleeveLength: { allowed: D.sleeveLength, hint: 'sleeve length (flutter/cap sleeves are Short Sleeve)' },
+  sleeveStyle: { allowed: D.sleeveStyle, hint: 'sleeve style; Regular Sleeves if nothing special' },
+  shapeType: { allowed: D.dressType, hint: 'dress type / silhouette (e.g. Tiered, Shirt, A-line, Fit and Flare, Bodycon, Wrap)' },
+  topsLength: { allowed: D.length, hint: 'dress length — where the hem ends on the model' },
+  topPattern: { allowed: D.pattern, hint: 'main pattern; Solid if plain' },
+  printType: { allowed: D.printType, hint: 'print / surface design; Solid if plain' },
+  fabricType: { allowed: D.fabric, hint: 'fabric as stated in the text (Pure Cotton for 100% cotton, Viscose Rayon for viscose/rayon); if the text never says, judge from the photos — never Unknown' },
+  suitableFor: { allowed: D.suitableFor, hint: 'Western Wear for western dresses' },
+  occasion: { allowed: D.occasion, hint: 'occasion' },
+};
+
 export function isGeminiConfigured(): boolean {
   return !!process.env.GEMINI_API_KEY;
 }
@@ -117,7 +132,9 @@ export async function suggestFlipkartListing(input: {
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set in .env');
 
   const isCoOrd = input.category === 'Co Ord Sets' || input.category === 'Summer Co-ord Sets';
-  const attributes = input.category === 'Tops' ? TOP_ATTRIBUTES : isCoOrd ? CO_ORD_ATTRIBUTES : ETHNIC_ATTRIBUTES;
+  const attributes = input.category === 'Tops' ? TOP_ATTRIBUTES
+    : input.category === 'Western Dress' ? DRESS_ATTRIBUTES
+    : isCoOrd ? CO_ORD_ATTRIBUTES : ETHNIC_ATTRIBUTES;
   const images = (await Promise.all(input.imageUrls.slice(0, MAX_IMAGES).map(imagePart))).filter(Boolean);
 
   const body = JSON.stringify({

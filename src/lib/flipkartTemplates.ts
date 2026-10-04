@@ -22,6 +22,7 @@ const BULK_VERTICALS: Record<string, { vertical: string; vid: number; label: str
   Tops: { vertical: 'top', vid: 4786, label: 'Tops' },
   'Co Ord Sets': { vertical: 'apparel_set', vid: 7481, label: 'Co-ords' },
   'Summer Co-ord Sets': { vertical: 'apparel_set', vid: 7481, label: 'Co-ords' },
+  'Western Dress': { vertical: 'dress', vid: 4759, label: 'Dress' },
 };
 
 const SELLER_HUB_BRAND = 'Darshan Style Hub';

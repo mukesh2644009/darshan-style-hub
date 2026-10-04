@@ -33,15 +33,18 @@ export async function POST(request: Request) {
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
-    if (product.category !== 'Co Ord Sets' && product.category !== 'Summer Co-ord Sets') {
-      return NextResponse.json({ error: `Myntra AI Fill currently supports Co-Ord Sets only (this is "${product.category}").` }, { status: 422 });
+    const isDress = product.category === 'Western Dress';
+    if (product.category !== 'Co Ord Sets' && product.category !== 'Summer Co-ord Sets' && !isDress) {
+      return NextResponse.json({ error: `Myntra AI Fill currently supports Co-Ord Sets and Western Dress only (this is "${product.category}").` }, { status: 422 });
     }
 
     const suggestion = await suggestMyntraCoOrdListing({
       name: product.name,
       description: product.description,
       imageUrls: product.images.map((img) => absoluteImageUrl(img.url)).filter(Boolean),
+      category: product.category,
     });
+    if (isDress) return NextResponse.json({ suggestion });
 
     // Fabric is mandatory on Myntra but rarely stated in our descriptions. If
     // the AI couldn't decide, fall back to the other piece, then this product's

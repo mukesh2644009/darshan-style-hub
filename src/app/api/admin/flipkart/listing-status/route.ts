@@ -8,6 +8,8 @@ export const dynamic = 'force-dynamic';
 // Short in-memory cache so every admin page load doesn't re-hit Flipkart.
 const CACHE_TTL_MS = 10 * 60 * 1000;
 let cache: { at: number; bySku: Map<string, FlipkartListing | null> } = { at: 0, bySku: new Map() };
+const IN_QC_RECHECK_MS = 60 * 1000;
+const missingCheckedAt = new Map<string, number>();
 
 export interface ProductFlipkartStatus {
   status: string; // ACTIVE if any size is active, else the first listing's status; IN_QC if only submitted
@@ -49,11 +51,19 @@ export async function POST(request: Request) {
 
     if (Date.now() - cache.at > CACHE_TTL_MS) cache = { at: Date.now(), bySku: new Map() };
     const allSkus = products.filter((p) => p.sku).flatMap(candidateSkus);
-    const unknown = allSkus.filter((sku) => !cache.bySku.has(sku));
+    // Products sent to QC go live without warning — re-check their "not
+    // listed yet" answers after a minute instead of holding them for 10.
+    const inQcSkus = new Set(products.filter((p) => p.sku && p.flipkartListingDetail?.flipkartRequestId).flatMap(candidateSkus));
+    const staleMissing = (sku: string) =>
+      inQcSkus.has(sku) && cache.bySku.get(sku) === null && Date.now() - (missingCheckedAt.get(sku) ?? 0) > IN_QC_RECHECK_MS;
+    const unknown = allSkus.filter((sku) => !cache.bySku.has(sku) || staleMissing(sku));
     if (unknown.length > 0) {
       const found = await fetchFlipkartListings(unknown);
       const foundBySku = new Map(found.map((l) => [l.sku, l]));
-      for (const sku of unknown) cache.bySku.set(sku, foundBySku.get(sku) ?? null);
+      for (const sku of unknown) {
+        cache.bySku.set(sku, foundBySku.get(sku) ?? null);
+        if (!foundBySku.has(sku)) missingCheckedAt.set(sku, Date.now());
+      }
     }
 
     const result: Record<string, ProductFlipkartStatus> = {};

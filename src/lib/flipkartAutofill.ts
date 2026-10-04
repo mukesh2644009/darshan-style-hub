@@ -155,6 +155,65 @@ export const FLIPKART_TOP_VALUES = {
   topsLength: ['Calf Length', 'Crop', 'Hip Length', 'Knee Length', 'Long'],
 };
 
+// Western Dress ("dress" template, Clothing → Formal Wear → Dress) — allowed
+// values copied verbatim from the template's Index sheet
+// (Flipkart-Bulk-Template-Dress.xls, 2026-09-24); mandatory = blue header cells
+// read via Excel 2026-10-04. Not yet QC-tested.
+export const FLIPKART_DRESS_VALUES = {
+  occasion: ['Beach Wear', 'Casual', 'Formal', 'Party'],
+  length: [
+    'Above Knee/Mid Thigh Length', 'Ankle Length', 'Below Knee', 'Knee Length', 'Maxi/Full Length',
+    'Midi/Calf Length', 'Mini/Short',
+  ],
+  dressType: [
+    'A-line', 'Asymmetric', 'Balloon/Bubble', 'Bandage', 'Blazer Dress', 'Blouson', 'Bodycon', 'Cinched Waist',
+    'Drop Waist', 'Empire Waist', 'Ethnic Dress', 'Fit and Flare', 'Gathered', 'Gown', 'High Low', 'Kaftan',
+    'Layered', 'Maxi', 'Peplum', 'Pinafore', 'Pleated', 'Ribbed', 'Ruffled', 'Sheath', 'Sheer', 'Shift', 'Shirt',
+    'Skater', 'Sweater', 'T Shirt', 'Tiered', 'Tube', 'Two Piece Dress', 'Wrap',
+  ],
+  fabric: [
+    'Acrylic Blend', 'Chambray', 'Chiffon', 'Cotton Blend', 'Cotton Linen', 'Cotton Lycra', 'Cotton Silk', 'Crepe',
+    'Denim', 'Georgette', 'Hosiery', 'Lace', 'Linen', 'Liva', 'Lycra Blend', 'Lyocell', 'Net', 'Nylon', 'Organza',
+    'Polyester', 'Pure Cotton', 'Satin', 'Silk', 'Silk Blend', 'Synthetic Leather', 'Tissue', 'Velvet',
+    'Viscose Rayon', 'Wool',
+  ],
+  suitableFor: ['Ethnic Wear', 'Fusion Wear', 'Maternity Wear', 'Western Wear'],
+  pattern: [
+    'Animal Print', 'Checkered', 'Chevron/Zig Zag', 'Colorblock', 'Embellished', 'Embroidered', 'Ethnic Motifs',
+    'Floral Print', 'Geometric Print', 'Graphic Print', 'Houndstooth', 'Ombre', 'Polka Print', 'Printed',
+    'Self Design', 'Solid', 'Striped', 'Tie & Dye', 'Tribal', 'Washed',
+  ],
+  sleeveStyle: [
+    '3/4 Sleeve', 'Balloon Sleeve', 'Batwing Sleeve', 'Bell Sleeves', 'Bishop Sleeve', 'Butterfly Sleeve',
+    'Cap Sleeve', 'Cape Sleeves', 'Cold Shoulder Sleeve', 'Cuffed Sleeve', 'Cutout Sleeves', 'Dolman Sleeve',
+    'Extended Sleeves', 'Fashion Sleeve', 'Flared Sleeve', 'Flute Sleeves', 'Flutter Sleeves', 'Full Sleeve',
+    'Half Sleeve', 'Juliet Sleeve', 'Kaftan Sleeve', 'Kimono Sleeve', 'Layered Sleeves', 'No Sleeves',
+    'Noodle strap', 'Off Shoulder Sleeve', 'One Shoulder', 'Petal Sleeves', 'Puff Sleeves', 'Raglan Sleeves',
+    'Regular Sleeves', 'Roll-up Sleeve', 'Ruffled Sleeves', 'Short Sleeve', 'Shoulder Straps', 'Sleeveless',
+    'Slit Sleeve', 'Volume Sleeve',
+  ],
+  neck: [
+    'Asymmetric Neck', 'Boat Neck', 'Choker Neck', 'Cold Shoulder', 'Collared', 'Cowl Collar', 'Halter Neck',
+    'Henley', 'High Neck', 'Hooded Neck', 'Keyhole Neck', 'Mandarin Collar', 'Off Shoulder', 'One Shoulder',
+    'Peter Pan Collar', 'Pussy Bow Collar', 'Round Neck', 'Ruffle Neck', 'Scoop Neck', 'Spaghetti Neck',
+    'Spread Collar', 'Square Neck', 'Strapless', 'Sweetheart Neck', 'Tie-up', 'U Neck', 'V-Neck',
+  ],
+  printType: [
+    'Abstract', 'Ajrakh', 'Animal Print', 'Applique', 'Argyle', 'Aztec Print', 'Bandhni', 'Batik', 'Block Print',
+    'Botanical Prints', 'Camouflage', 'Checkered', 'Chevron/Zig Zag', 'Colorblock', 'Conversational',
+    'Digital Prints', 'Ditsy Print', 'Embellished', 'Embroidered', 'Ethnic Motifs', 'Floral', 'Foil Print',
+    'Geometric', 'Graphic', 'Heavy Washed', 'Herringbone', 'Holographic', 'Houndstooth', 'Human Figures', 'Ikkat',
+    'Kalamkari', 'Leheriya', 'Light Washed', 'Mid Washed', 'Ombre', 'Paisley', 'Polka', 'Quirky', 'Self Design',
+    'Sequined', 'Shibori', 'Solid', 'Striped', 'Tie & Dye', 'Tribal', 'Typography', 'Varsity', 'Warli',
+    'Woven design',
+  ],
+  sleeveLength: ['3/4 Sleeve', 'Full Sleeve', 'Half Sleeve', 'Short Sleeve', 'Sleeveless'],
+};
+// Package size/weight for Dresses — the business confirmed 2026-10-04 they
+// pack the same as Tops (35×28×4 cm, 0.35 kg; see TOP_PACKAGE).
+const DRESS_PACKAGE: { lengthCm: string; breadthCm: string; heightCm: string; weightKg: string } | null =
+  { lengthCm: '35', breadthCm: '28', heightCm: '4', weightKg: '0.35' };
+
 // Ethnic-template neck names -> Tops' spelling of the same neckline.
 const TOP_NECK_FROM_ETHNIC: Record<string, string> = {
   'V Neck': 'V-Neck', 'Collared Neck': 'Collared', 'U - Neck': 'U Neck', 'Key Hole Neck': 'Keyhole Neck',
@@ -204,7 +263,7 @@ export const FLIPKART_CO_ORD_VALUES: Record<string, string[]> = {
   packOf: ['1', '2', '3', '4', '5'],
 };
 const COLOR_SYNONYMS: Record<string, string> = {
-  olive: 'Green', mustard: 'Yellow', peach: 'Pink', coral: 'Orange', rust: 'Brown',
+  olive: 'Green', 'olive green': 'Green', mustard: 'Yellow', peach: 'Pink', coral: 'Orange', rust: 'Brown',
   wine: 'Maroon', burgundy: 'Maroon', teal: 'Blue', navy: 'Dark Blue', 'navy blue': 'Dark Blue',
   cream: 'Beige', ivory: 'White', offwhite: 'White', 'off white': 'White', magenta: 'Pink',
   turquoise: 'Blue', lavender: 'Purple', indigo: 'Dark Blue', mint: 'Light Green',
@@ -258,6 +317,7 @@ export function deriveFlipkartAutofill(input: FlipkartAutofillInput): FlipkartAu
   const isEthnicSet = category === 'Kurtis' && isKurtaSet(name);
   const isKurti = category === 'Kurtis' && !isEthnicSet;
   const isTop = category === 'Tops';
+  const isDress = category === 'Western Dress';
   const text = `${name}\n${description}`;
 
   const patch: Record<string, string> = {};
@@ -271,7 +331,7 @@ export function deriveFlipkartAutofill(input: FlipkartAutofillInput): FlipkartAu
   };
   const block = (field: string) => blockedFields.push(field);
 
-  if (!isCoOrd && !isSuit && !isKurti && !isEthnicSet && !isTop) {
+  if (!isCoOrd && !isSuit && !isKurti && !isEthnicSet && !isTop && !isDress) {
     return { patch, reviewFields: [], blockedFields: ['category'] };
   }
 
@@ -322,12 +382,12 @@ export function deriveFlipkartAutofill(input: FlipkartAutofillInput): FlipkartAu
   // confirmed mandatory anywhere (Suits went live with it blank), so a
   // best-effort suggestion built from the product's own name/category/colour
   // — always review-flagged, never silently trusted.
-  const categoryLabel = isSuit ? 'Kurta Set' : isEthnicSet ? 'Kurta Set' : isKurti ? 'Kurti' : isTop ? 'Top' : 'Co-ord Set';
+  const categoryLabel = isSuit ? 'Kurta Set' : isEthnicSet ? 'Kurta Set' : isKurti ? 'Kurti' : isTop ? 'Top' : isDress ? 'Dress' : 'Co-ord Set';
   const nameLead = name.split('|')[0].trim();
   const keywordCandidates = [
     color ? `${color} ${categoryLabel} for Women` : '',
     nameLead.length <= 60 ? nameLead : '',
-    'Ethnic Wear for Women',
+    isDress ? 'Western Dress for Women' : 'Ethnic Wear for Women',
   ].filter(Boolean).slice(0, 5);
   if (keywordCandidates.length > 0) fillReview('searchKeywords', keywordCandidates.join('::'));
   else block('searchKeywords');
@@ -337,7 +397,7 @@ export function deriveFlipkartAutofill(input: FlipkartAutofillInput): FlipkartAu
 
   const neckMatch = NECK_PATTERNS.find(([re]) => re.test(text));
   // Tops and Co-ords share Flipkart's western neck spellings ("V-Neck", "Keyhole Neck").
-  const neck = neckMatch ? (isTop || isCoOrd ? TOP_NECK_FROM_ETHNIC[neckMatch[1]] ?? neckMatch[1] : neckMatch[1]) : '';
+  const neck = neckMatch ? (isTop || isCoOrd || isDress ? TOP_NECK_FROM_ETHNIC[neckMatch[1]] ?? neckMatch[1] : neckMatch[1]) : '';
   if (neck) fillReview('neck', neck); else block('neck');
 
   const pattern = /embroider/i.test(text) ? 'Embroidered' : /print/i.test(text) ? 'Printed' : '';
@@ -526,6 +586,69 @@ export function deriveFlipkartAutofill(input: FlipkartAutofillInput): FlipkartAu
     // Kurti-style tops (ethnic prints) are "Fusion Wear"; plain western tops "Western Wear".
     fillReview('suitableFor', /kurti|ethnic|block print|paisley|bandhani/i.test(text) ? 'Fusion Wear' : 'Western Wear');
     block('topsLength'); // recommended only — AI Fill can judge it from photos
+
+    block('topType'); block('bottomType'); block('bottomPattern'); block('bottomFabric');
+    block('packageContains'); block('tags');
+  } else if (isDress) {
+    // Western Dress ("dress" on Flipkart: Clothing → Formal Wear → Dress) —
+    // mandatory = blue header cells of Flipkart's own template (read via Excel
+    // 2026-10-04); enums only from FLIPKART_DRESS_VALUES. Not yet QC-tested:
+    // every guess is review-flagged. Reuses existing columns: Length → topsLength,
+    // Dress Type → shapeType, Fabric → fabricType, Pattern → topPattern.
+    const V = FLIPKART_DRESS_VALUES;
+    const inList = (list: string[], v: string) => (list.includes(v) ? v : '');
+    fillConfident('category', 'dress');
+    fillConfident('hsnFlipkart', FLIPKART_TOP_HSN);
+    fillConfident('ageGroup', 'Women'); // "Ideal For" — only allowed value
+    fillConfident('packOf', '1');
+    if (DRESS_PACKAGE) {
+      fillReview('lengthCm', DRESS_PACKAGE.lengthCm);
+      fillReview('breadthCm', DRESS_PACKAGE.breadthCm);
+      fillReview('heightCm', DRESS_PACKAGE.heightCm);
+      fillReview('weightKg', DRESS_PACKAGE.weightKg);
+    } else {
+      block('lengthCm'); block('breadthCm'); block('heightCm'); block('weightKg');
+    }
+
+    fillReview('fabricType', inList(V.fabric, fabric ? TOP_FABRIC_FROM_KEYWORD[fabric] ?? '' : ''));
+    if (fabricLabel) fillReview('materialCareDescription', fabricLabel); else block('materialCareDescription');
+    if (neck && !V.neck.includes(neck)) { delete patch.neck; block('neck'); } // not a Dress spelling — leave for the admin/AI
+
+    fillReview('topPattern', /floral/i.test(text) ? 'Floral Print'
+      : /polka/i.test(text) ? 'Polka Print'
+      : /check/i.test(text) ? 'Checkered'
+      : /stripe/i.test(text) ? 'Striped'
+      : /embroider/i.test(text) ? 'Embroidered'
+      : /print/i.test(text) ? 'Printed'
+      : /solid|plain/i.test(text) ? 'Solid' : '');
+
+    const sleeveMatch = SLEEVE_PATTERNS.find(([re]) => re.test(text));
+    const sleeveLength = sleeveMatch?.[1] === 'Elbow Length Sleeve' ? 'Half Sleeve'
+      : sleeveMatch?.[1] ?? (/flutter|cap sleeve|short sleeve|puff sleeve/i.test(text) ? 'Short Sleeve' : '');
+    fillReview('sleeveLength', sleeveLength);
+    fillReview('sleeveStyle', sleeveLength === 'Sleeveless' ? 'Sleeveless'
+      : /flutter/i.test(text) ? 'Flutter Sleeves'
+      : /puff sleeve/i.test(text) ? 'Puff Sleeves'
+      : /bell sleeve/i.test(text) ? 'Bell Sleeves'
+      : /ruffle/i.test(text) ? 'Ruffled Sleeves'
+      : 'Regular Sleeves');
+
+    // "Dress Type" — reuses the shapeType column.
+    fillReview('shapeType', /shirt dress/i.test(text) ? 'Shirt'
+      : /tiered/i.test(text) ? 'Tiered'
+      : /bodycon/i.test(text) ? 'Bodycon'
+      : /wrap/i.test(text) ? 'Wrap'
+      : /a[- ]line/i.test(text) ? 'A-line'
+      : /fit and flare|fit & flare/i.test(text) ? 'Fit and Flare'
+      : /smock|gather/i.test(text) ? 'Gathered'
+      : /maxi/i.test(text) ? 'Maxi' : '');
+    // "Length" — reuses the topsLength column.
+    fillReview('topsLength', /maxi|floor[- ]length|full[- ]length/i.test(text) ? 'Maxi/Full Length'
+      : /midi|calf/i.test(text) ? 'Midi/Calf Length'
+      : /knee[- ]length/i.test(text) ? 'Knee Length'
+      : /mini|short dress/i.test(text) ? 'Mini/Short' : '');
+    fillReview('occasion', /party/i.test(text) ? 'Party' : 'Casual');
+    fillReview('suitableFor', 'Western Wear');
 
     block('topType'); block('bottomType'); block('bottomPattern'); block('bottomFabric');
     block('packageContains'); block('tags');

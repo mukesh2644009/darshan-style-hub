@@ -9,7 +9,7 @@ import { platformPrice } from './platformPricing';
 // (a real, self-validated DSH_SU_04 bulk-template row). Safe for auto-fill,
 // since writing to our own DB is reversible.
 export function isFlipkartSupportedCategory(category: string): boolean {
-  return category === 'Co Ord Sets' || category === 'Summer Co-ord Sets' || category === 'Suits' || category === 'Kurtis' || category === 'Tops';
+  return category === 'Co Ord Sets' || category === 'Summer Co-ord Sets' || category === 'Suits' || category === 'Kurtis' || category === 'Tops' || category === 'Western Dress';
 }
 
 // Categories whose Excel *column layout* we've actually built. Co-Ord matches the
@@ -18,7 +18,7 @@ export function isFlipkartSupportedCategory(category: string): boolean {
 // (now live, 10/10 SKUs); Kurtis matches the real single-piece "kurta" template
 // — but only for genuinely single-piece products (see isKurtaSet below).
 export function isFlipkartExcelExportableCategory(category: string): boolean {
-  return category === 'Co Ord Sets' || category === 'Summer Co-ord Sets' || category === 'Suits' || category === 'Kurtis' || category === 'Tops';
+  return category === 'Co Ord Sets' || category === 'Summer Co-ord Sets' || category === 'Suits' || category === 'Kurtis' || category === 'Tops' || category === 'Western Dress';
 }
 
 // The site's "Kurtis" category actually mixes true single-piece kurtis with
@@ -91,6 +91,24 @@ export function getRequiredFlipkartFields(product: { category: string; name: str
     return required;
   }
 
+  if (product.category === 'Western Dress') {
+    // Blue (mandatory) header cells in Flipkart's own "dress" template, read
+    // via Excel 2026-10-04; package dims/procurement are purple (conditional).
+    add('lengthCm', 'Length (cm)');
+    add('breadthCm', 'Breadth (cm)');
+    add('heightCm', 'Height (cm)');
+    add('fulfilmentBy', 'Fulfilment by');
+    add('procurementType', 'Procurement type');
+    add('procurementSlaDays', 'Procurement SLA (DAY)');
+    add('occasion', 'Occasion');
+    add('ageGroup', 'Ideal For');
+    add('topsLength', 'Length (dress)');
+    add('shapeType', 'Dress Type');
+    add('fabricType', 'Fabric');
+    add('suitableFor', 'Suitable For');
+    return required;
+  }
+
   if (isSuit || isKurti || isEthnicSet) {
     add('netQuantity', 'Net Quantity');
     if (isSuit) add('topType', 'Top Type'); // no such column for single-piece Kurtis/Ethnic Set
@@ -151,7 +169,7 @@ export function validateFlipkartListing(product: ProductWithFlipkart): MissingFl
   if (!isFlipkartExcelExportableCategory(product.category)) {
     return [{
       field: 'category',
-      label: `Category "${product.category}" isn't supported for Flipkart Excel export yet (only Co Ord Sets, Summer Co-ord Sets, Suits, Kurtis, and Tops have a built column layout).`,
+      label: `Category "${product.category}" isn't supported for Flipkart Excel export yet (only Co Ord Sets, Summer Co-ord Sets, Suits, Kurtis, Tops and Western Dress have a built column layout).`,
     }];
   }
 
@@ -539,6 +557,87 @@ export const FLIPKART_TOP_COLUMNS = [
 ];
 
 // Column order/headers copied verbatim from Flipkart's own downloaded template
+// (Flipkart-Bulk-Template-Dress.xls, "dress" sheet, 72 columns) — Western
+// Dress (Clothing → Formal Wear → Dress). Allowed values: FLIPKART_DRESS_VALUES
+// in flipkartAutofill.ts. Column 10 has no header in Flipkart's own file.
+// Not yet QC-tested — expect a real QC round to correct something.
+export const FLIPKART_DRESS_COLUMNS = [
+  { header: 'Flipkart Serial Number', get: () => '' },
+  { header: 'Catalog QC Status', get: () => '' },
+  { header: 'QC Failed Reason (if any)', get: () => '' },
+  { header: 'Flipkart Product Link', get: () => '' },
+  { header: 'Product Data Status', get: () => '' },
+  { header: 'Disapproval Reason (if any)', get: () => '' },
+  { header: 'Seller SKU ID', get: ({ product, size }: RowContext) => `${product.sku}-${size.size}` },
+  { header: 'Group ID', get: ({ product }: RowContext) => product.sku },
+  { header: 'Parent Variant FSN', get: () => '' },
+  { header: '', get: () => '' },
+  { header: 'Listing Status', get: () => '' },
+  { header: 'MRP (INR)', get: ({ product }: RowContext) => platformPrice(product, 'flipkart').mrp },
+  { header: 'Your selling price (INR)', get: ({ product }: RowContext) => platformPrice(product, 'flipkart').price },
+  { header: 'Fullfilment by', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.fulfilmentBy) },
+  { header: 'Procurement type', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.procurementType) },
+  { header: 'Procurement SLA (DAY)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.procurementSlaDays) },
+  { header: 'Stock', get: ({ size }: RowContext) => size.quantity },
+  { header: 'Shipping provider', get: () => 'FLIPKART' },
+  // Purple (conditional) like Co-ords, where blank failed QC — live listings use 0.
+  { header: 'Local handling fee (INR)', get: () => 0 },
+  { header: 'Zonal handling fee (INR)', get: () => 0 },
+  { header: 'National handling fee (INR)', get: () => 0 },
+  { header: 'Length (CM)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.lengthCm) },
+  { header: 'Breadth (CM)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.breadthCm) },
+  { header: 'Height (CM)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.heightCm) },
+  { header: 'Weight (KG)', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.weightKg) },
+  { header: 'HSN', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.hsnFlipkart) },
+  { header: 'Luxury Cess', get: () => '' },
+  { header: 'Country Of Origin', get: () => MYNTRA_COUNTRY_OF_ORIGIN },
+  { header: 'Manufacturer Details', get: () => MYNTRA_BUSINESS_ADDRESS },
+  { header: 'Packer Details', get: () => MYNTRA_BUSINESS_ADDRESS },
+  { header: 'Importer Details', get: () => '' },
+  { header: 'Tax Code', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.taxCode) },
+  { header: 'Minimum Order Quantity (MinOQ)', get: () => '' },
+  { header: 'Brand', get: () => MYNTRA_BRAND },
+  { header: 'Occasion', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.occasion) },
+  { header: 'Ideal For', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.ageGroup) },
+  { header: 'Length', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.topsLength) },
+  { header: 'Dress Type', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.shapeType) },
+  { header: 'Fabric', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.fabricType) },
+  { header: 'Suitable For', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.suitableFor) },
+  { header: 'Style Code', get: ({ product }: RowContext) => product.sku },
+  { header: 'Brand Size', get: ({ size }: RowContext) => size.size },
+  { header: 'Brand Color', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.colour) },
+  { header: 'Color', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.colour) },
+  { header: 'Main Image URL', get: ({ product }: RowContext) => categorizeProductImages(product.images).front },
+  { header: 'Other Image URL 1', get: ({ product }: RowContext) => categorizeProductImages(product.images).back },
+  { header: 'Other Image URL 2', get: ({ product }: RowContext) => categorizeProductImages(product.images).side },
+  { header: 'Other Image URL 3', get: ({ product }: RowContext) => categorizeProductImages(product.images).detail },
+  { header: 'Other Image URL 4', get: ({ product }: RowContext) => categorizeProductImages(product.images).lookShot },
+  { header: 'Main Palette Image URL', get: () => '' },
+  { header: 'Pattern', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.topPattern) },
+  { header: 'Sleeve Style', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.sleeveStyle) },
+  { header: 'Model Name', get: () => '' },
+  { header: 'Pack of', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.packOf) },
+  { header: 'Fabric Care', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.materialCareDescription) },
+  { header: 'Neck', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.neck) },
+  { header: 'Lining Material', get: () => '' },
+  { header: 'Belt Included', get: () => '' },
+  { header: 'Video URL', get: () => '' },
+  { header: 'Pattern/Print Type', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.printType) },
+  { header: 'Detail Placement', get: () => '' },
+  { header: 'Surface Styling', get: () => '' },
+  { header: 'Transparency', get: () => '' },
+  { header: 'Size for Inwarding', get: () => '' },
+  { header: 'EAN/UPC', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.gtin) },
+  { header: 'Other Details', get: () => '' },
+  { header: 'Description', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.styleNote) },
+  { header: 'Search Keywords', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.searchKeywords) },
+  { header: 'Key Features', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.productDetails) },
+  { header: 'Sleeve Length', get: ({ product }: RowContext) => str(product.flipkartListingDetail?.sleeveLength) },
+  { header: 'Ornamentation Type', get: () => '' },
+  { header: 'Supplier Image', get: () => '' },
+];
+
+// Column order/headers copied verbatim from Flipkart's own downloaded template
 // (C_ethnic-set_ddeaa0ca6b304eb1_2409-2107FK_REQVH3IO38X3Y.xls, "ethnic_set"
 // sheet) — for kurta+bottom combos with no dupatta (e.g. "Kurta and Palazzo
 // Set"), confirmed 2026-09-24 as a real, distinct Flipkart category via Seller
@@ -654,5 +753,6 @@ export function columnsAndSheetFor(templateKey: string): { columns: FlipkartColu
   if (templateKey === 'Kurtis:single') return { columns: FLIPKART_KURTI_COLUMNS, sheetName: 'kurta' };
   if (templateKey === 'Kurtis:set') return { columns: FLIPKART_ETHNIC_SET_COLUMNS, sheetName: 'ethnic_set' };
   if (templateKey === 'Tops') return { columns: FLIPKART_TOP_COLUMNS, sheetName: 'top' };
+  if (templateKey === 'Western Dress') return { columns: FLIPKART_DRESS_COLUMNS, sheetName: 'dress' };
   return { columns: FLIPKART_CO_ORD_COLUMNS, sheetName: 'apparel_set' };
 }

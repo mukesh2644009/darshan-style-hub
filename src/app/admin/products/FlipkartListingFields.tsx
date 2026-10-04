@@ -230,7 +230,7 @@ export default function FlipkartListingFields({ productId, category, subcategory
             <Field label="Bottom Fabric" status={statusFor('bottomFabric')} required={requiredFor('bottomFabric')}>
               <input className={inputClassFor(statusFor('bottomFabric'), requiredFor('bottomFabric'))} value={value.bottomFabric} onChange={set('bottomFabric')} />
             </Field>
-            <Field label={category === 'Tops' ? 'Brand Fabric (dropdown value)' : 'Fabric (Ethnic Set, separate enum)'} status={statusFor('fabricType')} required={requiredFor('fabricType')}>
+            <Field label={category === 'Tops' ? 'Brand Fabric (dropdown value)' : category === 'Western Dress' ? 'Fabric (Dress)' : 'Fabric (Ethnic Set, separate enum)'} status={statusFor('fabricType')} required={requiredFor('fabricType')}>
               <input className={inputClassFor(statusFor('fabricType'), requiredFor('fabricType'))} value={value.fabricType} onChange={set('fabricType')} placeholder="Pure Cotton" />
             </Field>
             <Field label="Net Quantity" status={statusFor('netQuantity')} required={requiredFor('netQuantity')}>
@@ -292,7 +292,7 @@ export default function FlipkartListingFields({ productId, category, subcategory
               <Field label="Sleeve Length" status={statusFor('sleeveLength')} required={requiredFor('sleeveLength')}>
                 <input className={inputClassFor(statusFor('sleeveLength'), requiredFor('sleeveLength'))} value={value.sleeveLength} onChange={set('sleeveLength')} />
               </Field>
-              <Field label="Top Pattern" status={statusFor('topPattern')}>
+              <Field label={category === 'Western Dress' ? 'Pattern' : 'Top Pattern'} status={statusFor('topPattern')}>
                 <input className={inputClassFor(statusFor('topPattern'))} value={value.topPattern} onChange={set('topPattern')} />
               </Field>
               <Field label="Bottom Pattern" status={statusFor('bottomPattern')}>
@@ -304,7 +304,7 @@ export default function FlipkartListingFields({ productId, category, subcategory
               <Field label="Ideal For / Age Group" status={statusFor('ageGroup')}>
                 <input className={inputClassFor(statusFor('ageGroup'))} value={value.ageGroup} onChange={set('ageGroup')} placeholder="Women" />
               </Field>
-              <Field label={category === 'Tops' ? 'Style Type' : 'Shape Type / Kurta Style Type'} status={statusFor('shapeType')} required={requiredFor('shapeType')}>
+              <Field label={category === 'Tops' ? 'Style Type' : category === 'Western Dress' ? 'Dress Type' : 'Shape Type / Kurta Style Type'} status={statusFor('shapeType')} required={requiredFor('shapeType')}>
                 <input className={inputClassFor(statusFor('shapeType'), requiredFor('shapeType'))} value={value.shapeType} onChange={set('shapeType')} placeholder="Straight" />
               </Field>
               <Field label="Suitable For" status={statusFor('suitableFor')} required={requiredFor('suitableFor')}>
@@ -320,6 +320,19 @@ export default function FlipkartListingFields({ productId, category, subcategory
                   </Field>
                   <Field label="Tops Length" status={statusFor('topsLength')}>
                     <input className={inputClassFor(statusFor('topsLength'))} value={value.topsLength} onChange={set('topsLength')} placeholder="Hip Length" />
+                  </Field>
+                </>
+              )}
+              {category === 'Western Dress' && (
+                <>
+                  <Field label="Dress Length" status={statusFor('topsLength')} required={requiredFor('topsLength')}>
+                    <input className={inputClassFor(statusFor('topsLength'), requiredFor('topsLength'))} value={value.topsLength} onChange={set('topsLength')} placeholder="Midi/Calf Length" />
+                  </Field>
+                  <Field label="Sleeve Style (Dress)" status={statusFor('sleeveStyle')}>
+                    <input className={inputClassFor(statusFor('sleeveStyle'))} value={value.sleeveStyle} onChange={set('sleeveStyle')} placeholder="Flutter Sleeves" />
+                  </Field>
+                  <Field label="Pattern/Print Type (Dress)" status={statusFor('printType')}>
+                    <input className={inputClassFor(statusFor('printType'))} value={value.printType} onChange={set('printType')} placeholder="Solid" />
                   </Field>
                 </>
               )}

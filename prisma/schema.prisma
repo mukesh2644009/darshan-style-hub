@@ -468,6 +468,24 @@ model MyntraListingDetail {
   sleeveStyling String? // "Sleeve Styling"
   printType     String? // "Print or Pattern Type"
 
+  // Kurta Sets sheet (Myntra template v13; accepted DSH_SU_04/05 upload, job 1695788).
+  dupatta        String? // "Dupatta" (With Dupatta / NA)
+  dupattaFabric  String? // mandatory
+  dupattaPattern String?
+  dupattaBorder  String?
+  topHemline     String?
+  topLength      String? // "Top Length"
+  topShape       String?
+  slitDetail     String?
+  bottomClosure  String? // mandatory
+  waistband      String? // mandatory
+  weavePattern   String? // mandatory
+  weaveType      String? // mandatory
+  patternCoverage String?
+  technique      String?
+  ornamentation  String?
+  stitch         String?
+
   myntraStyleId String?
 
   createdAt DateTime @default(now())
@@ -494,6 +512,8 @@ model MyntraSizeMeasurement {
   inseamLength Float?
   toFitWaist   Float?
   hips         Float? // Dresses
+  acrossShoulder Float? // Kurta Sets
+  pyjamaWaist    Float? // Kurta Sets
 
   @@unique([myntraListingDetailId, size])
   @@index([myntraListingDetailId])

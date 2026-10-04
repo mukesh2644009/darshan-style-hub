@@ -13,7 +13,7 @@
 //    are never guessed, only flagged, because a wrong GTIN/HSN has real consequences.
 
 import { detectColorFromName, detectFabric, capitalizeFirst } from './productTextHeuristics';
-import { toMyntraFabric, MYNTRA_DRESSES_VALUES } from './myntraValues';
+import { toMyntraFabric, MYNTRA_DRESSES_VALUES, MYNTRA_KURTA_SETS_VALUES } from './myntraValues';
 
 export interface MyntraAutofillInput {
   name: string;
@@ -118,11 +118,42 @@ export function detectDressLength(text: string): string {
     : /\bmini\b/i.test(text) ? 'Mini' : '';
 }
 
+// Kurta-set size chart (garment inches) copied from the DSH_SU_04/05 upload Myntra
+// accepted (job 1695788, catalogued 21 Sep 2026); XS and XXXL extended one step.
+// Always review-flagged: not measured from the actual SKU.
+const KURTA_SET_SIZE_CHART: Record<string, { acrossShoulder: number; bust: number; chest: number; frontLength: number; hips: number; inseamLength: number; pyjamaWaist: number; toFitWaist: number; garmentWaist: number }> = {
+  XS: { acrossShoulder: 13, bust: 32, chest: 32, frontLength: 43.5, hips: 34, inseamLength: 38.5, pyjamaWaist: 26, toFitWaist: 26, garmentWaist: 24 },
+  S: { acrossShoulder: 13.5, bust: 34, chest: 34, frontLength: 44, hips: 36, inseamLength: 39, pyjamaWaist: 28, toFitWaist: 28, garmentWaist: 26 },
+  M: { acrossShoulder: 14, bust: 36, chest: 36, frontLength: 44, hips: 38, inseamLength: 39, pyjamaWaist: 30, toFitWaist: 30, garmentWaist: 28 },
+  L: { acrossShoulder: 14.5, bust: 38, chest: 38, frontLength: 45, hips: 40, inseamLength: 39.5, pyjamaWaist: 32, toFitWaist: 32, garmentWaist: 30 },
+  XL: { acrossShoulder: 15, bust: 40, chest: 40, frontLength: 45, hips: 42, inseamLength: 39.5, pyjamaWaist: 34, toFitWaist: 34, garmentWaist: 32 },
+  XXL: { acrossShoulder: 15.5, bust: 42, chest: 42, frontLength: 46, hips: 44, inseamLength: 40, pyjamaWaist: 36, toFitWaist: 36, garmentWaist: 34 },
+  XXXL: { acrossShoulder: 16, bust: 44, chest: 44, frontLength: 46, hips: 46, inseamLength: 40, pyjamaWaist: 38, toFitWaist: 38, garmentWaist: 36 },
+};
+
+export type KurtaSetMeasurementSuggestion = { size: string } & Record<'acrossShoulder' | 'bust' | 'chest' | 'frontLength' | 'hips' | 'inseamLength' | 'pyjamaWaist' | 'toFitWaist' | 'garmentWaist', string>;
+
+/** Per-size kurta-set measurements from the accepted SU_04/05 chart. Always review-flagged. */
+export function deriveKurtaSetSizeMeasurements(sizes: string[]): KurtaSetMeasurementSuggestion[] {
+  return sizes
+    .filter((s) => KURTA_SET_SIZE_CHART[s])
+    .map((s) => {
+      const m = KURTA_SET_SIZE_CHART[s];
+      return {
+        size: s,
+        acrossShoulder: String(m.acrossShoulder), bust: String(m.bust), chest: String(m.chest), frontLength: String(m.frontLength),
+        hips: String(m.hips), inseamLength: String(m.inseamLength), pyjamaWaist: String(m.pyjamaWaist),
+        toFitWaist: String(m.toFitWaist), garmentWaist: String(m.garmentWaist),
+      };
+    });
+}
+
 export function deriveMyntraAutofill(input: MyntraAutofillInput): MyntraAutofillOutcome {
   const { name, description, category, subcategory, colors } = input;
   const coOrd = category === 'Co Ord Sets' || category === 'Summer Co-ord Sets';
   const saree = category === 'Sarees';
   const dress = category === 'Western Dress';
+  const kurtaSet = category === 'Suits';
   const text = `${name}\n${description}`;
 
   const patch: Record<string, string> = {};
@@ -207,6 +238,72 @@ export function deriveMyntraAutofill(input: MyntraAutofillInput): MyntraAutofill
     fillReview('addOns', 'NA');
     fillReview('lining', 'NA');
     fillReview('numberOfPockets', 'NA');
+  } else if (kurtaSet) {
+    // Myntra "Kurta Sets" sheet — mandatory = yellow header cells. Defaults
+    // follow the accepted DSH_SU_04/05 upload; values only from
+    // MYNTRA_KURTA_SETS_VALUES, guesses review-flagged.
+    const V = MYNTRA_KURTA_SETS_VALUES;
+    const ok = (field: string, v: string) => (V[field]?.includes(v) ? v : '');
+    fillConfident('articleType', 'Kurta Sets');
+    if (patch.prominentColour && !V.prominentColour.includes(patch.prominentColour)) {
+      const lc = patch.prominentColour.toLowerCase();
+      const match = V.prominentColour
+        .filter((c) => c !== 'NA' && lc.includes(c.toLowerCase()))
+        .sort((a, b) => b.length - a.length || lc.indexOf(a.toLowerCase()) - lc.indexOf(b.toLowerCase()))[0];
+      if (match) patch.prominentColour = match; else { delete patch.prominentColour; block('prominentColour'); }
+    }
+
+    const raw = detectFabric(text);
+    const fab = (field: string) => ok(field, /viscose|rayon/i.test(raw) ? 'Viscose Rayon' : /cotton|jamdani|mulmul/i.test(raw) ? 'Pure Cotton'
+      : /georgette/i.test(raw) ? 'Georgette' : /chanderi/i.test(raw) ? 'Chanderi Cotton' : /linen/i.test(raw) ? 'Linen'
+      : /silk/i.test(raw) ? 'Silk Blend' : /polyester/i.test(raw) ? 'Polyester' : '');
+    const hasDupatta = /dupatta/i.test(text);
+    fillReview('topFabric', fab('topFabric'));
+    fillReview('bottomFabric', fab('bottomFabric'));
+    fillReview('dupatta', hasDupatta ? 'With Dupatta' : 'NA');
+    fillReview('dupattaFabric', hasDupatta ? fab('dupattaFabric') : 'NA');
+    fillReview('dupattaPattern', hasDupatta ? (/embroider/i.test(text) ? 'Embroidered' : /print/i.test(text) ? 'Printed' : 'Solid') : 'NA');
+    fillReview('dupattaBorder', hasDupatta ? (/tassel/i.test(text) ? 'Tassels' : patch.dupattaPattern === 'Printed' ? 'Printed' : 'Solid') : 'NA');
+    fillReview('hsnCode', CO_ORD_COMMON_HSN); // 62042300 — same code as the accepted SU_04/05 upload
+
+    const washMatch = description.match(/\b(dry clean|hand wash|machine wash)/i);
+    const washCare = washMatch ? washMatch[1].toLowerCase().split(' ').map(capitalizeFirst).join(' ') : 'Hand Wash';
+    fillReview('washCare', washCare);
+    if (patch.topFabric) fillReview('materialCareDescription', `100% ${raw || patch.topFabric}, ${washCare}`); else block('materialCareDescription');
+
+    fillReview('topType', /kurti\b/i.test(text) ? 'Kurti' : 'Kurta');
+    const bottom = /palazzo/i.test(text) ? 'Palazzos' : /sharara/i.test(text) ? 'Sharara' : /churidar/i.test(text) ? 'Churidar'
+      : /patiala/i.test(text) ? 'Patiala' : /salwar/i.test(text) ? 'Salwar' : /skirt/i.test(text) ? 'Skirt' : 'Trousers';
+    fillReview('bottomType', bottom);
+    fillReview('topShape', /anarkali/i.test(text) ? 'Anarkali' : /a[- ]line/i.test(text) ? 'A-Line' : /kaftan/i.test(text) ? 'Kaftan' : 'Straight');
+    fillReview('topLength', /anarkali|calf/i.test(text) ? 'Calf Length' : /floor/i.test(text) ? 'Floor Length' : 'Knee Length');
+    fillReview('topHemline', /anarkali|flared/i.test(text) ? 'Flared' : /high[- ]low/i.test(text) ? 'High-Low' : 'Straight');
+    fillReview('slitDetail', /anarkali/i.test(text) ? 'NA' : 'Side Slits');
+    fillReview('neck', ok('neck', /v[- ]?neck/i.test(text) ? 'V-Neck' : /round neck/i.test(text) ? 'Round Neck' : /mandarin/i.test(text) ? 'Mandarin Collar'
+      : /boat neck/i.test(text) ? 'Boat Neck' : /square neck/i.test(text) ? 'Square Neck' : /collar/i.test(text) ? 'Shirt Collar' : ''));
+    fillReview('sleeveLength', /sleeveless/i.test(text) ? 'Sleeveless' : /full sleeve|long sleeve/i.test(text) ? 'Long Sleeves'
+      : /3\/4|three[- ]quarter/i.test(text) ? 'Three-Quarter Sleeves' : /half sleeve|short sleeve/i.test(text) ? 'Short Sleeves' : '');
+    fillReview('topPattern', /jamdani|woven/i.test(text) ? 'Woven Design' : /embroider/i.test(text) ? 'Embroidered' : /print/i.test(text) ? 'Printed' : /solid|plain/i.test(text) ? 'Solid' : '');
+    fillReview('bottomPattern', /printed (pant|palazzo|bottom)/i.test(text) ? 'Printed' : 'Solid');
+    fillReview('printType', /floral/i.test(text) ? 'Floral' : /paisley/i.test(text) ? 'Paisley' : /geometric/i.test(text) ? 'Geometric'
+      : /bandhani|bandhej/i.test(text) ? 'Bandhani' : /leheriya/i.test(text) ? 'Leheriya' : /jamdani|woven/i.test(text) ? 'Woven Design'
+      : /ethnic motif/i.test(text) ? 'Ethnic Motifs' : /solid|plain/i.test(text) ? 'Solid' : '');
+    fillReview('bottomClosure', /drawstring/i.test(text) ? 'Drawstring' : /zip/i.test(text) ? 'Zip' : 'Drawstring');
+    fillReview('waistband', /elastic/i.test(text) ? 'Elasticated' : /partially elastic/i.test(text) ? 'Partially Elasticated' : 'Elasticated');
+    fillReview('weavePattern', /jamdani|jacquard/i.test(text) ? 'Jacquard' : /brocade/i.test(text) ? 'Brocade' : /dobby/i.test(text) ? 'Dobby' : /khadi/i.test(text) ? 'Khadi' : 'Regular');
+    fillReview('weaveType', /handloom|jamdani/i.test(text) ? 'Handloom' : 'Machine Weave');
+    fillReview('technique', /block print/i.test(text) ? 'Block Print' : /bandhani|bandhej/i.test(text) ? 'Bandhani' : /leheriya/i.test(text) ? 'Leheriya' : 'NA');
+    fillReview('ornamentation', /mirror/i.test(text) ? 'Mirror Work' : /gotta/i.test(text) ? 'Gotta Patti' : /zari/i.test(text) ? 'Zari'
+      : /sequin/i.test(text) ? 'Sequinned' : /chikankari/i.test(text) ? 'Chikankari' : /embroider|thread/i.test(text) ? 'Thread Work' : 'NA');
+    fillReview('occasion', /festive|wedding|party|embroider/i.test(text) ? 'Festive' : 'Daily');
+    fillReview('stitch', 'Ready to Wear');
+    fillReview('addOns', 'NA');
+    fillReview('numberOfPockets', 'NA');
+    const items = hasDupatta ? '3' : '2';
+    fillReview('numberOfItems', items);
+    fillReview('netQuantity', items);
+    const bottomWord = bottom === 'Trousers' ? 'Pant' : bottom === 'Palazzos' ? 'Palazzo' : bottom;
+    fillReview('packageContains', `1 Kurta, 1 ${bottomWord}${hasDupatta ? ', 1 Dupatta' : ''}`);
   } else if (dress) {
     // Myntra "Dresses" sheet — mandatory = yellow header cells (template v13,
     // 2026-10-04). Values only from MYNTRA_DRESSES_VALUES; guesses review-flagged.
@@ -296,4 +393,8 @@ export const MYNTRA_FIELD_LABELS: Record<string, string> = {
   fabric: 'Fabric', fabricType: 'Fabric Type', knitOrWoven: 'Knit or Woven', closure: 'Closure',
   dressShape: 'Shape', dressType: 'Type', dressLength: 'Length', sleeveStyling: 'Sleeve Styling',
   printType: 'Print or Pattern Type',
+  dupatta: 'Dupatta', dupattaFabric: 'Dupatta Fabric', dupattaPattern: 'Dupatta Pattern', dupattaBorder: 'Dupatta Border',
+  topHemline: 'Top Hemline', topLength: 'Top Length', topShape: 'Top Shape', slitDetail: 'Slit Detail',
+  bottomClosure: 'Bottom Closure', waistband: 'Waistband', weavePattern: 'Weave Pattern', weaveType: 'Weave Type',
+  patternCoverage: 'Pattern Coverage', technique: 'Technique', ornamentation: 'Ornamentation', stitch: 'Stitch',
 };

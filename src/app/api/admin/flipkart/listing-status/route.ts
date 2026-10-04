@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
-import { fetchFlipkartListings, type FlipkartListing } from '@/lib/flipkartApi';
+import { fetchFlipkartListings, fetchFlipkartInvalidSkus, type FlipkartListing } from '@/lib/flipkartApi';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,10 +9,12 @@ export const dynamic = 'force-dynamic';
 const CACHE_TTL_MS = 10 * 60 * 1000;
 let cache: { at: number; bySku: Map<string, FlipkartListing | null> } = { at: 0, bySku: new Map() };
 const IN_QC_RECHECK_MS = 60 * 1000;
+// Only call it failed once QC has had time to run (failures show within minutes).
+const QC_FAILED_AFTER_MS = 10 * 60 * 1000;
 const missingCheckedAt = new Map<string, number>();
 
 export interface ProductFlipkartStatus {
-  status: string; // ACTIVE if any size is active, else the first listing's status; IN_QC if only submitted
+  status: string; // ACTIVE if any size is active, else the first listing's status; IN_QC if only submitted; QC_FAILED if Flipkart rejected it
   url?: string;
   listedSkus: string[];
   requestId?: string;
@@ -66,6 +68,20 @@ export async function POST(request: Request) {
       }
     }
 
+    // Submitted products not live yet: if Flipkart calls every one of their
+    // size SKUs "invalid" (and the upload is old enough that QC has run), QC
+    // rejected them. Still-in-QC SKUs come back empty instead.
+    const notLiveSubmitted = products.filter((p) =>
+      p.sku && p.flipkartListingDetail?.flipkartRequestId
+      && !candidateSkus(p).some((sku) => cache.bySku.get(sku)));
+    const sizeSkus = notLiveSubmitted.flatMap((p) => p.sizes.map((s) => `${p.sku}-${s.size}`));
+    let invalidSkus = new Set<string>();
+    try {
+      if (sizeSkus.length > 0) invalidSkus = await fetchFlipkartInvalidSkus(sizeSkus);
+    } catch (err) {
+      console.warn('Flipkart invalid-SKU check failed:', err instanceof Error ? err.message : err);
+    }
+
     const result: Record<string, ProductFlipkartStatus> = {};
     for (const product of products) {
       if (!product.sku) continue;
@@ -76,8 +92,11 @@ export async function POST(request: Request) {
         // Not live yet, but we filled a Flipkart template for it — QC pending.
         const detail = product.flipkartListingDetail;
         if (detail?.flipkartRequestId) {
+          const submittedMs = detail.flipkartSubmittedAt ? Date.now() - detail.flipkartSubmittedAt.getTime() : Infinity;
+          const allInvalid = product.sizes.length > 0
+            && product.sizes.every((s) => invalidSkus.has(`${product.sku}-${s.size}`));
           result[product.id] = {
-            status: 'IN_QC',
+            status: allInvalid && submittedMs > QC_FAILED_AFTER_MS ? 'QC_FAILED' : 'IN_QC',
             listedSkus: [],
             requestId: detail.flipkartRequestId,
             submittedAt: detail.flipkartSubmittedAt?.toISOString(),

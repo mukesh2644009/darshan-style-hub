@@ -470,7 +470,16 @@ export function deriveFlipkartAutofill(input: FlipkartAutofillInput): FlipkartAu
     if (/dupatta/i.test(text)) fillReview('packageContains', '1 Kurta, 1 Bottom, 1 Dupatta');
     else block('packageContains');
 
-    if (pattern) fillReview('topPattern', pattern); else block('topPattern');
+    // Pattern is mandatory at real QC for Suits (DSH_SU_06 failed 2026-10-04
+    // with "Mandatory Attribute [pattern] is missing"). Values from the
+    // salwar_kurta_dupatta template's own Index sheet.
+    const suitPattern = /mirror|sequin|zari|gota|embellish|stone work|bead/i.test(text) ? 'Embellished'
+      : /floral print|floral printed/i.test(text) ? 'Floral Print'
+      : /paisley/i.test(text) ? 'Paisley'
+      : /geometric/i.test(text) ? 'Geometric Print'
+      : /jamdani|woven/i.test(text) ? 'Woven'
+      : pattern || (/solid|plain/i.test(text) ? 'Solid' : '');
+    if (suitPattern) fillReview('topPattern', suitPattern); else block('topPattern');
 
     // "Sleeve", "Shape Type", "Occasion", "Kurta Fabric", and "Suitable For"
     // are mandatory at Flipkart's real server-side QC, even though Excel's own

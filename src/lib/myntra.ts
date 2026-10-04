@@ -1,6 +1,6 @@
 import type { Product, ProductSize, ProductColor, MyntraListingDetail, MyntraSizeMeasurement } from '@prisma/client';
 import { platformPrice } from './platformPricing';
-import { MYNTRA_CO_ORDS_VALUES, MYNTRA_DRESSES_VALUES } from './myntraValues';
+import { MYNTRA_CO_ORDS_VALUES, MYNTRA_DRESSES_VALUES, MYNTRA_KURTA_SETS_VALUES } from './myntraValues';
 import { MYNTRA_FIELD_LABELS } from './myntraAutofill';
 
 const SIZE_RANK = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', '3XL', '4XL', 'Free Size'];
@@ -21,13 +21,14 @@ export const MYNTRA_COUNTRY_OF_ORIGIN = 'India';
 // — get them in Myntra format via "Download Myntra Images". Flipkart unaffected.
 const MYNTRA_NO_IMAGE = '';
 
-export type MyntraSheetName = 'Co-Ords' | 'Sarees' | 'Dresses';
+export type MyntraSheetName = 'Co-Ords' | 'Sarees' | 'Dresses' | 'Kurta Sets';
 
 /** Which Myntra bulk-upload sheet a product's category maps to, or null if unsupported. */
 export function getMyntraSheetName(productCategory: string): MyntraSheetName | null {
   if (productCategory === 'Sarees') return 'Sarees';
   if (productCategory === 'Co Ord Sets' || productCategory === 'Summer Co-ord Sets') return 'Co-Ords';
   if (productCategory === 'Western Dress') return 'Dresses';
+  if (productCategory === 'Suits') return 'Kurta Sets';
   return null;
 }
 
@@ -51,7 +52,7 @@ export function validateMyntraListing(product: ProductWithMyntra): MissingMyntra
   if (!sheet) {
     return [{
       field: 'category',
-      label: `Category "${product.category}" is not supported for Myntra export (only Co Ord Sets, Summer Co-ord Sets, Western Dress and Sarees are supported)`,
+      label: `Category "${product.category}" is not supported for Myntra export (only Co Ord Sets, Summer Co-ord Sets, Western Dress, Suits and Sarees are supported)`,
     }];
   }
 
@@ -123,6 +124,50 @@ export function validateMyntraListing(product: ProductWithMyntra): MissingMyntra
       const value = (d as Record<string, unknown> | null | undefined)?.[field];
       if (typeof value === 'string' && value.trim() && !allowed.includes(value)) {
         missing.push({ field, label: `${MYNTRA_FIELD_LABELS[field] || field}: "${value}" isn't a Myntra option — pick one from the dropdown` });
+      }
+    }
+    if (/unknown/i.test(d?.materialCareDescription || '')) {
+      missing.push({ field: 'materialCareDescription', label: 'materialCareDescription still says "Unknown" — fill in the fabric' });
+    }
+  } else if (sheet === 'Kurta Sets') {
+    // Yellow (mandatory) header cells of Myntra's Kurta Sets template.
+    req(d?.topFabric, 'topFabric', 'Top Fabric');
+    req(d?.bottomFabric, 'bottomFabric', 'Bottom Fabric');
+    req(d?.bottomClosure, 'bottomClosure', 'Bottom Closure');
+    req(d?.waistband, 'waistband', 'Waistband');
+    req(d?.weavePattern, 'weavePattern', 'Weave Pattern');
+    req(d?.weaveType, 'weaveType', 'Weave Type');
+    req(d?.dupattaFabric, 'dupattaFabric', 'Dupatta Fabric');
+    req(d?.addOns, 'addOns', 'Add-Ons');
+    req(d?.numberOfPockets, 'numberOfPockets', 'Number of Pockets');
+    req(d?.numberOfItems, 'numberOfItems', 'Number of Items');
+    req(d?.packageContains, 'packageContains', 'Package Contains');
+
+    const MEASURES = [
+      ['acrossShoulder', 'Across Shoulder'], ['bust', 'Bust'], ['chest', 'Chest'], ['frontLength', 'Front Length'],
+      ['hips', 'Hips'], ['inseamLength', 'Inseam Length'], ['pyjamaWaist', 'Pyjama Waist'], ['toFitWaist', 'To Fit Waist'],
+      ['garmentWaist', 'Waist'],
+    ] as const;
+    for (const s of product.sizes) {
+      const m = d?.sizeMeasurements.find((x) => x.size === s.size);
+      for (const [key, name] of MEASURES) {
+        if (m?.[key] == null) missing.push({ field: `sizeMeasurements.${s.size}.${key}`, label: `${name} (Inches) for size "${s.size}"` });
+      }
+    }
+    const sized = [...product.sizes].sort((a, b) => sizeRank(a.size) - sizeRank(b.size));
+    for (const [key, name] of MEASURES) {
+      for (let i = 1; i < sized.length; i++) {
+        const prev = d?.sizeMeasurements.find((x) => x.size === sized[i - 1].size)?.[key];
+        const cur = d?.sizeMeasurements.find((x) => x.size === sized[i].size)?.[key];
+        if (prev != null && cur != null && cur < prev) {
+          missing.push({ field: `sizeMeasurements.${sized[i].size}.${key}`, label: `${name}: size "${sized[i].size}" (${cur}) is smaller than "${sized[i - 1].size}" (${prev}) — Myntra needs it to go up with size` });
+        }
+      }
+    }
+    for (const [field, allowed] of Object.entries(MYNTRA_KURTA_SETS_VALUES)) {
+      const value = (d as Record<string, unknown> | null | undefined)?.[field];
+      if (typeof value === 'string' && value.trim() && !allowed.includes(value)) {
+        missing.push({ field, label: `${MYNTRA_FIELD_LABELS[field] || field}: "${value}" isn't a Myntra Kurta Sets option — pick one from the dropdown` });
       }
     }
     if (/unknown/i.test(d?.materialCareDescription || '')) {
@@ -497,12 +542,132 @@ export const DRESSES_COLUMNS: MyntraColumn[] = [
   { header: 'Additional Image 2', mandatory: false, get: () => MYNTRA_NO_IMAGE },
 ];
 
+// Column order/headers below are read directly from row 3 of Myntra's official
+// "Kurta Sets" bulk-upload template sheet (v13) — do not reorder. mandatory = yellow
+// header cells. Same layout as the accepted DSH_SU_04/05 upload (job 1695788).
+export const KURTA_SETS_COLUMNS: MyntraColumn[] = [
+  { header: 'styleId', mandatory: false, get: () => '' },
+  { header: 'styleGroupId', mandatory: true, get: ({ styleGroupId }) => styleGroupId },
+  { header: 'vendorSkuCode', mandatory: false, get: ({ product, size }) => `${product.sku}-${size.size}` },
+  { header: 'vendorArticleNumber', mandatory: true, get: ({ product }) => product.sku },
+  { header: 'vendorArticleName', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.styleName) },
+  { header: 'brand', mandatory: true, get: () => MYNTRA_BRAND },
+  { header: 'Manufacturer Name and Address with Pincode', mandatory: true, get: () => MYNTRA_BUSINESS_ADDRESS },
+  { header: 'Packer Name and Address with Pincode', mandatory: true, get: () => MYNTRA_BUSINESS_ADDRESS },
+  { header: 'Importer Name and Address with Pincode', mandatory: false, get: () => '' },
+  { header: 'Country Of Origin', mandatory: true, get: () => MYNTRA_COUNTRY_OF_ORIGIN },
+  { header: 'Country Of Origin2', mandatory: false, get: () => '' },
+  { header: 'Country Of Origin3', mandatory: false, get: () => '' },
+  { header: 'Country Of Origin4', mandatory: false, get: () => '' },
+  { header: 'Country Of Origin5', mandatory: false, get: () => '' },
+  { header: 'articleType', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.articleType) || 'Kurta Sets' },
+  { header: 'Brand Size', mandatory: true, get: ({ size }) => size.size },
+  { header: 'Standard Size', mandatory: true, get: ({ size }) => size.size },
+  { header: 'is Standard Size present on Label', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.sizeLabelPresent) || 'Yes' },
+  { header: 'Brand Colour (Remarks)', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.colourRemarks) },
+  { header: 'GTIN', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.gtin) },
+  { header: 'HSN', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.hsnCode) },
+  { header: 'SKUCode', mandatory: false, get: () => '' },
+  { header: 'MRP', mandatory: true, get: ({ product }) => platformPrice(product, 'myntra').mrp },
+  { header: 'ISP', mandatory: true, get: ({ product }) => platformPrice(product, 'myntra').price },
+  { header: 'AgeGroup', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.ageGroup) || 'Adults-Women' },
+  { header: 'Prominent Colour', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.prominentColour) },
+  { header: 'Second Prominent Colour', mandatory: false, get: () => '' },
+  { header: 'Third Prominent Colour', mandatory: false, get: () => '' },
+  { header: 'FashionType', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.fashionType) || 'Fashion' },
+  { header: 'Usage', mandatory: false, get: () => '' },
+  { header: 'Year', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.year) },
+  { header: 'season', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.season) },
+  { header: 'AI Label', mandatory: false, get: () => '' },
+  { header: 'List View Name', mandatory: false, get: () => '' },
+  { header: 'Product Details', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.productDetails) },
+  { header: 'styleNote', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.styleNote) },
+  { header: 'materialCareDescription', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.materialCareDescription) },
+  { header: 'sizeAndFitDescription', mandatory: false, get: () => '' },
+  { header: 'productDisplayName', mandatory: false, get: ({ product }) => product.name },
+  { header: 'tags', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.tags) },
+  { header: 'addedDate', mandatory: false, get: () => '' },
+  { header: 'Color Variant GroupId', mandatory: false, get: () => '' },
+  { header: 'Top Type', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.topType) },
+  { header: 'Bottom Type', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.bottomType) },
+  { header: 'Dupatta', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.dupatta) },
+  { header: 'Top Pattern', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.topPattern) },
+  { header: 'Top Fabric', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.topFabric) },
+  { header: 'Top Design Styling', mandatory: false, get: () => '' },
+  { header: 'Top Hemline', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.topHemline) },
+  { header: 'Top Length', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.topLength) },
+  { header: 'Top Shape', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.topShape) },
+  { header: 'Neck', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.neck) },
+  { header: 'Sleeve Length', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.sleeveLength) },
+  { header: 'Sleeve Styling', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.sleeveStyling) },
+  { header: 'Slit Detail', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.slitDetail) },
+  { header: 'Bottom Fabric', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.bottomFabric) },
+  { header: 'Bottom Pattern', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.bottomPattern) },
+  { header: 'Bottom Closure', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.bottomClosure) },
+  { header: 'Waistband', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.waistband) },
+  { header: 'Print or Pattern Type', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.printType) },
+  { header: 'Occasion', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.occasion) },
+  { header: 'Technique', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.technique) },
+  { header: 'Ornamentation', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.ornamentation) },
+  { header: 'Weave Pattern', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.weavePattern) },
+  { header: 'Weave Type', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.weaveType) },
+  { header: 'Pattern Coverage', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.patternCoverage) },
+  { header: 'Dupatta Fabric', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.dupattaFabric) },
+  { header: 'Dupatta Pattern', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.dupattaPattern) },
+  { header: 'Dupatta Border', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.dupattaBorder) },
+  { header: 'Wash Care', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.washCare) },
+  { header: 'Body or Garment Size', mandatory: false, get: () => 'Garment Measurements in' },
+  { header: 'Stitch', mandatory: false, get: ({ product }) => str(product.myntraListingDetail?.stitch) || 'Ready to Wear' },
+  { header: 'Add-Ons', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.addOns) },
+  { header: 'Sustainable', mandatory: false, get: () => 'Regular' },
+  { header: 'Main Trend', mandatory: false, get: () => '' },
+  { header: 'Character', mandatory: false, get: () => '' },
+  { header: 'Number of Pockets', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.numberOfPockets) },
+  { header: 'Number of Items', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.numberOfItems) },
+  { header: 'Net Quantity Unit', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.netQuantityUnit) || 'Pieces' },
+  { header: 'Theme', mandatory: false, get: () => 'NA' },
+  { header: 'Theme 1', mandatory: false, get: () => 'NA' },
+  { header: 'Style Tip', mandatory: false, get: () => '' },
+  { header: 'Where-to-wear', mandatory: false, get: () => '' },
+  { header: 'Package Contains', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.packageContains) },
+  { header: 'BIS Expiry Date', mandatory: false, get: () => '' },
+  { header: 'BIS Certificate Image URL', mandatory: false, get: () => '' },
+  { header: 'BIS Certificate Number', mandatory: false, get: () => '' },
+  { header: 'Net Quantity', mandatory: true, get: ({ product }) => str(product.myntraListingDetail?.netQuantity) },
+  { header: 'Across Shoulder ( Inches )', mandatory: true, get: ({ product, size }) => num(product.myntraListingDetail?.sizeMeasurements.find(m => m.size === size.size)?.acrossShoulder) },
+  { header: 'Bust ( Inches )', mandatory: true, get: ({ product, size }) => num(product.myntraListingDetail?.sizeMeasurements.find(m => m.size === size.size)?.bust) },
+  { header: 'Chest ( Inches )', mandatory: true, get: ({ product, size }) => num(product.myntraListingDetail?.sizeMeasurements.find(m => m.size === size.size)?.chest) },
+  { header: 'Front Length ( Inches )', mandatory: true, get: ({ product, size }) => num(product.myntraListingDetail?.sizeMeasurements.find(m => m.size === size.size)?.frontLength) },
+  { header: 'Hips ( Inches )', mandatory: true, get: ({ product, size }) => num(product.myntraListingDetail?.sizeMeasurements.find(m => m.size === size.size)?.hips) },
+  { header: 'Inseam Length ( Inches )', mandatory: true, get: ({ product, size }) => num(product.myntraListingDetail?.sizeMeasurements.find(m => m.size === size.size)?.inseamLength) },
+  { header: 'Pyjama Waist ( Inches )', mandatory: true, get: ({ product, size }) => num(product.myntraListingDetail?.sizeMeasurements.find(m => m.size === size.size)?.pyjamaWaist) },
+  { header: 'To Fit Waist ( Inches )', mandatory: true, get: ({ product, size }) => num(product.myntraListingDetail?.sizeMeasurements.find(m => m.size === size.size)?.toFitWaist) },
+  { header: 'Waist ( Inches )', mandatory: true, get: ({ product, size }) => num(product.myntraListingDetail?.sizeMeasurements.find(m => m.size === size.size)?.garmentWaist) },
+  { header: 'Outseam Length ( Inches )', mandatory: false, get: () => '' },
+  { header: 'Sleeve-Length ( Inches )', mandatory: false, get: () => '' },
+  { header: 'To Fit Bust ( Inches )', mandatory: false, get: () => '' },
+  { header: 'To Fit Chest ( Inches )', mandatory: false, get: () => '' },
+  { header: 'Front Image', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Side Image', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Back Image', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Detail Angle', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Look Shot Image', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Additional Image 1', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+  { header: 'Additional Image 2', mandatory: false, get: () => MYNTRA_NO_IMAGE },
+];
+
 export const MYNTRA_SHEET_GROUP_LABELS: Record<MyntraSheetName, { col: number; label: string }[]> = {
   'Co-Ords': [
     { col: 1, label: 'Business (Information required for Style Creation/Legal Compliance/Order Tracking)' },
     { col: 34, label: 'Discoverability - Attributes required for Product Description and Cataloguing' },
     { col: 75, label: 'Sizing - Mandatory Measurements' },
     { col: 88, label: 'Imagery - Mandatory Image Angles' },
+  ],
+  'Kurta Sets': [
+    { col: 1, label: 'Business (Information required for Style Creation/Legal Compliance/Order Tracking)' },
+    { col: 34, label: 'Discoverability - Attributes required for Product Description and Cataloguing' },
+    { col: 89, label: 'Sizing - Mandatory Measurements' },
+    { col: 102, label: 'Imagery - Mandatory Image Angles' },
   ],
   Dresses: [
     { col: 1, label: 'Business (Information required for Style Creation/Legal Compliance/Order Tracking)' },
@@ -519,5 +684,5 @@ export const MYNTRA_SHEET_GROUP_LABELS: Record<MyntraSheetName, { col: number; l
 };
 
 export function getMyntraColumns(sheet: MyntraSheetName): MyntraColumn[] {
-  return sheet === 'Co-Ords' ? CO_ORDS_COLUMNS : sheet === 'Dresses' ? DRESSES_COLUMNS : SAREES_COLUMNS;
+  return sheet === 'Co-Ords' ? CO_ORDS_COLUMNS : sheet === 'Dresses' ? DRESSES_COLUMNS : sheet === 'Kurta Sets' ? KURTA_SETS_COLUMNS : SAREES_COLUMNS;
 }

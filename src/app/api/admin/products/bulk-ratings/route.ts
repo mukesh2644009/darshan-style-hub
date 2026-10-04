@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { revalidateStorefront } from '@/lib/revalidateStore';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,5 +31,6 @@ export async function PATCH(request: Request) {
     )
   );
 
+  revalidateStorefront();
   return NextResponse.json({ success: true, updated: updates.length });
 }

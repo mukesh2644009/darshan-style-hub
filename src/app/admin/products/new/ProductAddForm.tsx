@@ -959,6 +959,13 @@ export default function ProductAddForm() {
           </div>
         </div>
 
+        {formData.originalPrice > 0 && formData.price > formData.originalPrice && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm font-medium">
+              Selling price (₹{formData.price.toLocaleString('en-IN')}) is higher than the Original price / MRP (₹{formData.originalPrice.toLocaleString('en-IN')}) — they look swapped. The site won't show a discount for this product.
+            </p>
+          </div>
+        )}
         {formData.originalPrice > formData.price && formData.price > 0 && (
           <div className="mt-4 p-3 bg-green-50 rounded-lg">
             <p className="text-green-800 text-sm font-medium">

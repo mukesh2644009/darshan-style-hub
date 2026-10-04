@@ -1,4 +1,4 @@
-import { MYNTRA_CO_ORDS_VALUES, MYNTRA_DRESSES_VALUES } from './myntraValues';
+import { MYNTRA_CO_ORDS_VALUES, MYNTRA_DRESSES_VALUES, MYNTRA_KURTA_SETS_VALUES } from './myntraValues';
 
 // "AI Fill" for the Myntra review panel (Co-Ords): Gemini reads the product's
 // name, description and photos and drafts Myntra's text fields plus its
@@ -78,6 +78,49 @@ const DRESS_FIELDS: Record<string, { allowed?: string[]; hint: string }> = {
   season: { allowed: DV.season, hint: 'season it suits best' },
 };
 
+// Kurta Sets ("Kurta Sets" sheet, used for Suits) — dropdowns from Myntra's masterdata.
+const KV = MYNTRA_KURTA_SETS_VALUES;
+const KURTA_SET_FIELDS: Record<string, { allowed?: string[]; hint: string }> = {
+  styleName: { hint: 'short product name, e.g. "Olive Jamdani Kurta Pant Set" (colour + key detail + Kurta Set), max 40 characters' },
+  productDetails: { hint: 'Myntra "Product Details": one paragraph (50-90 words) covering the kurta, bottom, dupatta (if any), fabric and key selling points' },
+  styleNote: { hint: 'one or two sentences on how to style or wear it' },
+  tags: { hint: '8-12 distinct search terms Indian shoppers would type on Myntra, lowercase, comma-separated, each 2-5 words (colour, fabric, work, "kurta set with dupatta" style phrases), no near-duplicates' },
+  materialCareDescription: { hint: 'fabric and care, e.g. "100% Cotton, Hand Wash" — never "Unknown"' },
+  colourRemarks: { hint: 'brand colour name as a shopper would say it' },
+  prominentColour: { allowed: KV.prominentColour, hint: 'dominant colour' },
+  topType: { allowed: KV.topType, hint: 'Kurta for kurta sets' },
+  bottomType: { allowed: KV.bottomType, hint: 'bottom piece (Trousers for straight pants, Palazzos, Salwar, Churidar, Sharara…)' },
+  dupatta: { allowed: KV.dupatta, hint: 'With Dupatta only if a dupatta is included; NA otherwise' },
+  topFabric: { allowed: KV.topFabric, hint: 'kurta fabric as stated (Pure Cotton for cotton/jamdani, Viscose Rayon for viscose/rayon); if unstated judge from photos — never Unknown' },
+  bottomFabric: { allowed: KV.bottomFabric, hint: 'bottom fabric; usually the same as the kurta' },
+  dupattaFabric: { allowed: KV.dupattaFabric, hint: 'dupatta fabric; NA when there is no dupatta' },
+  dupattaPattern: { allowed: KV.dupattaPattern, hint: 'dupatta pattern; NA when there is no dupatta' },
+  dupattaBorder: { allowed: KV.dupattaBorder, hint: 'dupatta border; NA when there is no dupatta' },
+  topPattern: { allowed: KV.topPattern, hint: "kurta's pattern" },
+  bottomPattern: { allowed: KV.bottomPattern, hint: "bottom's pattern; Solid if plain" },
+  printType: { allowed: KV.printType, hint: 'main print or pattern type' },
+  topShape: { allowed: KV.topShape, hint: 'kurta silhouette' },
+  topLength: { allowed: KV.topLength, hint: 'where the kurta ends on the model' },
+  topHemline: { allowed: KV.topHemline, hint: 'kurta hemline' },
+  slitDetail: { allowed: KV.slitDetail, hint: 'kurta slits; NA if none' },
+  neck: { allowed: KV.neck, hint: 'neckline' },
+  sleeveLength: { allowed: KV.sleeveLength, hint: 'sleeve length' },
+  sleeveStyling: { allowed: KV.sleeveStyling, hint: 'sleeve style; Regular Sleeves if nothing special' },
+  bottomClosure: { allowed: KV.bottomClosure, hint: 'how the bottom fastens (Drawstring, Slip-On for elastic pull-on, Zip…)' },
+  waistband: { allowed: KV.waistband, hint: 'Elasticated for elastic waists' },
+  weavePattern: { allowed: KV.weavePattern, hint: 'Jacquard for jamdani/jacquard weaves, Regular for plain fabric' },
+  weaveType: { allowed: KV.weaveType, hint: 'Handloom for jamdani/handwoven, Machine Weave otherwise' },
+  ornamentation: { allowed: KV.ornamentation, hint: 'surface work (Thread Work for embroidery, Mirror Work, Gotta Patti…); NA if none' },
+  technique: { allowed: KV.technique, hint: 'print/dye technique (Block Print, Bandhani…); NA if none' },
+  occasion: { allowed: KV.occasion, hint: 'Festive for embroidered/festive sets, Daily for everyday cotton sets' },
+  washCare: { allowed: KV.washCare, hint: 'wash care as stated; Hand Wash if not stated' },
+  season: { allowed: KV.season, hint: 'season it suits best' },
+};
+
+const KURTA_SET_PROMPT = `You are writing a Myntra listing for an Indian women's fashion seller (brand: Darshan Style Hub). The product is a kurta set (kurta + bottom, sometimes with a dupatta).
+Use only what the product name, description and photos actually show. Never invent work or items that aren't there (no dupatta unless one is included); for fabric, follow the fabric instructions.
+No emojis, no HTML, no price or discount claims. For fields with an allowed list, pick from it, reading the photos when the text doesn't say; answer "${UNKNOWN}" if you genuinely can't tell.`;
+
 const DRESS_PROMPT = `You are writing a Myntra listing for an Indian women's fashion seller (brand: Darshan Style Hub). The product is a western dress.
 Use only what the product name, description and photos actually show. Never invent work or items that aren't there; for fabric, follow the fabric instructions.
 No emojis, no HTML, no price or discount claims. For fields with an allowed list, pick from it, reading the photos when the text doesn't say; answer "${UNKNOWN}" if you genuinely can't tell.`;
@@ -106,8 +149,9 @@ export async function suggestMyntraCoOrdListing(input: {
   category?: string;
 }): Promise<MyntraAiSuggestion> {
   const isDress = input.category === 'Western Dress';
-  const FIELDS = isDress ? DRESS_FIELDS : CO_ORDS_FIELDS;
-  const prompt = isDress ? DRESS_PROMPT : PROMPT;
+  const isKurtaSet = input.category === 'Suits';
+  const FIELDS = isKurtaSet ? KURTA_SET_FIELDS : isDress ? DRESS_FIELDS : CO_ORDS_FIELDS;
+  const prompt = isKurtaSet ? KURTA_SET_PROMPT : isDress ? DRESS_PROMPT : PROMPT;
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY is not set in .env');
 
@@ -142,12 +186,14 @@ export async function suggestMyntraCoOrdListing(input: {
       body,
     });
     data = await res.json().catch(() => ({}));
-    if (res.ok || res.status === 429) break;
+    // Free-tier quotas are per model (e.g. 20 requests/day on one model), so a
+    // 429 just moves on to the next model; only stop once one succeeds.
+    if (res.ok) break;
   }
   if (!res || !res.ok) {
     if (!res) throw new Error('Gemini request failed');
     const message = data?.error?.message || `HTTP ${res.status}`;
-    if (res.status === 429) throw new Error(`Gemini free-tier limit reached — try again in a minute. (${message})`);
+    if (res.status === 429) throw new Error(`Gemini free-tier limit reached on every model — the free daily quota resets in a few hours; you can still fill the fields by hand and Save. (${message})`);
     throw new Error(`Gemini request failed: ${message}`);
   }
 

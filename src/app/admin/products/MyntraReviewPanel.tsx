@@ -33,7 +33,7 @@ interface DetailResponse {
   measurements: ({ size: string } & Partial<Record<keyof SizeMeasurementForm, number | null>>)[];
 }
 
-const MEASUREMENT_FIELDS: (keyof SizeMeasurementForm)[] = ['bust', 'chest', 'frontLength', 'garmentWaist', 'hips', 'inseamLength', 'toFitWaist'];
+const MEASUREMENT_FIELDS: (keyof SizeMeasurementForm)[] = ['bust', 'chest', 'frontLength', 'garmentWaist', 'hips', 'acrossShoulder', 'pyjamaWaist', 'inseamLength', 'toFitWaist'];
 
 // Single-product Myntra review: same flow as the Flipkart panel — autofill
 // runs first, then AI Fill / edit / Save. Multi-product selection still goes

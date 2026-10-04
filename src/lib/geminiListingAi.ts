@@ -31,6 +31,25 @@ const ETHNIC_ATTRIBUTES: AttributeSpec = {
   shapeType: { hint: "the kurta's silhouette as Flipkart names it, e.g. Straight, A-line, Anarkali, Flared" },
 };
 
+// Suits ("salwar_kurta_dupatta" template) also need Kurta Fabric — values from
+// that template's own Index sheet (…REQLFNQFOTLHX_1.xls). Accepted live:
+// "Pure Cotton" (DSH_SU_04/05).
+const SUIT_KURTA_FABRICS = [
+  'Acrylic', 'Art Silk', 'Chanderi', 'Chiffon', 'Cotton', 'Cotton Blend', 'Cotton Silk', 'Crepe', 'Denim', 'Dupion',
+  'Georgette', 'Jacquard', 'Jute Silk', 'Khadi', 'Lace', 'Linen', 'Liva', 'Lycra', 'Muslin', 'Net', 'Organza',
+  'Poly Knit', 'Polyester', 'Pure Cotton', 'Raw Silk', 'Rayon', 'Rayon Blend', 'Rayon Cotton', 'Satin', 'Silk',
+  'Silk Blend', 'Spun', 'Tissue', 'Velvet', 'Viscose', 'Viscose Blend', 'Woolen',
+];
+const SUIT_ATTRIBUTES: AttributeSpec = {
+  ...ETHNIC_ATTRIBUTES,
+  // Mandatory at real QC (DSH_SU_06 failed without it, 2026-10-04).
+  topPattern: {
+    allowed: ['Animal Print', 'Applique', 'Checkered', 'Chevron/Zig Zag', 'Color Block', 'Embellished', 'Embroidered', 'Floral Print', 'Geometric Print', 'Graphic Print', 'Ombre', 'Paisley', 'Polka Print', 'Printed', 'Self Design', 'Solid', 'Striped', 'Woven'],
+    hint: "the kurta's main pattern (Embellished for mirror/sequin/zari work, Embroidered for thread embroidery, Woven for jamdani)",
+  },
+  topFabric: { allowed: SUIT_KURTA_FABRICS, hint: 'kurta fabric as stated in the text (Pure Cotton for 100% cotton/jamdani, Viscose for viscose/rayon); if the text never says, judge the most likely fabric from the photos (drape, sheen, texture) — never Unknown' },
+};
+
 // Co-ords ("apparel_set" template) — values from Flipkart's own dropdowns.
 const C = FLIPKART_CO_ORD_VALUES;
 const CO_ORD_ATTRIBUTES: AttributeSpec = {
@@ -134,6 +153,7 @@ export async function suggestFlipkartListing(input: {
   const isCoOrd = input.category === 'Co Ord Sets' || input.category === 'Summer Co-ord Sets';
   const attributes = input.category === 'Tops' ? TOP_ATTRIBUTES
     : input.category === 'Western Dress' ? DRESS_ATTRIBUTES
+    : input.category === 'Suits' ? SUIT_ATTRIBUTES
     : isCoOrd ? CO_ORD_ATTRIBUTES : ETHNIC_ATTRIBUTES;
   const images = (await Promise.all(input.imageUrls.slice(0, MAX_IMAGES).map(imagePart))).filter(Boolean);
 
@@ -160,12 +180,14 @@ export async function suggestFlipkartListing(input: {
       body,
     });
     data = await res.json().catch(() => ({}));
-    if (res.ok || res.status === 429) break;
+    // Free-tier quotas are per model (e.g. 20 requests/day on one model), so a
+    // 429 just moves on to the next model; only stop once one succeeds.
+    if (res.ok) break;
   }
   if (!res || !res.ok) {
     if (!res) throw new Error('Gemini request failed');
     const message = data?.error?.message || `HTTP ${res.status}`;
-    if (res.status === 429) throw new Error(`Gemini free-tier limit reached — try again in a minute. (${message})`);
+    if (res.status === 429) throw new Error(`Gemini free-tier limit reached on every model — the free daily quota resets in a few hours; you can still fill the fields by hand and Save. (${message})`);
     throw new Error(`Gemini request failed: ${message}`);
   }
 

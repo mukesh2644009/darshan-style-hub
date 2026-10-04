@@ -504,10 +504,14 @@ export default function ProductDetailClient({ product, relatedProducts }: Produc
               <span className="text-2xl sm:text-3xl font-bold text-gray-900">
                 ₹{product.price.toLocaleString()}
               </span>
-              {product.originalPrice && (
+              {/* Only a real discount (MRP above price) — never "Save ₹-200". */}
+              {product.originalPrice && product.originalPrice > product.price && (
                 <>
                   <span className="text-lg sm:text-xl text-gray-400 line-through">
                     ₹{product.originalPrice.toLocaleString()}
+                  </span>
+                  <span className="text-sm sm:text-base font-semibold text-green-700">
+                    {Math.round((1 - product.price / product.originalPrice) * 100)}% OFF
                   </span>
                   <span className="text-sm sm:text-base text-primary-600 font-medium">
                     Save ₹{(product.originalPrice - product.price).toLocaleString()}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { revalidateStorefront } from '@/lib/revalidateStore';
 import { slugify, generateUniqueSlug } from '@/lib/slug';
 
 export const dynamic = 'force-dynamic';
@@ -132,7 +133,7 @@ export async function POST(request: Request) {
       if (Array.isArray(myntraSizeMeasurements)) {
         for (const m of myntraSizeMeasurements) {
           if (!m.size) continue;
-          const hasAny = ['bust', 'chest', 'frontLength', 'garmentWaist', 'inseamLength', 'toFitWaist', 'hips']
+          const hasAny = ['bust', 'chest', 'frontLength', 'garmentWaist', 'inseamLength', 'toFitWaist', 'hips', 'acrossShoulder', 'pyjamaWaist']
             .some((f) => m[f] !== '' && m[f] != null);
           if (!hasAny) continue;
           await prisma.myntraSizeMeasurement.create({
@@ -145,6 +146,8 @@ export async function POST(request: Request) {
               garmentWaist: m.garmentWaist !== '' && m.garmentWaist != null ? parseFloat(m.garmentWaist) : null,
               inseamLength: m.inseamLength !== '' && m.inseamLength != null ? parseFloat(m.inseamLength) : null,
               hips: m.hips !== '' && m.hips != null ? parseFloat(m.hips) : null,
+              acrossShoulder: m.acrossShoulder !== '' && m.acrossShoulder != null ? parseFloat(m.acrossShoulder) : null,
+              pyjamaWaist: m.pyjamaWaist !== '' && m.pyjamaWaist != null ? parseFloat(m.pyjamaWaist) : null,
               toFitWaist: m.toFitWaist !== '' && m.toFitWaist != null ? parseFloat(m.toFitWaist) : null,
             },
           });
@@ -159,6 +162,7 @@ export async function POST(request: Request) {
       });
     }
 
+    revalidateStorefront();
     return NextResponse.json({ success: true, product }, { status: 201 });
   } catch (error) {
     console.error('Error creating product:', error);

@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 // edits + per-size measurements (PATCH) without touching the rest of the
 // product record.
 
-const MEASUREMENT_FIELDS = ['bust', 'chest', 'frontLength', 'garmentWaist', 'inseamLength', 'toFitWaist', 'hips'] as const;
+const MEASUREMENT_FIELDS = ['bust', 'chest', 'frontLength', 'garmentWaist', 'inseamLength', 'toFitWaist', 'hips', 'acrossShoulder', 'pyjamaWaist'] as const;
 
 export async function GET(request: Request) {
   const auth = await requireAdmin();

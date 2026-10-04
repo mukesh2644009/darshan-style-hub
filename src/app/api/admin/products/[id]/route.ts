@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
+import { revalidateStorefront } from '@/lib/revalidateStore';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 
@@ -183,6 +184,8 @@ export async function PATCH(
             garmentWaist: m.garmentWaist !== '' && m.garmentWaist != null ? parseFloat(m.garmentWaist) : null,
             inseamLength: m.inseamLength !== '' && m.inseamLength != null ? parseFloat(m.inseamLength) : null,
             hips: m.hips !== '' && m.hips != null ? parseFloat(m.hips) : null,
+            acrossShoulder: m.acrossShoulder !== '' && m.acrossShoulder != null ? parseFloat(m.acrossShoulder) : null,
+            pyjamaWaist: m.pyjamaWaist !== '' && m.pyjamaWaist != null ? parseFloat(m.pyjamaWaist) : null,
             toFitWaist: m.toFitWaist !== '' && m.toFitWaist != null ? parseFloat(m.toFitWaist) : null,
           };
           await prisma.myntraSizeMeasurement.upsert({
@@ -215,6 +218,7 @@ export async function PATCH(
       },
     });
 
+    revalidateStorefront();
     return NextResponse.json({ success: true, product: updatedProduct });
   } catch (error) {
     console.error('Error updating product:', error);
@@ -267,6 +271,7 @@ export async function DELETE(
       where: { id: params.id },
     });
 
+    revalidateStorefront();
     return NextResponse.json({ success: true, deletedImages: images.length });
   } catch (error) {
     console.error('Error deleting product:', error);

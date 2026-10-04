@@ -112,6 +112,9 @@ export function getRequiredFlipkartFields(product: { category: string; name: str
   if (isSuit || isKurti || isEthnicSet) {
     add('netQuantity', 'Net Quantity');
     if (isSuit) add('topType', 'Top Type'); // no such column for single-piece Kurtis/Ethnic Set
+    // Confirmed mandatory for Suits via a real QC failure 2026-10-04 (DSH_SU_06:
+    // "Mandatory Attribute [pattern] is missing").
+    if (isSuit) add('topPattern', 'Pattern');
     // Confirmed mandatory for Suits via a real Flipkart QC failure 2026-09-24
     // (Excel's own local validation doesn't catch these); applied to Kurtis
     // too as the best-effort starting point, pending its own real QC test.

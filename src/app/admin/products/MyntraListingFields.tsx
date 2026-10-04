@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { FiChevronDown, FiChevronRight, FiTag, FiRefreshCw, FiAlertTriangle, FiLoader } from 'react-icons/fi';
-import { deriveMyntraAutofill, deriveCoOrdSizeMeasurements, deriveDressSizeMeasurements, detectDressLength, MYNTRA_FIELD_LABELS } from '@/lib/myntraAutofill';
+import { deriveMyntraAutofill, deriveCoOrdSizeMeasurements, deriveDressSizeMeasurements, deriveKurtaSetSizeMeasurements, detectDressLength, MYNTRA_FIELD_LABELS } from '@/lib/myntraAutofill';
 
 export interface MyntraFormState {
   styleName: string;
@@ -55,6 +55,23 @@ export interface MyntraFormState {
   dressLength: string;
   sleeveStyling: string;
   printType: string;
+  // Kurta Sets specific
+  dupatta: string;
+  dupattaFabric: string;
+  dupattaPattern: string;
+  dupattaBorder: string;
+  topHemline: string;
+  topLength: string;
+  topShape: string;
+  slitDetail: string;
+  bottomClosure: string;
+  waistband: string;
+  weavePattern: string;
+  weaveType: string;
+  patternCoverage: string;
+  technique: string;
+  ornamentation: string;
+  stitch: string;
 }
 
 export const EMPTY_MYNTRA_FORM: MyntraFormState = {
@@ -104,6 +121,22 @@ export const EMPTY_MYNTRA_FORM: MyntraFormState = {
   dressLength: '',
   sleeveStyling: '',
   printType: '',
+  dupatta: '',
+  dupattaFabric: '',
+  dupattaPattern: '',
+  dupattaBorder: '',
+  topHemline: '',
+  topLength: '',
+  topShape: '',
+  slitDetail: '',
+  bottomClosure: '',
+  waistband: '',
+  weavePattern: '',
+  weaveType: '',
+  patternCoverage: '',
+  technique: '',
+  ornamentation: '',
+  stitch: '',
 };
 
 export interface SizeMeasurementForm {
@@ -113,11 +146,13 @@ export interface SizeMeasurementForm {
   garmentWaist: string;
   inseamLength: string;
   toFitWaist: string;
-  hips: string; // Dresses
+  hips: string; // Dresses, Kurta Sets
+  acrossShoulder: string; // Kurta Sets
+  pyjamaWaist: string; // Kurta Sets
 }
 
 export const EMPTY_SIZE_MEASUREMENT: SizeMeasurementForm = {
-  bust: '', chest: '', frontLength: '', garmentWaist: '', inseamLength: '', toFitWaist: '', hips: '',
+  bust: '', chest: '', frontLength: '', garmentWaist: '', inseamLength: '', toFitWaist: '', hips: '', acrossShoulder: '', pyjamaWaist: '',
 };
 
 function isCoOrdCategory(category: string) {
@@ -179,7 +214,8 @@ export default function MyntraListingFields({ productId, defaultOpen, category, 
   const coOrd = isCoOrdCategory(category);
   const saree = isSareeCategory(category);
   const dress = category === 'Western Dress';
-  const supported = coOrd || saree || dress;
+  const kurtaSet = category === 'Suits';
+  const supported = coOrd || saree || dress || kurtaSet;
 
   const set = (field: keyof MyntraFormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => onChange({ [field]: e.target.value });
   const statusFor = (field: keyof MyntraFormState): FieldStatus =>
@@ -208,6 +244,18 @@ export default function MyntraListingFields({ productId, defaultOpen, category, 
 
     // Per-size measurements: fill only empty cells, from the shared co-ord size chart.
     let measurementsFilled = 0;
+    if (kurtaSet) {
+      // Size chart from the accepted DSH_SU_04/05 Myntra upload.
+      for (const s of deriveKurtaSetSizeMeasurements(sizes)) {
+        const current = measurements[s.size] || EMPTY_SIZE_MEASUREMENT;
+        (['acrossShoulder', 'bust', 'chest', 'frontLength', 'hips', 'inseamLength', 'pyjamaWaist', 'toFitWaist', 'garmentWaist'] as const).forEach((field) => {
+          if (!current[field]) {
+            onMeasurementChange(s.size, field, s[field]);
+            measurementsFilled += 1;
+          }
+        });
+      }
+    }
     if (dress) {
       // Standard dress block; Front Length follows the dress length.
       const length = value.dressLength || outcome.patch.dressLength || detectDressLength(`${productName}\n${productDescription}`);
@@ -300,7 +348,7 @@ export default function MyntraListingFields({ productId, defaultOpen, category, 
             Fetch
           </button>
         )}
-        {(coOrd || dress) && productId && (
+        {(coOrd || dress || kurtaSet) && productId && (
           <button
             type="button"
             onClick={handleAiFill}
@@ -319,7 +367,7 @@ export default function MyntraListingFields({ productId, defaultOpen, category, 
         <div className="px-6 pb-6 space-y-5">
           {!supported && (
             <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              Myntra export currently only supports the &quot;Co Ord Sets&quot;, &quot;Summer Co-ord Sets&quot;, &quot;Western Dress&quot; and &quot;Sarees&quot; categories.
+              Myntra export currently only supports the &quot;Co Ord Sets&quot;, &quot;Summer Co-ord Sets&quot;, &quot;Western Dress&quot;, &quot;Suits&quot; and &quot;Sarees&quot; categories.
               Fields below can still be filled in, but export will be blocked for this category.
             </p>
           )}
@@ -350,7 +398,7 @@ export default function MyntraListingFields({ productId, defaultOpen, category, 
               <input className={inputClassFor(statusFor('styleName'))} value={value.styleName} onChange={set('styleName')} placeholder="e.g. Black Embroidered Co-ord Set" />
             </Field>
             <Field label="Article Type *" status={statusFor('articleType')}>
-              <input className={inputClassFor(statusFor('articleType'))} value={value.articleType} onChange={set('articleType')} placeholder={coOrd ? 'Co-Ords' : dress ? 'Dresses' : 'Sarees'} />
+              <input className={inputClassFor(statusFor('articleType'))} value={value.articleType} onChange={set('articleType')} placeholder={coOrd ? 'Co-Ords' : dress ? 'Dresses' : kurtaSet ? 'Kurta Sets' : 'Sarees'} />
             </Field>
             <Field label="Is Standard Size on Label? *">
               <select className={inputClass} value={value.sizeLabelPresent} onChange={set('sizeLabelPresent')}>
@@ -501,6 +549,90 @@ export default function MyntraListingFields({ productId, defaultOpen, category, 
                                     type="number"
                                     step="0.1"
                                     className="w-20 px-2 py-1 border border-gray-300 rounded text-center"
+                                    value={m[field]}
+                                    onChange={(e) => onMeasurementChange(size, field, e.target.value)}
+                                  />
+                                </td>
+                              ))}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {kurtaSet && (
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-bold text-gray-700 mb-3">Kurta Set Fields</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {([
+                  ['topFabric', 'Top Fabric *', 'Pure Cotton'], ['bottomFabric', 'Bottom Fabric *', 'Pure Cotton'], ['dupattaFabric', 'Dupatta Fabric *', 'NA'],
+                  ['bottomClosure', 'Bottom Closure *', 'Drawstring'], ['waistband', 'Waistband *', 'Elasticated'], ['weavePattern', 'Weave Pattern *', 'Regular'],
+                  ['weaveType', 'Weave Type *', 'Machine Weave'], ['addOns', 'Add-Ons *', 'NA'], ['numberOfPockets', 'Number of Pockets *', 'NA'],
+                  ['numberOfItems', 'Number of Items *', '3'], ['packageContains', 'Package Contains *', '1 Kurta, 1 Pant, 1 Dupatta'], ['dupatta', 'Dupatta', 'With Dupatta'],
+                  ['topType', 'Top Type', 'Kurta'], ['bottomType', 'Bottom Type', 'Trousers'], ['topShape', 'Top Shape', 'Straight'],
+                  ['topLength', 'Top Length', 'Knee Length'], ['topHemline', 'Top Hemline', 'Straight'], ['slitDetail', 'Slit Detail', 'Side Slits'],
+                  ['neck', 'Neck', 'V-Neck'], ['sleeveLength', 'Sleeve Length', 'Three-Quarter Sleeves'], ['sleeveStyling', 'Sleeve Styling', 'Regular Sleeves'],
+                  ['topPattern', 'Top Pattern', 'Embroidered'], ['bottomPattern', 'Bottom Pattern', 'Solid'], ['printType', 'Print or Pattern Type', 'Floral'],
+                  ['dupattaPattern', 'Dupatta Pattern', 'Printed'], ['dupattaBorder', 'Dupatta Border', 'Solid'], ['ornamentation', 'Ornamentation', 'Thread Work'],
+                  ['technique', 'Technique', 'NA'], ['occasion', 'Occasion', 'Festive'], ['stitch', 'Stitch', 'Ready to Wear'],
+                ] as [keyof MyntraFormState, string, string][]).map(([field, label, placeholder]) => (
+                  <Field key={field} label={label} status={statusFor(field)}>
+                    <input className={inputClassFor(statusFor(field))} value={value[field]} onChange={set(field)} placeholder={placeholder} />
+                  </Field>
+                ))}
+              </div>
+
+              <div className="mt-3 space-y-3">
+                <Field label="Product Details (paragraph)" status={statusFor('productDetails')}>
+                  <textarea className={inputClassFor(statusFor('productDetails'))} rows={3} value={value.productDetails} onChange={set('productDetails')} />
+                </Field>
+                <Field label="Style Note" status={statusFor('styleNote')}>
+                  <textarea className={inputClassFor(statusFor('styleNote'))} rows={2} value={value.styleNote} onChange={set('styleNote')} />
+                </Field>
+                <Field label="Tags (search keywords, comma-separated)" status={statusFor('tags')}>
+                  <input className={inputClassFor(statusFor('tags'))} value={value.tags} onChange={set('tags')} placeholder="olive kurta set, jamdani kurta pant set, kurta set with dupatta" />
+                </Field>
+              </div>
+
+              {sizes.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-1">
+                    Per-Size Measurements (inches) *
+                    <span className="text-amber-600 font-normal text-xs" title="Fetch fills the size chart from the accepted DSH_SU_04/05 upload; check it against the real set">⚠ from SU_04/05 chart — verify</span>
+                  </h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border border-gray-200 rounded-lg overflow-hidden">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th className="px-2 py-2 text-left">Size</th>
+                          <th className="px-2 py-2 text-left">Across Shoulder</th>
+                          <th className="px-2 py-2 text-left">Bust</th>
+                          <th className="px-2 py-2 text-left">Chest</th>
+                          <th className="px-2 py-2 text-left">Front Length</th>
+                          <th className="px-2 py-2 text-left">Hips</th>
+                          <th className="px-2 py-2 text-left">Inseam</th>
+                          <th className="px-2 py-2 text-left">Pyjama Waist</th>
+                          <th className="px-2 py-2 text-left">To Fit Waist</th>
+                          <th className="px-2 py-2 text-left">Waist</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sizes.map((size) => {
+                          const m = measurements[size] || EMPTY_SIZE_MEASUREMENT;
+                          return (
+                            <tr key={size} className="border-t border-gray-100">
+                              <td className="px-2 py-1.5 font-medium text-gray-800">{size}</td>
+                              {(['acrossShoulder', 'bust', 'chest', 'frontLength', 'hips', 'inseamLength', 'pyjamaWaist', 'toFitWaist', 'garmentWaist'] as (keyof SizeMeasurementForm)[]).map((field) => (
+                                <td key={field} className="px-2 py-1.5">
+                                  <input
+                                    type="number"
+                                    step="0.1"
+                                    className="w-16 px-2 py-1 border border-gray-300 rounded text-center"
                                     value={m[field]}
                                     onChange={(e) => onMeasurementChange(size, field, e.target.value)}
                                   />

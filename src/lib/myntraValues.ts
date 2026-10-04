@@ -84,3 +84,42 @@ export const MYNTRA_DRESSES_VALUES: Record<string, string[]> = {
   numberOfItems: ['1', '2', '3', '4', '5'],
   season: ['Spring', 'Summer', 'Fall', 'Winter'],
 };
+
+// Myntra Kurta Sets dropdown values, copied from the template's own masterdata sheet
+// (Myntra-Sku-Template-2026-09-20 (1).xlsx, Kurta Sets, v13) — the sheet that put
+// DSH_SU_04/05 live (job 1695788). Keys are MyntraListingDetail field names.
+export const MYNTRA_KURTA_SETS_VALUES: Record<string, string[]> = {
+  prominentColour: ['Red', 'Blue', 'Green', 'Black', 'Purple', 'White', 'Pink', 'Grey', 'Brown', 'Yellow', 'Orange', 'Navy Blue', 'Maroon', 'Cream', 'Silver', 'Gold', 'Tan', 'Beige', 'Peach', 'Multi', 'Copper', 'Steel', 'Olive', 'Khaki', 'Rose', 'Taupe', 'Off White', 'Metallic', 'Charcoal', 'Grey Melange', 'Turquoise Blue', 'Coffee Brown', 'Sea Green', 'Lavender', 'Lime Green', 'Magenta', 'Burgundy', 'Teal', 'Nude', 'Bronze', 'Fluorescent Green', 'Rust', 'Mustard', 'NA', 'Mauve', 'Coral', 'Rose Gold', 'Assorted', 'Champagne', 'Fuchsia', 'Violet', 'Camel Brown', 'Transparent'],
+  topType: ['Kurta', 'Kurti', 'Top'],
+  bottomType: ['Skirt', 'Palazzos', 'Patiala', 'Salwar', 'Sharara', 'Trousers', 'Harem Pants', 'Dhoti Pants', 'Pyjamas', 'Churidar', 'Panchakattu', 'Mundu', 'Veshti', 'Leggings', 'Farshi Salwar'],
+  dupatta: ['With Dupatta', 'NA'],
+  topPattern: ['Printed', 'Embroidered', 'Solid', 'Dyed', 'Self Design', 'Yoke Design', 'Striped', 'Colourblocked', 'Woven Design', 'Checked', 'Embellished'],
+  topFabric: ['Supernet', 'Pure Cotton', 'Pure Silk', 'Tissue', 'Satin', 'Dupion Silk', 'Jute Silk', 'Jute Cotton', 'Organza', 'Voile', 'Velvet', 'Raw Silk', 'Viscose Rayon', 'Art Silk', 'Poly Georgette', 'Poly Chiffon', 'Net', 'Tussar Silk', 'Poly Crepe', 'Silk Georgette', 'Silk Chiffon', 'Silk Crepe', 'Shantoon', 'Cotton Blend', 'Silk Blend', 'Polyester', 'Linen', 'Nylon', 'Pure Wool', 'Wool Blend', 'Liva', 'Chanderi Cotton', 'Chanderi Silk', 'Poly Chanderi', 'Organic Cotton', 'Poly Silk', 'Acrylic', 'Georgette', 'Cotton Silk', 'Chinon', 'Mulmul', 'Mul Chanderi'],
+  topHemline: ['High-Low', 'Straight', 'Curved', 'Asymmetric', 'Flared', 'Scalloped'],
+  topLength: ['Above Knee', 'Knee Length', 'Calf Length', 'Floor Length', 'Short'],
+  topShape: ['Anarkali', 'Straight', 'A-Line', 'Kaftan', 'Pathani'],
+  neck: ['V-Neck', 'Round Neck', 'Scoop Neck', 'Boat Neck', 'Shawl Collar', 'Halter Neck', 'Mandarin Collar', 'Shirt Collar', 'Square Neck', 'U-Neck', 'Cowl Neck', 'Sweetheart Neck', 'Keyhole Neck', 'Band Collar', 'One Shoulder', 'Off-Shoulder', 'Tie-Up Neck', 'Shoulder Straps'],
+  sleeveLength: ['Long Sleeves', 'Short Sleeves', 'Sleeveless', 'Three-Quarter Sleeves'],
+  sleeveStyling: ['Cap Sleeves', 'Shoulder Straps', 'Puffed Sleeves', 'Roll-Up Sleeves', 'Flared Sleeves', 'Regular Sleeves', 'Cold-Shoulder Sleeves', 'No Sleeves', 'Bell Sleeves', 'Accordion Pleated Sleeves', 'Batwing Sleeves', 'Bishop Sleeves', 'Cape Sleeves', 'Cuffed Sleeves', 'Dolman Sleeves', 'Drop-Shoulder Sleeves', 'Flutter Sleeves', 'Kimono Sleeves', 'Layered Sleeves', 'Petal Sleeves', 'Raglan Sleeves', 'Puff Sleeves', 'Slit Sleeves', 'Thumb Hole Sleeves'],
+  slitDetail: ['Front Slit', 'Back Slit', 'Side Slits', 'NA', 'Multiple Slits'],
+  bottomFabric: ['Supernet', 'Pure Cotton', 'Pure Silk', 'Tissue', 'Satin', 'Dupion Silk', 'Jute Silk', 'Jute Cotton', 'Organza', 'Voile', 'Velvet', 'Raw Silk', 'Viscose Rayon', 'Art Silk', 'Poly Georgette', 'Poly Chiffon', 'Net', 'Tussar Silk', 'Poly Crepe', 'Silk Georgette', 'Silk Chiffon', 'Silk Crepe', 'Shantoon', 'Cotton Blend', 'Silk Blend', 'Polyester', 'Linen', 'Pure Wool', 'Wool Blend', 'Organic Cotton', 'Poly Silk', 'Georgette', 'Santoon', 'Chinon', 'Mulmul', 'Mul Chanderi'],
+  bottomPattern: ['Printed', 'Embroidered', 'Solid', 'Dyed', 'Self Design', 'Checked', 'Striped'],
+  bottomClosure: ['Zip', 'Drawstring', 'Button', 'Hook and Eye', 'Slip-On', 'NA'],
+  waistband: ['Elasticated', 'Partially Elasticated', 'NA'],
+  printType: ['Striped', 'Solid', 'Checked', 'Colourblocked', 'Floral', 'Paisley', 'Abstract', 'Geometric', 'Tribal', 'Chevron', 'Bandhani', 'Animal', 'Quirky', 'Textured', 'Ombre', 'Ethnic Motifs', 'Leheriya', 'Woven Design', 'Tie and Dye'],
+  occasion: ['Maternity', 'Festive', 'Fusion', 'Daily'],
+  technique: ['Shibori', 'Bandhani', 'Ikat', 'Batik', 'Leheriya', 'Kalamkari', 'Block Print', 'Ombre', 'Screen', 'Foil', 'Khari Print', 'NA', 'Kutch', 'Ajrakh', 'Bagru', 'Patola', 'Dabu', 'Bagh', 'Warli', 'Kantha', 'Screen Print'],
+  ornamentation: ['Gotta Patti', 'Mirror Work', 'Sequinned', 'Beads and Stones', 'Zardozi', 'Zari', 'Aari Work', 'Mukaish', 'Patchwork', 'Chikankari', 'Phulkari', 'Thread Work', 'NA'],
+  weavePattern: ['Jacquard', 'Brasso', 'Brocade', 'Dobby', 'Denim', 'Khadi', 'Regular'],
+  weaveType: ['Handloom', 'Machine Weave', 'Knitted', 'Knitted and Woven'],
+  patternCoverage: ['Placement', 'Small', 'Large', 'Yoke or Border', 'None'],
+  dupattaFabric: ['Supernet', 'Pure Cotton', 'Pure Silk', 'Tissue', 'Satin', 'Dupion Silk', 'Jute Silk', 'Jute Cotton', 'Organza', 'Voile', 'Velvet', 'Raw Silk', 'Viscose Rayon', 'Art Silk', 'Poly Georgette', 'Poly Chiffon', 'Net', 'Tussar Silk', 'Poly Crepe', 'Silk Georgette', 'Silk Chiffon', 'Silk Crepe', 'Cotton Blend', 'Silk Blend', 'NA', 'Wool', 'Polyester'],
+  dupattaPattern: ['Printed', 'Embroidered', 'Solid', 'Dyed', 'Self Design', 'NA'],
+  dupattaBorder: ['Tassels', 'Fringed', 'Taping', 'Printed', 'Solid', 'NA'],
+  washCare: ['Hand Wash', 'Machine Wash', 'Dry Clean'],
+  stitch: ['Made to Measure', 'Ready to Wear', 'Customisable', 'Made On Order'],
+  addOns: ['Nehru jacket', 'Waistcoat', 'Jacket', 'NA', 'Camisole', 'Comes with a Mask'],
+  numberOfPockets: ['1', '2', 'NA'],
+  numberOfItems: ['1', '2', '3', '4', '5'],
+  season: ['Spring', 'Summer', 'Fall', 'Winter'],
+};

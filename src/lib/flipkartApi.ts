@@ -57,6 +57,24 @@ interface RawListing {
   price?: { mrp?: number; selling_price?: number };
 }
 
+/**
+ * SKUs Flipkart answers as "invalid" — it has no listing for them. For a SKU we
+ * submitted, that means QC rejected it (checked 2026-10-04: QC-failed SKUs and
+ * never-uploaded SKUs both come back "invalid", while SKUs still in QC come
+ * back empty). Flipkart's API gives no reason — that's only in Seller Hub.
+ */
+export async function fetchFlipkartInvalidSkus(skus: string[]): Promise<Set<string>> {
+  const invalid = new Set<string>();
+  for (let i = 0; i < skus.length; i += MAX_SKUS_PER_CALL) {
+    const chunk = skus.slice(i, i + MAX_SKUS_PER_CALL);
+    const res = await flipkartGet(`/listings/v3/${chunk.map(encodeURIComponent).join(',')}`);
+    if (!res.ok) throw new Error(`Flipkart listings lookup failed (${res.status})`);
+    const data = await res.json();
+    for (const sku of (Array.isArray(data.invalid) ? data.invalid : []) as string[]) invalid.add(sku);
+  }
+  return invalid;
+}
+
 // Looks up our seller SKUs; SKUs Flipkart doesn't know are simply absent.
 export async function fetchFlipkartListings(skus: string[]): Promise<FlipkartListing[]> {
   const chunks: string[][] = [];

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   FiPackage, FiEdit, FiEye, FiExternalLink, FiDownload, FiLoader, FiAlertTriangle, FiX,
-  FiCheckCircle, FiMoreVertical, FiClock, FiImage,
+  FiCheckCircle, FiMoreVertical, FiClock, FiImage, FiSearch,
 } from 'react-icons/fi';
 import { SiFlipkart } from 'react-icons/si';
 import WhatsAppShareButton from './WhatsAppShareButton';
@@ -224,12 +224,44 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
     return () => { cancelled = true; };
   }, [productIdsKey]);
 
-  const allSelected = products.length > 0 && products.every((p) => selected.has(p.id));
+  // Myntra status per product (from each style's public myntra.com page).
+  const [myntraStatuses, setMyntraStatuses] = useState<
+    Record<string, { styleId: string; status: string; sizes: { size: string; available: boolean }[] }>
+  >({});
+  useEffect(() => {
+    if (!productIdsKey) return;
+    let cancelled = false;
+    fetch('/api/admin/myntra/listing-status', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productIds: productIdsKey.split(',') }),
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (!cancelled && data?.statuses) setMyntraStatuses(data.statuses); })
+      .catch(() => {}); // informational only
+    return () => { cancelled = true; };
+  }, [productIdsKey]);
+
+  // Search box: SKU, name or subcategory (all words must match, any order).
+  const [query, setQuery] = useState('');
+  const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = terms.length === 0
+    ? products
+    : products.filter((p) => {
+        const hay = `${p.sku} ${p.name} ${p.subcategory || ''}`.toLowerCase();
+        return terms.every((t) => hay.includes(t));
+      });
+
+  // Select-all works on what's shown (e.g. search "suit" → tick them all).
+  const allSelected = shown.length > 0 && shown.every((p) => selected.has(p.id));
 
   const toggleAll = () => {
     setSelected((prev) => {
-      if (allSelected) return new Set();
-      return new Set(products.map((p) => p.id));
+      const next = new Set(prev);
+      if (allSelected) shown.forEach((p) => next.delete(p.id));
+      else shown.forEach((p) => next.add(p.id));
+      return next;
     });
   };
 
@@ -960,7 +992,31 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
         />
       )}
 
-      {products.length === 0 ? (
+      {/* Search */}
+      {products.length > 0 && (
+        <div className="px-4 pt-4 flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <FiSearch className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by SKU or name — e.g. DSH_SU, dress, olive"
+              className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+            />
+          </div>
+          {terms.length > 0 && (
+            <span className="text-sm text-gray-500">
+              {shown.length} of {products.length} shown
+              <button type="button" onClick={() => setQuery('')} className="ml-2 text-primary-600 hover:underline">Clear</button>
+            </span>
+          )}
+        </div>
+      )}
+
+      {products.length > 0 && shown.length === 0 ? (
+        <div className="p-12 text-center text-gray-500">No products match &quot;{query}&quot;.</div>
+      ) : products.length === 0 ? (
         <div className="p-12 text-center">
           <FiPackage className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-xl font-medium text-gray-900 mb-2">
@@ -1004,7 +1060,7 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {products.map((product) => (
+              {shown.map((product) => (
                 <tr key={product.id} className={`hover:bg-gray-50 ${selected.has(product.id) ? 'bg-primary-50/40' : ''}`}>
                   <td className="px-4 py-4">
                     <input
@@ -1036,15 +1092,39 @@ export default function ProductsTable({ products, totalCount, activeCategory }: 
                         <FiClock className="w-3 h-3" />
                       </span>
                     )}
+                    {flipkartStatuses[product.id]?.status === 'QC_FAILED' && (
+                      <span
+                        className="inline-flex items-center gap-0.5 ml-2 align-middle text-red-600 cursor-help"
+                        title={`Flipkart QC failed (request ${flipkartStatuses[product.id].requestId}) — Flipkart has no listing for any of its sizes. The reason is in Seller Hub: Listings → Bulk Listings → ${flipkartStatuses[product.id].requestId} → error file. Fix it in the Flipkart panel, Save, and upload again with a fresh template.`}
+                      >
+                        <SiFlipkart className="w-4 h-4" />
+                        <FiAlertTriangle className="w-3 h-3" />
+                      </span>
+                    )}
                     {product.myntraListingDetail?.myntraStyleId && (
                       <a
                         href={`https://www.myntra.com/${product.myntraListingDetail.myntraStyleId}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center ml-2 align-middle w-4 h-4 rounded bg-[#ff3f6c] text-white text-[10px] font-bold leading-none"
-                        title={`On Myntra (style ${product.myntraListingDetail.myntraStyleId})`}
+                        className={`inline-flex items-center gap-0.5 ml-2 align-middle ${
+                          myntraStatuses[product.id]?.status === 'NO_STOCK' || myntraStatuses[product.id]?.status === 'NOT_FOUND' ? 'opacity-80' : ''
+                        }`}
+                        title={(() => {
+                          const m = myntraStatuses[product.id];
+                          const id = product.myntraListingDetail.myntraStyleId;
+                          if (!m) return `On Myntra (style ${id}) — checking status…`;
+                          if (m.status === 'IN_STOCK') return `Live on Myntra, in stock (style ${id}): ${m.sizes.map((x) => `${x.size}${x.available ? '' : ' ✗'}`).join(', ')}`;
+                          if (m.status === 'NO_STOCK') return `On Myntra but no stock (style ${id}) — still cataloguing, or upload inventory in M-Direct (sellerSkuCode,quantity).`;
+                          if (m.status === 'NOT_FOUND') return `Not live on Myntra yet (style ${id}) — cataloguing / approval pending.`;
+                          return `On Myntra (style ${id}) — status unknown`;
+                        })()}
                       >
-                        M
+                        <span className={`inline-flex items-center justify-center w-4 h-4 rounded text-white text-[10px] font-bold leading-none ${
+                          !myntraStatuses[product.id] || myntraStatuses[product.id].status === 'IN_STOCK' || myntraStatuses[product.id].status === 'UNKNOWN'
+                            ? 'bg-[#ff3f6c]' : myntraStatuses[product.id].status === 'NO_STOCK' ? 'bg-amber-500' : 'bg-gray-400'
+                        }`}>M</span>
+                        {myntraStatuses[product.id]?.status === 'NO_STOCK' && <FiAlertTriangle className="w-3 h-3 text-amber-500" />}
+                        {myntraStatuses[product.id]?.status === 'NOT_FOUND' && <FiClock className="w-3 h-3 text-gray-400" />}
                       </a>
                     )}
                     {flipkartStatuses[product.id]?.url && (

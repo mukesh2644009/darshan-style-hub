@@ -43,7 +43,9 @@ ${input.bullets.map((b) => `- ${b}`).join('\n')}`;
       body,
     });
     data = await res.json().catch(() => ({}));
-    if (res.ok || res.status === 429) break;
+    // Free-tier quotas are per model (e.g. 20 requests/day on one model), so a
+    // 429 just moves on to the next model; only stop once one succeeds.
+    if (res.ok) break;
   }
   if (!res || !res.ok) throw new Error(`Gemini request failed: ${data?.error?.message || `HTTP ${res?.status}`}`);
 

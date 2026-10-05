@@ -170,7 +170,7 @@ export async function GET() {
           String(Math.max(0, sizeQty(size))),                 // inventory
           '',                                                 // material
           '',                                                 // pattern
-          'IN:::0 INR',                                       // shipping (free in India above threshold)
+          `IN:::${product.price >= 999 ? 0 : 99} INR`,          // shipping — same rule as checkout (free from ₹999, else ₹99)
         ];
 
         rows.push(row.map(csvField));

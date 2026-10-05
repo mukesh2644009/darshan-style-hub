@@ -79,7 +79,7 @@ ${sizes ? `      <g:size>${escapeXml(sizes)}</g:size>\n` : ''}      <g:gender>fe
       <g:age_group>adult</g:age_group>
       <g:shipping>
         <g:country>IN</g:country>
-        <g:price>0.00 INR</g:price>
+        <g:price>${p.price >= 999 ? '0.00' : '99.00'} INR</g:price>
       </g:shipping>
     </item>`;
     });

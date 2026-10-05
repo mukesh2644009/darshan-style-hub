@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/auth';
 import { createNimbusShipment } from '@/lib/nimbuspost';
+import { orderCodCharge } from '@/lib/orderCharges';
 import { Prisma } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
@@ -80,13 +81,13 @@ export async function POST(request: Request) {
     const paymentMode = order.paymentMethod === 'COD' ? 'COD' : 'PREPAID';
     const shortOrderRef = `DSH${order.id.slice(0, 8).toUpperCase()}`;
     const orderShipping = order.shipping ?? 99;
-    const orderCodCharge = order.paymentMethod === 'COD' ? 50 : 0;
+    const codCharges = orderCodCharge(order);
     const shipment = await createNimbusShipment({
       orderNumber: shortOrderRef,
       paymentMode,
       amount: order.total,
       shippingCharges: orderShipping,
-      codCharges: orderCodCharge,
+      codCharges,
       customerName: order.shippingName,
       customerPhone: order.shippingPhone,
       customerEmail:

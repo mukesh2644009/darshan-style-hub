@@ -31,7 +31,8 @@ export default function CheckoutPage() {
   const { user, isAuthenticated, isLoading, checkAuth } = useAuthStore();
   const router = useRouter();
   const WHATSAPP_NUMBER = '919019076335';
-  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'whatsapp' | 'cod'>('upi');
+  // COD pre-selected: it's what most of our shoppers choose ("Most popular").
+  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'whatsapp' | 'cod'>('cod');
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [orderLoading, setOrderLoading] = useState(false);
@@ -183,7 +184,6 @@ export default function CheckoutPage() {
 
   const subtotal = getTotalPrice();
   const shipping = subtotal >= 999 ? 0 : 99;
-  const codCharge = paymentMethod === 'cod' ? 50 : 0;
   const appliedDiscount = (paymentMethod !== 'cod' && couponApplied) ? couponDiscount : 0;
 
   // Loyalty points: 10 points = ₹1. Can use all available points, up to subtotal value.
@@ -191,7 +191,7 @@ export default function CheckoutPage() {
   const pointsToRedeem = (isAuthenticated && usePoints) ? Math.floor(maxPointsUsable / 10) * 10 : 0;
   const pointsDiscount = Math.floor(pointsToRedeem / 10);
 
-  const total = Math.max(0, subtotal + shipping + codCharge - appliedDiscount - pointsDiscount);
+  const total = Math.max(0, subtotal + shipping - appliedDiscount - pointsDiscount);
   const pointsWillEarn = Math.floor(total / 10);
 
   const handleApplyCoupon = () => {
@@ -425,7 +425,6 @@ export default function CheckoutPage() {
       ? items.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
       : orderTotal;
     const shippingVal = subtotalVal >= 999 ? 0 : 99;
-    const codVal = orderPaymentMethod === 'COD' ? 50 : 0;
 
     downloadReceipt({
       orderId: orderId,
@@ -450,7 +449,6 @@ export default function CheckoutPage() {
         : [{ name: 'Order Items', size: '-', color: '', quantity: 1, price: orderTotal }],
       subtotal: subtotalVal,
       shipping: shippingVal,
-      codCharge: codVal,
       total: orderTotal,
     });
   };
@@ -969,12 +967,6 @@ export default function CheckoutPage() {
 
                 {paymentMethod === 'cod' && (
                   <div className="space-y-2">
-                    <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
-                      <FiInfo className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                      <p className="text-sm">
-                        <strong>₹50 extra charge</strong> will be added for Cash on Delivery. Choose online payment to avoid this charge.
-                      </p>
-                    </div>
                     <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800">
                       <FiTag className="w-5 h-5 flex-shrink-0 mt-0.5" />
                       <p className="text-sm">
@@ -1169,12 +1161,6 @@ export default function CheckoutPage() {
                 </div>
                 {shipping > 0 && (
                   <p className="text-xs text-primary-600">Add ₹{(999 - subtotal).toLocaleString('en-IN')} more for free shipping</p>
-                )}
-                {codCharge > 0 && (
-                  <div className="w-full flex justify-between items-center text-sm text-gray-600">
-                    <span>COD Charge</span>
-                    <span className="flex-shrink-0">₹{codCharge}</span>
-                  </div>
                 )}
                 {appliedDiscount > 0 && (
                   <div className="w-full flex justify-between items-center text-sm text-green-600 font-medium">

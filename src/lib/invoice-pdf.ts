@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit';
 import { LOGO_BUFFER } from './logo-data';
+import { orderCodCharge } from './orderCharges';
 
 interface InvoiceItem {
   name: string;
@@ -224,14 +225,14 @@ export async function generateOrderInvoicePDF(data: InvoiceData): Promise<Buffer
          .fillColor(darkColor)
          .text(data.shipping === 0 ? 'FREE' : `Rs.${data.shipping}`, totalsValueX, totalsY, { width: totalsValueWidth, align: 'right' });
 
-      // COD charge — derive from payment method
-      const isCod = data.paymentMethod === 'COD';
-      if (isCod) {
+      // COD charge — only on older orders that actually paid it (fee dropped Oct 2026)
+      const codCharge = orderCodCharge(data);
+      if (codCharge > 0) {
         totalsY += 18;
         doc.fillColor(grayColor)
            .text('COD Charge:', totalsLabelX, totalsY)
            .fillColor(darkColor)
-           .text('Rs.50', totalsValueX, totalsY, { width: totalsValueWidth, align: 'right' });
+           .text(`Rs.${codCharge}`, totalsValueX, totalsY, { width: totalsValueWidth, align: 'right' });
       }
 
       if (data.discount && data.discount > 0) {

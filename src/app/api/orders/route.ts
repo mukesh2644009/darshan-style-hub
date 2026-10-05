@@ -155,7 +155,6 @@ export async function POST(request: Request) {
     }
 
     const shipping = subtotal >= 999 ? 0 : 99;
-    const codCharge = paymentMethod === 'COD' ? 50 : 0;
     const isCod = paymentMethod === 'COD';
 
     // Server-side coupon validation — only DSH10 (10% off) for prepaid orders
@@ -186,7 +185,7 @@ export async function POST(request: Request) {
       validatedPointsToRedeem = pointsDiscount * 10;
     }
 
-    const total = Math.max(0, subtotal + shipping + codCharge - discount - pointsDiscount);
+    const total = Math.max(0, subtotal + shipping - discount - pointsDiscount);
 
     // Decrement inventory — blocks if any size is out of stock
     const inventoryError = await decrementInventory(

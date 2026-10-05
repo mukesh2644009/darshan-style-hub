@@ -14,7 +14,6 @@ import { downloadReceipt } from '@/lib/generate-receipt';
 import { FiDownload } from 'react-icons/fi';
 import { gaBeginCheckout, gaPurchase } from '@/lib/google-analytics';
 import { normalizeProductImageUrl } from '@/lib/productImageUrl';
-import QuickSignupModal from '@/components/QuickSignupModal';
 import PaymentBadges from '@/components/PaymentBadges';
 
 const INDIAN_STATES = [
@@ -53,8 +52,6 @@ export default function CheckoutPage() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [orderTotal, setOrderTotal] = useState(0);
   const [orderPaymentMethod, setOrderPaymentMethod] = useState('');
-  const [showSignupModal, setShowSignupModal] = useState(false);
-  const [signupPrompted, setSignupPrompted] = useState(false);
   const [loyaltyBalance, setLoyaltyBalance] = useState(0);
   const [usePoints, setUsePoints] = useState(false);
   const [loyaltyEarned, setLoyaltyEarned] = useState(0);
@@ -64,17 +61,6 @@ export default function CheckoutPage() {
   useEffect(() => {
     checkAuth();
   }, [checkAuth]);
-
-  // Prompt guests with items in cart to sign up once when they reach checkout.
-  // If they close the modal, they can still continue as a guest below.
-  useEffect(() => {
-    if (isLoading) return;
-    if (signupPrompted) return;
-    if (isAuthenticated) return;
-    if (items.length === 0) return;
-    setShowSignupModal(true);
-    setSignupPrompted(true);
-  }, [isLoading, isAuthenticated, items.length, signupPrompted]);
 
   // PIN code auto-fill — India Post API (free, no key required)
   const lookupPincode = useCallback(async (pin: string) => {
@@ -1244,16 +1230,6 @@ export default function CheckoutPage() {
         </form>
       </div>
 
-      <QuickSignupModal
-        isOpen={showSignupModal}
-        onClose={() => setShowSignupModal(false)}
-        onSuccess={() => {
-          setShowSignupModal(false);
-          checkAuth();
-        }}
-        cartItems={items}
-        cartTotal={getTotalPrice()}
-      />
     </div>
   );
 }

@@ -85,7 +85,9 @@ export function fbViewContent(productId: string, name: string, category: string,
     content_ids: [productId],
     content_name: name,
     content_category: category,
-    content_type: 'product',
+    // The catalog lists one row per size (id = productId_Size, item_group_id =
+    // productId); a page view is for the whole product, so match the group.
+    content_type: 'product_group',
     value: price,
     currency: 'INR',
   }, { email: user?.email, phone: user?.phone, externalId: user?.id });

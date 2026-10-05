@@ -150,7 +150,7 @@ export async function trackViewContent(
     contentIds: [productId],
     contentName: productName,
     contentCategory: category,
-    contentType: 'product',
+    contentType: 'product_group', // matches the catalog's item_group_id (one row per size)
     value: price,
     currency: 'INR',
   });

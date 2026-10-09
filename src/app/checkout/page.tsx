@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -36,6 +36,13 @@ export default function CheckoutPage() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [orderLoading, setOrderLoading] = useState(false);
+  // On phones the Place Order button is a fixed bottom bar, far from the form —
+  // bring the error box into view whenever an order can't go through.
+  const errorBoxRef = useRef<HTMLDivElement>(null);
+  const [errorTick, setErrorTick] = useState(0);
+  useEffect(() => {
+    if (errorTick) errorBoxRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [errorTick]);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -221,6 +228,11 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     const newErrors: Record<string, string> = {};
+    // Phones autofill "+91-98765 43210", "09876543210", "919876543210" — keep the 10 digits.
+    let phoneDigits = formData.phone.replace(/\D/g, '');
+    if (phoneDigits.length === 12 && phoneDigits.startsWith('91')) phoneDigits = phoneDigits.slice(2);
+    if (phoneDigits.length === 11 && phoneDigits.startsWith('0')) phoneDigits = phoneDigits.slice(1);
+    const pincodeDigits = formData.pincode.replace(/\D/g, '');
     
     // Email is optional for OTP-verified users
     if (formData.email?.trim()) {
@@ -229,12 +241,15 @@ export default function CheckoutPage() {
     }
     if (!formData.firstName?.trim()) newErrors.firstName = 'First name is required';
     if (!formData.phone?.trim()) newErrors.phone = 'Phone number is required';
+    else if (!/^[6-9]\d{9}$/.test(phoneDigits)) newErrors.phone = 'Enter a valid 10-digit mobile number';
     if (!formData.address?.trim()) newErrors.address = 'Address is required';
     if (!formData.city?.trim()) newErrors.city = 'City is required';
     if (!formData.pincode?.trim()) newErrors.pincode = 'Pincode is required';
+    else if (!/^\d{6}$/.test(pincodeDigits)) newErrors.pincode = 'Enter a valid 6-digit pincode';
     
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
+      setErrorTick((t) => t + 1);
       return;
     }
 
@@ -253,11 +268,11 @@ export default function CheckoutPage() {
           })),
           shippingName: `${formData.firstName.trim()} ${formData.lastName.trim()}`,
           shippingEmail: formData.email.trim(),
-          shippingPhone: formData.phone.trim().replace(/\s/g, '').replace(/^\+91/, ''),
+          shippingPhone: phoneDigits,
           shippingAddress: formData.address.trim(),
           shippingCity: formData.city.trim(),
           shippingState: formData.state.trim(),
-          shippingPincode: formData.pincode.trim(),
+          shippingPincode: pincodeDigits,
           paymentMethod: paymentMethod === 'cod' ? 'COD' : paymentMethod === 'upi' ? 'UPI (Razorpay)' : 'UPI (WhatsApp)',
           couponCode: appliedDiscount > 0 ? couponCode.toUpperCase() : undefined,
           couponDiscount: appliedDiscount > 0 ? appliedDiscount : undefined,
@@ -309,9 +324,11 @@ export default function CheckoutPage() {
         }
       } else {
         setErrors({ form: data.error || 'Failed to place order. Please try again.' });
+        setErrorTick((t) => t + 1);
       }
     } catch (error) {
       setErrors({ form: 'Something went wrong. Please try again.' });
+      setErrorTick((t) => t + 1);
     } finally {
       setOrderLoading(false);
     }
@@ -723,7 +740,7 @@ export default function CheckoutPage() {
               )}
 
               {Object.keys(errors).length > 0 && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 text-red-700">
+                <div ref={errorBoxRef} className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 text-red-700">
                   <FiAlertCircle className="flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium">Please fix the following:</p>
